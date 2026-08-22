@@ -6,12 +6,12 @@
 
 ### 前置要求
 
-| 工具       | 版本                        | 说明                                    |
-| ---------- | --------------------------- | --------------------------------------- |
-| Node.js    | ≥ 20.19（建议 22.x）        | 见 `.nvmrc` / `engines`                 |
-| pnpm       | 11.x（`devEngines` 已锁定） | `corepack enable` 或独立安装            |
-| Docker     | 任意近期版本                | 仅本地数据库用，无 Docker 可本机装 PG16 |
-| PostgreSQL | 16+                         | 本地由 `docker compose` 提供            |
+| 工具       | 版本                        | 说明                                                      |
+| ---------- | --------------------------- | --------------------------------------------------------- |
+| Node.js    | ≥ 20.19（建议 22.x）        | 见 `.nvmrc` / `engines`                                   |
+| pnpm       | 11.x（`devEngines` 已锁定） | `corepack enable` 或独立安装                              |
+| Docker     | 任意近期版本                | 本地数据库**二选一**：Docker（推荐）或本机已装 PG         |
+| PostgreSQL | 16+                         | Docker 方案由 `docker compose` 提供；本机方案直接用已装的 |
 
 ### 首次启动（按顺序）
 
@@ -19,7 +19,12 @@
 # 1. 安装依赖（根目录）
 pnpm install
 
-# 2. 起本地数据库（PG16 + pg_trgm 扩展）
+# 2. 起本地数据库（PG16+，二选一，均需 pg_trgm 扩展）
+#    A. Docker（推荐）：docker compose up -d db
+#    B. 本机已装 PostgreSQL：三条命令分开跑（详见 docs/M0-工程骨架说明.md 步 9）
+#       psql -U postgres -c "CREATE USER crm WITH PASSWORD 'crm_dev_password';"
+#       psql -U postgres -c "CREATE DATABASE litecrm OWNER crm;"
+#       psql -U postgres -d litecrm -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"
 docker compose up -d db
 
 # 3. 准备环境变量
