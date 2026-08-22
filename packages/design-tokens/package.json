@@ -1,0 +1,13 @@
+{
+  "name": "@crm/design-tokens",
+  "version": "1.0.0",
+  "description": "双端统一主题变量（颜色/间距/字号/圆角）",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  }
+}

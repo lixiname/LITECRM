@@ -1,0 +1,3 @@
+// Drizzle schema 入口（M0 占位）
+// M1 起按业务域挂表：org / customers / opportunities / complaints / planning / expenses ...
+export {}

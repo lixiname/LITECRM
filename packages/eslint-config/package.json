@@ -1,0 +1,22 @@
+{
+  "name": "@crm/eslint-config",
+  "version": "1.0.0",
+  "description": "共享 ESLint 9 flat config（web/mobile/api 统一引用）",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^17.11.0",
+    "typescript-eslint": "^8.67.0",
+    "vue-eslint-parser": "^10.4.1"
+  }
+}

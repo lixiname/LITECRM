@@ -1,0 +1,47 @@
+{
+  "name": "LITECRM",
+  "version": "1.0.0",
+  "description": "Lite CRM monorepo（详见 docs/重构架构决策与实施蓝图.md）",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "dev:web": "pnpm --filter @crm/web dev",
+    "dev:mobile": "pnpm --filter @crm/mobile dev",
+    "dev:api": "pnpm --filter @crm/api start:dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write \"**/*.{ts,vue,json,md,yml,yaml,mjs}\"",
+    "contracts:generate": "pnpm --filter @crm/api generate:openapi && pnpm --filter @crm/contracts generate",
+    "contracts:check": "pnpm --filter @crm/contracts check",
+    "db:generate": "pnpm --filter @crm/api db:generate",
+    "db:migrate": "pnpm --filter @crm/api db:migrate",
+    "db:studio": "pnpm --filter @crm/api db:studio",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.22.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "@crm/eslint-config": "workspace:*",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "eslint": "^10.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
+    "prettier": "^3.9.6",
+    "turbo": "^2.10.11"
+  }
+}

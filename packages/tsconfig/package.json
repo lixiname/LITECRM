@@ -1,0 +1,11 @@
+{
+  "name": "@crm/tsconfig",
+  "version": "1.0.0",
+  "description": "共享 TypeScript 基础配置（base/node/vue）",
+  "private": true,
+  "files": [
+    "base.json",
+    "node.json",
+    "vue.json"
+  ]
+}

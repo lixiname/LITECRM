@@ -1,0 +1,30 @@
+:root {
+  --crm-color-primary: #1677ff;
+  --crm-color-primary-light: #e6f4ff;
+  --crm-color-success: #52c41a;
+  --crm-color-warning: #faad14;
+  --crm-color-danger: #ff4d4f;
+  --crm-color-text-primary: #1f2329;
+  --crm-color-text-secondary: #646a73;
+  --crm-color-text-disabled: #8f959e;
+  --crm-color-border: #dee0e3;
+  --crm-color-bg-page: #f5f6f7;
+  --crm-color-bg-card: #ffffff;
+
+  --crm-spacing-xs: 4px;
+  --crm-spacing-sm: 8px;
+  --crm-spacing-md: 12px;
+  --crm-spacing-lg: 16px;
+  --crm-spacing-xl: 24px;
+  --crm-spacing-xxl: 32px;
+
+  --crm-radius-sm: 4px;
+  --crm-radius-md: 8px;
+  --crm-radius-lg: 12px;
+
+  --crm-font-size-xs: 12px;
+  --crm-font-size-sm: 14px;
+  --crm-font-size-md: 16px;
+  --crm-font-size-lg: 18px;
+  --crm-font-size-xl: 22px;
+}
