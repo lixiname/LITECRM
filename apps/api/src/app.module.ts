@@ -12,6 +12,8 @@ import { ClaimsModule } from './claims/claims.module'
 import { ActivitiesModule } from './activities/activities.module'
 import { OpportunitiesModule } from './opportunities/opportunities.module'
 import { ComplaintsModule } from './complaints/complaints.module'
+import { PlanningModule } from './planning/planning.module'
+import { ExpensesModule } from './expenses/expenses.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -27,6 +29,8 @@ import { ComplaintsModule } from './complaints/complaints.module'
     ActivitiesModule,
     OpportunitiesModule,
     ComplaintsModule,
+    PlanningModule,
+    ExpensesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

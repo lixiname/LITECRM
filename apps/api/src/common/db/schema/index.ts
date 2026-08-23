@@ -17,6 +17,13 @@ import {
   opportunityEvents,
   visitRecords,
 } from './actions'
+import {
+  businessWeeks,
+  dailyExpenses,
+  managementComments,
+  weeklyPlanItems,
+  weeklyPlans,
+} from './planning'
 
 export {
   baseColumns,
@@ -35,4 +42,9 @@ export {
   deals,
   complaints,
   complaintFollowUps,
+  businessWeeks,
+  weeklyPlans,
+  weeklyPlanItems,
+  managementComments,
+  dailyExpenses,
 }

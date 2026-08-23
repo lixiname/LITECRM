@@ -9,3 +9,6 @@ export const pool = new Pool({
 })
 
 export const db = drizzle(pool, { schema })
+
+// 事务 client 类型（供跨模块联动传 tx，如拜访→周计划项强一致）
+export type DbClient = Parameters<Parameters<typeof db.transaction>[0]>[0]

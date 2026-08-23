@@ -404,6 +404,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/business-weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanningController_listBusinessWeeks"];
+        put?: never;
+        post: operations["PlanningController_createBusinessWeek"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanningController_getMyPlan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/plans/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanningController_addPlanItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanningController_createComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanningController_listUnread"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanningController_markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/opportunities": {
         parameters: {
             query?: never;
@@ -510,6 +606,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["ComplaintsController_followUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ExpensesController_list"];
+        put?: never;
+        post: operations["ExpensesController_upsert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expenses/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExpensesController_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expenses/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExpensesController_void"];
         delete?: never;
         options?: never;
         head?: never;
@@ -828,6 +972,41 @@ export interface components {
             /** @description 下次拜访动作 */
             nextFollowUpAction?: string;
         };
+        CreateBusinessWeekDto: {
+            /** @description 业务周名称 */
+            name: string;
+            /** @description 周起始日 */
+            weekStart: string;
+            /** @description 周结束日 */
+            weekEnd: string;
+            /** @description 是否启用 */
+            isActive?: boolean;
+        };
+        CreatePlanItemDto: {
+            /** @description 计划日期 */
+            plannedDate: string;
+            /** @description 关联客户（可空=同行关系维护） */
+            customerId?: string;
+            /** @description 行动计划 */
+            action: string;
+            /** @description 备注 */
+            notes?: string;
+        };
+        /**
+         * @description 目标类型
+         * @enum {string}
+         */
+        CommentTargetType: "weekly_plan" | "weekly_plan_item" | "visit";
+        CreateCommentDto: {
+            /** @description 目标类型 */
+            targetType: components["schemas"]["CommentTargetType"];
+            /** @description 目标 ID（周计划/计划项/拜访） */
+            targetId: string;
+            /** @description 被指导人 ID */
+            ownerId: string;
+            /** @description 意见内容 */
+            content: string;
+        };
         /**
          * @description 发现渠道
          * @enum {string}
@@ -936,6 +1115,22 @@ export interface components {
             nextFollowUpDate?: string;
             /** @description 客诉状态（类型声明） */
             status?: components["schemas"]["ComplaintStatus"];
+        };
+        CreateExpenseDto: {
+            /** @description 费用日期 */
+            expenseDate: string;
+            /** @description 烟酒 */
+            tobaccoAlcohol?: number;
+            /** @description 礼品 */
+            gifts?: number;
+            /** @description 餐叙 */
+            dining?: number;
+            /** @description 招待 */
+            entertainment?: number;
+            /** @description 住宿 */
+            lodging?: number;
+            /** @description 备注 */
+            notes?: string;
         };
     };
     responses: never;
@@ -1684,6 +1879,150 @@ export interface operations {
             };
         };
     };
+    PlanningController_listBusinessWeeks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 业务周列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_createBusinessWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBusinessWeekDto"];
+            };
+        };
+        responses: {
+            /** @description 创建业务周（admin） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_getMyPlan: {
+        parameters: {
+            query: {
+                businessWeekId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 我的周计划（含计划项） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_addPlanItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanItemDto"];
+            };
+        };
+        responses: {
+            /** @description 加计划项 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_createComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentDto"];
+            };
+        };
+        responses: {
+            /** @description 发布指导意见（上级对下属） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_listUnread: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 我的未读意见 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 标记已读 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     OpportunitiesController_list: {
         parameters: {
             query?: never;
@@ -1868,6 +2207,86 @@ export interface operations {
         };
         responses: {
             /** @description 跟进 / 确认解决（终态禁止） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpensesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 我的费用（可按月 YYYY-MM 筛选） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpensesController_upsert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExpenseDto"];
+            };
+        };
+        responses: {
+            /** @description 保存/更新当日费用（upsert） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpensesController_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 提交（计入统计） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpensesController_void: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 作废（剔除统计，留痕） */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -119,3 +119,13 @@ export type FollowUpOutcome = (typeof FOLLOW_UP_OUTCOMES)[number]
 // 成交交易性质（§7.2 deals.trade_type）
 export const TRADE_TYPES = ['equipment', 'consumable', 'part', 'service'] as const
 export type TradeType = (typeof TRADE_TYPES)[number]
+
+// ===== M4 计划费用域枚举（§7.2：varchar + CHECK + 应用层枚举）=====
+
+// 费用三态（§8.8：draft 不计入 / submitted 计入 / voided 剔除留痕）
+export const EXPENSE_STATUSES = ['draft', 'submitted', 'voided'] as const
+export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number]
+
+// 指导意见多态目标（§8.7）
+export const COMMENT_TARGET_TYPES = ['weekly_plan', 'weekly_plan_item', 'visit'] as const
+export type CommentTargetType = (typeof COMMENT_TARGET_TYPES)[number]

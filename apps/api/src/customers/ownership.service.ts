@@ -4,9 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, gte, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { complaints, customerTransfers, customers } from '../common/db/schema'
+import { complaints, customerTransfers, customers, weeklyPlanItems } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { CapacityService } from './capacity.service'
 import type { AuthUser } from '../auth/auth.service'
@@ -74,6 +74,15 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: dto.reason,
       })
+      // §8.3 联动：未来计划项作废（人的执行计划，不随客户）
+      await tx
+        .delete(weeklyPlanItems)
+        .where(
+          and(
+            eq(weeklyPlanItems.customerId, customer.id),
+            gte(weeklyPlanItems.plannedDate, new Date().toISOString().slice(0, 10)),
+          ),
+        )
       return { id: customer.id, status: nextStatus, ownerId: null }
     })
   }

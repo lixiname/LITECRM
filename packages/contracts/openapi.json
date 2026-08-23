@@ -877,6 +877,145 @@
         "tags": ["visits"]
       }
     },
+    "/business-weeks": {
+      "post": {
+        "operationId": "PlanningController_createBusinessWeek",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBusinessWeekDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "创建业务周（admin）"
+          }
+        },
+        "tags": ["planning"]
+      },
+      "get": {
+        "operationId": "PlanningController_listBusinessWeeks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "业务周列表"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/plans": {
+      "get": {
+        "operationId": "PlanningController_getMyPlan",
+        "parameters": [
+          {
+            "name": "businessWeekId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "我的周计划（含计划项）"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/plans/{id}/items": {
+      "post": {
+        "operationId": "PlanningController_addPlanItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "加计划项"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/comments": {
+      "post": {
+        "operationId": "PlanningController_createComment",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "发布指导意见（上级对下属）"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/comments/unread": {
+      "get": {
+        "operationId": "PlanningController_listUnread",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "我的未读意见"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/comments/{id}/read": {
+      "post": {
+        "operationId": "PlanningController_markRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "标记已读"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
     "/opportunities": {
       "post": {
         "operationId": "OpportunitiesController_create",
@@ -1074,6 +1213,80 @@
           }
         },
         "tags": ["complaints"]
+      }
+    },
+    "/expenses": {
+      "post": {
+        "operationId": "ExpensesController_upsert",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpenseDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "保存/更新当日费用（upsert）"
+          }
+        },
+        "tags": ["expenses"]
+      },
+      "get": {
+        "operationId": "ExpensesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "我的费用（可按月 YYYY-MM 筛选）"
+          }
+        },
+        "tags": ["expenses"]
+      }
+    },
+    "/expenses/{id}/submit": {
+      "post": {
+        "operationId": "ExpensesController_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "提交（计入统计）"
+          }
+        },
+        "tags": ["expenses"]
+      }
+    },
+    "/expenses/{id}/void": {
+      "post": {
+        "operationId": "ExpensesController_void",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "作废（剔除统计，留痕）"
+          }
+        },
+        "tags": ["expenses"]
       }
     }
   },
@@ -1752,6 +1965,81 @@
         },
         "required": ["customerId", "occurredAt", "method"]
       },
+      "CreateBusinessWeekDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "业务周名称"
+          },
+          "weekStart": {
+            "type": "string",
+            "description": "周起始日"
+          },
+          "weekEnd": {
+            "type": "string",
+            "description": "周结束日"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "是否启用"
+          }
+        },
+        "required": ["name", "weekStart", "weekEnd"]
+      },
+      "CreatePlanItemDto": {
+        "type": "object",
+        "properties": {
+          "plannedDate": {
+            "type": "string",
+            "description": "计划日期"
+          },
+          "customerId": {
+            "type": "string",
+            "description": "关联客户（可空=同行关系维护）"
+          },
+          "action": {
+            "type": "string",
+            "description": "行动计划"
+          },
+          "notes": {
+            "type": "string",
+            "description": "备注"
+          }
+        },
+        "required": ["plannedDate", "action"]
+      },
+      "CommentTargetType": {
+        "type": "string",
+        "enum": ["weekly_plan", "weekly_plan_item", "visit"],
+        "description": "目标类型"
+      },
+      "CreateCommentDto": {
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "description": "目标类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommentTargetType"
+              }
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "description": "目标 ID（周计划/计划项/拜访）"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "被指导人 ID"
+          },
+          "content": {
+            "type": "string",
+            "description": "意见内容"
+          }
+        },
+        "required": ["targetType", "targetId", "ownerId", "content"]
+      },
       "OpportunitySource": {
         "type": "string",
         "enum": ["referral", "cold_call", "exhibition", "online", "other"],
@@ -1969,6 +2257,40 @@
           }
         },
         "required": ["content", "outcome"]
+      },
+      "CreateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "expenseDate": {
+            "type": "string",
+            "description": "费用日期"
+          },
+          "tobaccoAlcohol": {
+            "type": "number",
+            "description": "烟酒"
+          },
+          "gifts": {
+            "type": "number",
+            "description": "礼品"
+          },
+          "dining": {
+            "type": "number",
+            "description": "餐叙"
+          },
+          "entertainment": {
+            "type": "number",
+            "description": "招待"
+          },
+          "lodging": {
+            "type": "number",
+            "description": "住宿"
+          },
+          "notes": {
+            "type": "string",
+            "description": "备注"
+          }
+        },
+        "required": ["expenseDate"]
       }
     }
   }
