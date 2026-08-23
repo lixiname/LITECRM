@@ -1,29 +1,18 @@
 <template>
-  <div class="home">
-    <van-nav-bar title="Lite CRM">
-      <template #right>
-        <van-button v-if="auth.isLoggedIn" size="small" plain type="danger" @click="handleLogout">
-          退出
-        </van-button>
-      </template>
-    </van-nav-bar>
+  <div class="mine">
+    <van-nav-bar title="我的" />
 
-    <div v-if="auth.isLoggedIn" class="home__body">
-      <van-cell-group inset>
-        <van-cell title="客户管理" is-link @click="router.push('/customers')" />
-        <van-cell title="快速记一笔" is-link @click="router.push('/expenses')" />
-      </van-cell-group>
+    <van-cell-group inset title="当前用户">
+      <van-cell title="姓名" :value="auth.user?.displayName" />
+      <van-cell title="账号" :value="auth.user?.username" />
+      <van-cell title="角色" :value="ROLE_LABELS[auth.user?.role ?? 'sales']" />
+      <van-cell title="数据范围" :value="DATA_SCOPE_LABELS[auth.dataScope ?? 'self']" />
+      <van-cell title="能力点" :value="auth.capabilities.join(' / ')" />
+    </van-cell-group>
 
-      <van-cell-group inset title="当前用户">
-        <van-cell title="姓名" :value="auth.user?.displayName" />
-        <van-cell title="账号" :value="auth.user?.username" />
-        <van-cell title="角色" :value="ROLE_LABELS[auth.user?.role ?? 'sales']" />
-        <van-cell title="数据范围" :value="DATA_SCOPE_LABELS[auth.dataScope ?? 'self']" />
-        <van-cell title="能力点" :value="auth.capabilities.join(' / ')" />
-      </van-cell-group>
+    <div class="mine__logout">
+      <van-button round block type="danger" plain @click="handleLogout">退出登录</van-button>
     </div>
-
-    <p v-else class="home__hint">登录后查看会话信息</p>
   </div>
 </template>
 
@@ -41,12 +30,7 @@ function handleLogout() {
 </script>
 
 <style scoped>
-.home__body {
-  padding: var(--crm-spacing-lg) 0;
-}
-.home__hint {
-  padding: var(--crm-spacing-xl);
-  text-align: center;
-  color: var(--crm-color-text-secondary);
+.mine__logout {
+  margin: var(--crm-spacing-lg) var(--crm-spacing-md);
 }
 </style>
