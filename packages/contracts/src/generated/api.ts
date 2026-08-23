@@ -36,6 +36,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/change-password": {
         parameters: {
             query?: never;
@@ -104,10 +120,118 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        LoginDto: Record<string, never>;
-        ChangePasswordDto: Record<string, never>;
-        CreateUserDto: Record<string, never>;
-        UpdateUserDto: Record<string, never>;
+        LoginDto: {
+            /** @description 登录用户名 */
+            username: string;
+            /** @description 密码 */
+            password: string;
+        };
+        /**
+         * @description 角色
+         * @enum {string}
+         */
+        Role: "sales" | "executive" | "assistant" | "admin";
+        AuthUserDto: {
+            /** @description 用户 ID */
+            id: string;
+            /** @description 登录用户名 */
+            username: string;
+            /** @description 显示名 */
+            displayName: string;
+            /** @description 角色 */
+            role: components["schemas"]["Role"];
+        };
+        /**
+         * @description 能力点快照
+         * @enum {string}
+         */
+        Ability: "customer.write" | "customer.transfer" | "approve.claim" | "dashboard.view" | "stats.view" | "export" | "user.manage";
+        /**
+         * @description 数据范围快照
+         * @enum {string}
+         */
+        DataScope: "self" | "team" | "full";
+        LoginResponseDto: {
+            /** @description 当前用户 */
+            user: components["schemas"]["AuthUserDto"];
+            /** @description 访问令牌（2h） */
+            accessToken: string;
+            /** @description 刷新令牌（14d，滑动续期） */
+            refreshToken: string;
+            /** @description 能力点快照 */
+            capabilities: components["schemas"]["Ability"][];
+            /** @description 数据范围快照 */
+            dataScope: components["schemas"]["DataScope"];
+        };
+        RefreshDto: {
+            /** @description 刷新令牌 */
+            refreshToken: string;
+        };
+        TokenPairDto: {
+            /** @description 新的访问令牌（2h） */
+            accessToken: string;
+            /** @description 新的刷新令牌（14d，滑动续期） */
+            refreshToken: string;
+        };
+        ChangePasswordDto: {
+            /** @description 旧密码 */
+            oldPassword: string;
+            /** @description 新密码（至少 8 位） */
+            newPassword: string;
+        };
+        UserDto: {
+            /** @description 用户 ID */
+            id: string;
+            /** @description 登录用户名 */
+            username: string;
+            /** @description 显示名 */
+            displayName: string;
+            /** @description 角色 */
+            role: components["schemas"]["Role"];
+            /** @description 手机号（钉钉绑定预留） */
+            phone?: string | null;
+            /** @description 直属上级 ID（组织树） */
+            reportsToId?: string | null;
+            /** @description 区域 */
+            region?: string | null;
+            /** @description 是否启用 */
+            isActive: boolean;
+            /**
+             * Format: date-time
+             * @description 创建时间
+             */
+            createdAt: string;
+        };
+        CreateUserDto: {
+            /** @description 登录用户名 */
+            username: string;
+            /** @description 初始密码（至少 8 位） */
+            password: string;
+            /** @description 显示名 */
+            displayName: string;
+            /** @description 角色 */
+            role: components["schemas"]["Role"];
+            /** @description 直属上级 ID（组织树） */
+            reportsToId?: string;
+            /** @description 手机号（钉钉绑定预留） */
+            phone?: string;
+            /** @description 区域 */
+            region?: string;
+        };
+        UpdateUserDto: {
+            /** @description 显示名 */
+            displayName?: string;
+            /** @description 角色 */
+            role?: components["schemas"]["Role"];
+            /** @description 直属上级 ID（组织树，null=顶层） */
+            reportsToId?: string | null;
+            /** @description 手机号（钉钉绑定预留） */
+            phone?: string;
+            /** @description 区域 */
+            region?: string;
+            /** @description 是否启用 */
+            isActive?: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -147,11 +271,38 @@ export interface operations {
             };
         };
         responses: {
+            /** @description 登录成功 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshDto"];
+            };
+        };
+        responses: {
+            /** @description 新的令牌对 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPairDto"];
+                };
             };
         };
     };
@@ -168,6 +319,7 @@ export interface operations {
             };
         };
         responses: {
+            /** @description 改密成功（全端 token 已失效） */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -185,11 +337,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description 用户列表 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserDto"][];
+                };
             };
         };
     };
@@ -206,11 +361,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description 创建成功 */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
             };
         };
     };
@@ -225,11 +383,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description 用户详情 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
             };
         };
     };
@@ -244,6 +405,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description 停用成功 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -267,11 +429,14 @@ export interface operations {
             };
         };
         responses: {
+            /** @description 更新成功 */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
+                };
             };
         };
     };
@@ -286,11 +451,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description 临时密码（仅此一次展示） */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": string;
+                };
             };
         };
     };

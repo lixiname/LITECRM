@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import type { Role } from '../common/constants'
 import type { JwtPayload } from './auth.service'
 
 // PEP（策略执行点）：校验 access token，注入当前用户（§6.1）

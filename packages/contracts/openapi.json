@@ -29,7 +29,43 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Auth"]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "新的令牌对",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPairDto"
+                }
+              }
+            }
           }
         },
         "tags": ["Auth"]
@@ -51,7 +87,7 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "改密成功（全端 token 已失效）"
           }
         },
         "tags": ["Auth"]
@@ -63,7 +99,17 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "用户列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
           }
         },
         "tags": ["Users"]
@@ -83,7 +129,14 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
           }
         },
         "tags": ["Users"]
@@ -104,7 +157,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "用户详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
           }
         },
         "tags": ["Users"]
@@ -133,7 +193,14 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
           }
         },
         "tags": ["Users"]
@@ -152,7 +219,7 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "停用成功"
           }
         },
         "tags": ["Users"]
@@ -173,7 +240,14 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "临时密码（仅此一次展示）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "tags": ["Users"]
@@ -192,19 +266,263 @@
     "schemas": {
       "LoginDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "登录用户名"
+          },
+          "password": {
+            "type": "string",
+            "description": "密码"
+          }
+        },
+        "required": ["username", "password"]
+      },
+      "Role": {
+        "type": "string",
+        "enum": ["sales", "executive", "assistant", "admin"],
+        "description": "角色"
+      },
+      "AuthUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "用户 ID"
+          },
+          "username": {
+            "type": "string",
+            "description": "登录用户名"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名"
+          },
+          "role": {
+            "description": "角色",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          }
+        },
+        "required": ["id", "username", "displayName", "role"]
+      },
+      "Ability": {
+        "type": "string",
+        "enum": [
+          "customer.write",
+          "customer.transfer",
+          "approve.claim",
+          "dashboard.view",
+          "stats.view",
+          "export",
+          "user.manage"
+        ],
+        "description": "能力点快照"
+      },
+      "DataScope": {
+        "type": "string",
+        "enum": ["self", "team", "full"],
+        "description": "数据范围快照"
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "description": "当前用户",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AuthUserDto"
+              }
+            ]
+          },
+          "accessToken": {
+            "type": "string",
+            "description": "访问令牌（2h）"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌（14d，滑动续期）"
+          },
+          "capabilities": {
+            "type": "array",
+            "description": "能力点快照",
+            "items": {
+              "$ref": "#/components/schemas/Ability"
+            }
+          },
+          "dataScope": {
+            "description": "数据范围快照",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DataScope"
+              }
+            ]
+          }
+        },
+        "required": ["user", "accessToken", "refreshToken", "capabilities", "dataScope"]
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "刷新令牌"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "TokenPairDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "新的访问令牌（2h）"
+          },
+          "refreshToken": {
+            "type": "string",
+            "description": "新的刷新令牌（14d，滑动续期）"
+          }
+        },
+        "required": ["accessToken", "refreshToken"]
       },
       "ChangePasswordDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "description": "旧密码"
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "新密码（至少 8 位）"
+          }
+        },
+        "required": ["oldPassword", "newPassword"]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "用户 ID"
+          },
+          "username": {
+            "type": "string",
+            "description": "登录用户名"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名"
+          },
+          "role": {
+            "description": "角色",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "description": "手机号（钉钉绑定预留）"
+          },
+          "reportsToId": {
+            "type": "string",
+            "nullable": true,
+            "description": "直属上级 ID（组织树）"
+          },
+          "region": {
+            "type": "string",
+            "nullable": true,
+            "description": "区域"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "是否启用"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "创建时间"
+          }
+        },
+        "required": ["id", "username", "displayName", "role", "isActive", "createdAt"]
       },
       "CreateUserDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "登录用户名"
+          },
+          "password": {
+            "type": "string",
+            "description": "初始密码（至少 8 位）"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名"
+          },
+          "role": {
+            "description": "角色",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          },
+          "reportsToId": {
+            "type": "string",
+            "description": "直属上级 ID（组织树）"
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号（钉钉绑定预留）"
+          },
+          "region": {
+            "type": "string",
+            "description": "区域"
+          }
+        },
+        "required": ["username", "password", "displayName", "role"]
       },
       "UpdateUserDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "显示名"
+          },
+          "role": {
+            "description": "角色",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          },
+          "reportsToId": {
+            "type": "string",
+            "nullable": true,
+            "description": "直属上级 ID（组织树，null=顶层）"
+          },
+          "phone": {
+            "type": "string",
+            "description": "手机号（钉钉绑定预留）"
+          },
+          "region": {
+            "type": "string",
+            "description": "区域"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "是否启用"
+          }
+        }
       }
     }
   }

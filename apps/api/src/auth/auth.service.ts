@@ -106,6 +106,25 @@ export class AuthService {
     return temp
   }
 
+  // 无感刷新（§6.5：refresh token 换新 access+refresh，滑动续期；token_version 校验兜底）
+  async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    let payload: JwtPayload
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken)
+    } catch {
+      throw new UnauthorizedException('登录已失效，请重新登录')
+    }
+    if (payload.type !== 'refresh') throw new UnauthorizedException('token 类型错误')
+
+    const [user] = await db.select().from(users).where(eq(users.id, payload.sub)).limit(1)
+    if (!user || !user.isActive) throw new UnauthorizedException('登录已失效，请重新登录')
+    if (user.tokenVersion !== payload.tv) throw new UnauthorizedException('登录已失效，请重新登录')
+
+    // 重新签发：access/refresh 均重置 TTL（滑动续期）
+    const { access, refresh } = await this.signTokens(user.id, user.role as Role, user.tokenVersion)
+    return { accessToken: access, refreshToken: refresh }
+  }
+
   private async recordFailure(userId: string, currentCount: number): Promise<void> {
     const count = currentCount + 1
     const lockedUntil = count >= MAX_LOGIN_FAILURES ? new Date(Date.now() + LOCK_DURATION_MS) : null
