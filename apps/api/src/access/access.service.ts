@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { ForbiddenException, Injectable } from '@nestjs/common'
 import { db } from '../common/db/db'
 import { users } from '../common/db/schema'
 import {
@@ -85,5 +85,17 @@ export class AccessService {
       cur = byId.get(cur) ?? null
     }
     return false
+  }
+
+  // 客户可维护判定（§8.3/8.4/8.5/8.6）：owner / 管理链 / admin；业务模块统一走此收口
+  async assertCanContributeCustomer(
+    customerOwnerId: string | null,
+    actor: { id: string; role: Role },
+  ): Promise<void> {
+    if (customerOwnerId === actor.id) return
+    if (actor.role === 'admin') return
+    const isManager = await this.isManagerOf(actor.id, customerOwnerId)
+    if (isManager) return
+    throw new ForbiddenException('无权维护该客户')
   }
 }

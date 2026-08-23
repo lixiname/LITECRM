@@ -833,6 +833,248 @@
         },
         "tags": ["claims"]
       }
+    },
+    "/visits": {
+      "post": {
+        "operationId": "VisitsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVisitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "登记拜访"
+          }
+        },
+        "tags": ["visits"]
+      }
+    },
+    "/visits/customer/{customerId}": {
+      "get": {
+        "operationId": "VisitsController_listByCustomer",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "客户拜访时间线"
+          }
+        },
+        "tags": ["visits"]
+      }
+    },
+    "/opportunities": {
+      "post": {
+        "operationId": "OpportunitiesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "新建商机（意向阶段）"
+          }
+        },
+        "tags": ["opportunities"]
+      },
+      "get": {
+        "operationId": "OpportunitiesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "商机列表（客户当前归属可见）"
+          }
+        },
+        "tags": ["opportunities"]
+      }
+    },
+    "/opportunities/{id}": {
+      "get": {
+        "operationId": "OpportunitiesController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "商机详情（含事件流与成交 Deal）"
+          }
+        },
+        "tags": ["opportunities"]
+      }
+    },
+    "/opportunities/{id}/advance": {
+      "post": {
+        "operationId": "OpportunitiesController_advance",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvanceOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "推进 / 转订单（quoteAmount 非空=生成 Deal）"
+          }
+        },
+        "tags": ["opportunities"]
+      }
+    },
+    "/opportunities/{id}/close": {
+      "post": {
+        "operationId": "OpportunitiesController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "结案（lost / demand_disappeared）"
+          }
+        },
+        "tags": ["opportunities"]
+      }
+    },
+    "/complaints": {
+      "post": {
+        "operationId": "ComplaintsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComplaintDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "登记客诉"
+          }
+        },
+        "tags": ["complaints"]
+      },
+      "get": {
+        "operationId": "ComplaintsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "客诉列表（客户当前归属可见）"
+          }
+        },
+        "tags": ["complaints"]
+      }
+    },
+    "/complaints/{id}": {
+      "get": {
+        "operationId": "ComplaintsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "客诉详情（含跟进事件）"
+          }
+        },
+        "tags": ["complaints"]
+      }
+    },
+    "/complaints/{id}/follow-up": {
+      "post": {
+        "operationId": "ComplaintsController_followUp",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowUpComplaintDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "跟进 / 确认解决（终态禁止）"
+          }
+        },
+        "tags": ["complaints"]
+      }
     }
   },
   "info": {
@@ -1448,6 +1690,246 @@
             "description": "审批意见（拒绝时必填）"
           }
         }
+      },
+      "VisitMethod": {
+        "type": "string",
+        "enum": ["offline_visit", "remote", "other"],
+        "description": "拜访方式"
+      },
+      "VisitType": {
+        "type": "string",
+        "enum": ["new_customer", "existing_maintenance", "industry_relation"],
+        "description": "拜访类型"
+      },
+      "CreateVisitDto": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "客户 ID"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "沟通时间（业务时间）"
+          },
+          "method": {
+            "description": "拜访方式",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VisitMethod"
+              }
+            ]
+          },
+          "visitType": {
+            "description": "拜访类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/VisitType"
+              }
+            ]
+          },
+          "businessSituation": {
+            "type": "string",
+            "description": "生意情况"
+          },
+          "equipmentSituation": {
+            "type": "string",
+            "description": "设备使用"
+          },
+          "personnelChanges": {
+            "type": "string",
+            "description": "人员变动"
+          },
+          "nextFollowUpDate": {
+            "type": "string",
+            "description": "下次拜访日期（触发周计划生成）"
+          },
+          "nextFollowUpAction": {
+            "type": "string",
+            "description": "下次拜访动作"
+          }
+        },
+        "required": ["customerId", "occurredAt", "method"]
+      },
+      "OpportunitySource": {
+        "type": "string",
+        "enum": ["referral", "cold_call", "exhibition", "online", "other"],
+        "description": "发现渠道"
+      },
+      "AmountType": {
+        "type": "string",
+        "enum": ["oral", "quoted"],
+        "description": "金额类型"
+      },
+      "CreateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "客户 ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "需求简述"
+          },
+          "source": {
+            "description": "发现渠道",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpportunitySource"
+              }
+            ]
+          },
+          "amountType": {
+            "description": "金额类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AmountType"
+              }
+            ]
+          },
+          "amount": {
+            "type": "number",
+            "description": "意向金额（与成交金额解耦，成交时以报价单金额为准）"
+          },
+          "approximate": {
+            "type": "boolean",
+            "description": "约估"
+          },
+          "amountNote": {
+            "type": "string",
+            "description": "金额表述"
+          },
+          "productLine": {
+            "type": "string",
+            "description": "大类产品线"
+          },
+          "expectedCloseDate": {
+            "type": "string",
+            "description": "预计成交日"
+          },
+          "nextAction": {
+            "type": "string",
+            "description": "下一步动作"
+          },
+          "nextFollowUpDate": {
+            "type": "string",
+            "description": "下次跟进日期"
+          }
+        },
+        "required": [
+          "customerId",
+          "name",
+          "source",
+          "amountType",
+          "amount",
+          "nextAction",
+          "nextFollowUpDate"
+        ]
+      },
+      "AdvanceOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "conclusion": {
+            "type": "string",
+            "description": "跟进结论"
+          },
+          "nextAction": {
+            "type": "string",
+            "description": "下一步动作"
+          },
+          "nextFollowUpDate": {
+            "type": "string",
+            "description": "下次跟进日期"
+          },
+          "quoteAmount": {
+            "type": "number",
+            "description": "报价单金额（填了=转订单，生成 Deal）"
+          }
+        }
+      },
+      "CloseOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "结案结果",
+            "enum": ["lost", "demand_disappeared"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "结案说明"
+          }
+        },
+        "required": ["result", "reason"]
+      },
+      "ComplaintType": {
+        "type": "string",
+        "enum": ["product_quality", "delivery", "service", "logistics", "price", "other"],
+        "description": "客诉类型"
+      },
+      "CreateComplaintDto": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "description": "客户 ID"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "发生时间"
+          },
+          "type": {
+            "description": "客诉类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ComplaintType"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "问题描述"
+          },
+          "nextFollowUpDate": {
+            "type": "string",
+            "description": "下次确认日期"
+          }
+        },
+        "required": ["customerId", "occurredAt", "type", "description", "nextFollowUpDate"]
+      },
+      "FollowUpOutcome": {
+        "type": "string",
+        "enum": ["followed_up", "resolved"],
+        "description": "跟进结果"
+      },
+      "FollowUpComplaintDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "本次处理确认"
+          },
+          "outcome": {
+            "description": "跟进结果",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FollowUpOutcome"
+              }
+            ]
+          },
+          "resolution": {
+            "type": "string",
+            "description": "解决结果（outcome=resolved 必填）"
+          },
+          "nextFollowUpDate": {
+            "type": "string",
+            "description": "下次确认日期（outcome=followed_up 必填）"
+          }
+        },
+        "required": ["content", "outcome"]
       }
     }
   }

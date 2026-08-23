@@ -9,6 +9,14 @@ import {
   customers,
   customerTransfers,
 } from './customers'
+import {
+  complaintFollowUps,
+  complaints,
+  deals,
+  opportunities,
+  opportunityEvents,
+  visitRecords,
+} from './actions'
 
 export {
   baseColumns,
@@ -21,4 +29,10 @@ export {
   customerTransfers,
   customerClaimRequests,
   customerDimensionOptions,
+  visitRecords,
+  opportunities,
+  opportunityEvents,
+  deals,
+  complaints,
+  complaintFollowUps,
 }

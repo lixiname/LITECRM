@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { contacts, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'

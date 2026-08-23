@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { customerTransfers, customers } from '../common/db/schema'
+import { complaints, customerTransfers, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { CapacityService } from './capacity.service'
 import type { AuthUser } from '../auth/auth.service'
@@ -49,11 +49,17 @@ export class OwnershipService {
     })
   }
 
-  // 主动释放（§8.3）：owner 本人发起；pool=公海 / invalid=无效；未解决客诉拦截（M3 接入）
+  // 主动释放（§8.3）：owner 本人发起；pool=公海 / invalid=无效；未解决客诉拦截
   async release(customerId: string, dto: ReleaseCustomerDto, actor: AuthUser) {
     const customer = await this.findOwned(customerId, actor)
     await this.assertIsOwner(customer, actor)
-    // TODO(M3)：未解决客诉 → 禁止释放（先解决/转交）；complaints 表 M3 建后接入
+    // §8.3 客诉拦截：未解决客诉 → 禁止释放（先解决/转交）
+    const [openComplaint] = await db
+      .select({ id: complaints.id })
+      .from(complaints)
+      .where(and(eq(complaints.customerId, customer.id), eq(complaints.status, 'registered')))
+      .limit(1)
+    if (openComplaint) throw new ConflictException('存在未解决客诉，请先处理')
 
     const nextStatus = dto.target === 'pool' ? 'public' : 'invalid'
     return db.transaction(async (tx) => {

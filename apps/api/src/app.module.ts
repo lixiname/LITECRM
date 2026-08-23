@@ -9,6 +9,9 @@ import { AuditModule } from './audit/audit.module'
 import { CatalogModule } from './catalog/catalog.module'
 import { CustomersModule } from './customers/customers.module'
 import { ClaimsModule } from './claims/claims.module'
+import { ActivitiesModule } from './activities/activities.module'
+import { OpportunitiesModule } from './opportunities/opportunities.module'
+import { ComplaintsModule } from './complaints/complaints.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -21,6 +24,9 @@ import { ClaimsModule } from './claims/claims.module'
     CatalogModule,
     CustomersModule,
     ClaimsModule,
+    ActivitiesModule,
+    OpportunitiesModule,
+    ComplaintsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

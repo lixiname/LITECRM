@@ -15,6 +15,13 @@
       "when": 1787494106447,
       "tag": "0001_groovy_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787498187877,
+      "tag": "0002_classy_jigsaw",
+      "breakpoints": true
     }
   ]
 }

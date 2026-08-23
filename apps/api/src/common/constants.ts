@@ -58,3 +58,64 @@ export const CUSTOMER_DIMENSIONS = [
   'source', // 客户来源
 ] as const
 export type CustomerDimension = (typeof CUSTOMER_DIMENSIONS)[number]
+
+// ===== M3 业务动作域枚举（§7.2：varchar + CHECK + 应用层枚举）=====
+
+// 拜访方式（§7.2 visit_records.method）
+export const VISIT_METHODS = ['offline_visit', 'remote', 'other'] as const
+export type VisitMethod = (typeof VISIT_METHODS)[number]
+
+// 拜访类型（§7.2 visit_records.visit_type）
+export const VISIT_TYPES = ['new_customer', 'existing_maintenance', 'industry_relation'] as const
+export type VisitType = (typeof VISIT_TYPES)[number]
+
+// 商机阶段状态机（§8.5）
+export const OPPORTUNITY_STAGES = [
+  'intent', // 意向
+  'following', // 跟进
+  'ordered', // 转成交（生成 Deal）
+  'lost', // 丢失
+  'demand_disappeared', // 需求消失
+] as const
+export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number]
+
+// 商机金额类型（§7.2：意向金额精度分层）
+export const AMOUNT_TYPES = ['oral', 'quoted'] as const
+export type AmountType = (typeof AMOUNT_TYPES)[number]
+
+// 商机发现渠道（§7.2 opportunity.source，应用层枚举）
+export const OPPORTUNITY_SOURCES = [
+  'referral',
+  'cold_call',
+  'exhibition',
+  'online',
+  'other',
+] as const
+export type OpportunitySource = (typeof OPPORTUNITY_SOURCES)[number]
+
+// 商机事件类型（§7.2 opportunity_events.type，只追加）
+export const OPPORTUNITY_EVENT_TYPES = ['created', 'stage_changed', 'updated'] as const
+export type OpportunityEventType = (typeof OPPORTUNITY_EVENT_TYPES)[number]
+
+// 客诉类型（§7.2 complaint.type，6 类）
+export const COMPLAINT_TYPES = [
+  'product_quality', // 产品质量
+  'delivery', // 交期
+  'service', // 服务
+  'logistics', // 物流
+  'price', // 价格
+  'other', // 其他
+] as const
+export type ComplaintType = (typeof COMPLAINT_TYPES)[number]
+
+// 客诉状态（§8.6：两态，核心管理终态）
+export const COMPLAINT_STATUSES = ['registered', 'resolved'] as const
+export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number]
+
+// 客诉跟进结果（§8.6 complaint_follow_ups.outcome）
+export const FOLLOW_UP_OUTCOMES = ['followed_up', 'resolved'] as const
+export type FollowUpOutcome = (typeof FOLLOW_UP_OUTCOMES)[number]
+
+// 成交交易性质（§7.2 deals.trade_type）
+export const TRADE_TYPES = ['equipment', 'consumable', 'part', 'service'] as const
+export type TradeType = (typeof TRADE_TYPES)[number]
