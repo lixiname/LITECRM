@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@crm/domain'
 
-// M0 骨架：仅占位首页；业务路由随模块推进（规格 §5）
+// 路由：登录页 + 首页（M1 打通）；业务路由随模块推进（规格 §5）
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -8,8 +9,23 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('@/pages/HomePage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/pages/LoginPage.vue'),
+      meta: { guestOnly: true },
     },
   ],
+})
+
+// 登录守卫（§8.1）：未登录访问受保护页 → /login；已登录访问 /login → 首页
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+  if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'login' }
+  if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'home' }
+  return true
 })
 
 export default router

@@ -12,7 +12,9 @@
     "lint": "eslint src --fix"
   },
   "dependencies": {
+    "@crm/contracts": "workspace:*",
     "@crm/design-tokens": "workspace:*",
+    "@crm/domain": "workspace:*",
     "pinia": "^4.0.3",
     "vant": "^4.10.0",
     "vue": "^3.5.40",

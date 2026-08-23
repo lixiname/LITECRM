@@ -12,5 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // dev 联调：/api 代理到 NestJS（规格 §9.2 同域名反代约定）
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
 })

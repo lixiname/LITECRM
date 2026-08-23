@@ -12,5 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    host: true, // 移动真机联调（Android 浏览器/钉钉 WebView 经局域网 IP 访问）
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+    },
   },
 })
