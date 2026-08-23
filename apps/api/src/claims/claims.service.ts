@@ -1,0 +1,167 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { and, eq } from 'drizzle-orm'
+import { db } from '../common/db/db'
+import { customerClaimRequests, customerTransfers, customers } from '../common/db/schema'
+import { AccessService } from '../access/access.service'
+import { CapacityService } from '../customers/capacity.service'
+import type { AuthUser } from '../auth/auth.service'
+import type { CreateClaimDto } from './dto/create-claim.dto'
+import type { ReviewClaimDto } from './dto/review-claim.dto'
+
+/**
+ * 接管审批流（§8.3）：申请 → 单点审批（approved/rejected）/ 撤回。
+ * 审批候选池 = 当前 owner + 管理链 + admin，排除申请人（防自我审批），owner 同意让出允许。
+ * 并发防护：同客户仅一条 pending（部分唯一索引）+ 归属快照校验。
+ */
+@Injectable()
+export class ClaimsService {
+  constructor(
+    private readonly accessService: AccessService,
+    private readonly capacityService: CapacityService,
+  ) {}
+
+  // 发起接管申请（§8.3）
+  async create(customerId: string, dto: CreateClaimDto, actor: AuthUser) {
+    if (actor.role === 'admin' || actor.role === 'assistant') {
+      throw new ForbiddenException('该角色不能发起接管')
+    }
+    const customer = await this.getCustomer(customerId)
+    if (customer.status !== 'active') throw new ConflictException('仅 active 客户可申请接管')
+    if (customer.ownerId === actor.id) throw new ConflictException('不能接管自己名下的客户')
+
+    const [pending] = await db
+      .select()
+      .from(customerClaimRequests)
+      .where(
+        and(
+          eq(customerClaimRequests.customerId, customerId),
+          eq(customerClaimRequests.status, 'pending'),
+        ),
+      )
+      .limit(1)
+    if (pending) throw new ConflictException('该客户已有待审批的接管申请')
+
+    const [created] = await db
+      .insert(customerClaimRequests)
+      .values({
+        customerId,
+        applicantId: actor.id,
+        currentOwnerId: customer.ownerId,
+        reason: dto.reason,
+      })
+      .returning()
+    // TODO(M5)：站内提醒 owner 及管理链（alerts 模块）
+    return created
+  }
+
+  // 审批通过（§8.3 单点审批）：复用 changeOwner，容量校验
+  async approve(id: string, dto: ReviewClaimDto, actor: AuthUser) {
+    const claim = await this.getPending(id)
+    const customer = await this.getCustomer(claim.customerId)
+    if (claim.currentOwnerId !== customer.ownerId) {
+      throw new ConflictException('客户归属已变化，请重新申请')
+    }
+    await this.assertReviewer(claim, customer, actor)
+    await this.capacityService.assertWithinCapacity(claim.applicantId)
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(customers)
+        .set({ ownerId: claim.applicantId })
+        .where(eq(customers.id, customer.id))
+      await tx.insert(customerTransfers).values({
+        customerId: customer.id,
+        fromOwnerId: customer.ownerId,
+        toOwnerId: claim.applicantId,
+        operatedById: actor.id,
+        reason: `接管审批通过：${claim.reason}`,
+      })
+      // TODO(M3)：商机/客诉当前归属 JOIN 客户自动跟随
+    })
+    await this.markReviewed(id, 'approved', actor, dto.comment ?? null)
+    // TODO(M5)：通知申请人审批结果
+    return { id: claim.id, status: 'approved' }
+  }
+
+  // 拒绝（§8.3：comment 必填）
+  async reject(id: string, dto: ReviewClaimDto, actor: AuthUser) {
+    const claim = await this.getPending(id)
+    const customer = await this.getCustomer(claim.customerId)
+    await this.assertReviewer(claim, customer, actor)
+    if (!dto.comment?.trim()) throw new BadRequestException('拒绝必须填写意见')
+    await this.markReviewed(id, 'rejected', actor, dto.comment)
+    return { id: claim.id, status: 'rejected' }
+  }
+
+  // 撤回（§8.3：仅申请人本人）
+  async withdraw(id: string, actor: AuthUser) {
+    const claim = await this.getPending(id)
+    if (claim.applicantId !== actor.id && actor.role !== 'admin') {
+      throw new ForbiddenException('仅申请人可撤回')
+    }
+    await db
+      .update(customerClaimRequests)
+      .set({ status: 'withdrawn' })
+      .where(eq(customerClaimRequests.id, id))
+    return { id: claim.id, status: 'withdrawn' }
+  }
+
+  // ===== 内部工具 =====
+
+  private async getCustomer(customerId: string) {
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, customerId))
+      .limit(1)
+    if (!customer) throw new NotFoundException('客户不存在')
+    return customer
+  }
+
+  private async getPending(id: string) {
+    const [claim] = await db
+      .select()
+      .from(customerClaimRequests)
+      .where(and(eq(customerClaimRequests.id, id), eq(customerClaimRequests.status, 'pending')))
+      .limit(1)
+    if (!claim) throw new NotFoundException('待审批申请不存在')
+    return claim
+  }
+
+  // 审批候选池（§8.3）：当前 owner + 管理链 + admin；排除申请人（防自我审批）
+  private async assertReviewer(
+    claim: typeof customerClaimRequests.$inferSelect,
+    customer: typeof customers.$inferSelect,
+    actor: AuthUser,
+  ) {
+    if (actor.id === claim.applicantId) throw new ForbiddenException('禁止审批自己的申请')
+    if (actor.role === 'admin') return
+    if (actor.id === customer.ownerId) return // 被接管方确认让出，允许
+    const isManager = await this.accessService.isManagerOf(actor.id, customer.ownerId)
+    if (isManager) return
+    throw new ForbiddenException('无权审批该接管申请')
+  }
+
+  private async markReviewed(
+    id: string,
+    status: 'approved' | 'rejected',
+    actor: AuthUser,
+    comment: string | null,
+  ) {
+    await db
+      .update(customerClaimRequests)
+      .set({
+        status,
+        reviewedById: actor.id,
+        reviewComment: comment,
+        reviewedAt: new Date(),
+      })
+      .where(eq(customerClaimRequests.id, id))
+  }
+}

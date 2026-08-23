@@ -698,6 +698,120 @@
         },
         "tags": ["customers"]
       }
+    },
+    "/claims/customer/{customerId}": {
+      "post": {
+        "operationId": "ClaimsController_create",
+        "parameters": [
+          {
+            "name": "customerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "发起接管申请"
+          }
+        },
+        "tags": ["claims"]
+      }
+    },
+    "/claims/{id}/approve": {
+      "post": {
+        "operationId": "ClaimsController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "审批通过（changeOwner + 容量校验）"
+          }
+        },
+        "tags": ["claims"]
+      }
+    },
+    "/claims/{id}/reject": {
+      "post": {
+        "operationId": "ClaimsController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewClaimDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "拒绝（意见必填）"
+          }
+        },
+        "tags": ["claims"]
+      }
+    },
+    "/claims/{id}/withdraw": {
+      "post": {
+        "operationId": "ClaimsController_withdraw",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "撤回（仅申请人本人）"
+          }
+        },
+        "tags": ["claims"]
+      }
     }
   },
   "info": {
@@ -1238,6 +1352,25 @@
           }
         },
         "required": ["target", "reason"]
+      },
+      "CreateClaimDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "接管理由"
+          }
+        },
+        "required": ["reason"]
+      },
+      "ReviewClaimDto": {
+        "type": "object",
+        "properties": {
+          "comment": {
+            "type": "string",
+            "description": "审批意见（拒绝时必填）"
+          }
+        }
       }
     }
   }

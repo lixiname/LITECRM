@@ -8,6 +8,7 @@ import { OrgModule } from './org/org.module'
 import { AuditModule } from './audit/audit.module'
 import { CatalogModule } from './catalog/catalog.module'
 import { CustomersModule } from './customers/customers.module'
+import { ClaimsModule } from './claims/claims.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -19,6 +20,7 @@ import { CustomersModule } from './customers/customers.module'
     AuditModule,
     CatalogModule,
     CustomersModule,
+    ClaimsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
