@@ -10,6 +10,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto'
 import { UpdateCustomerDto } from './dto/update-customer.dto'
 import { CustomerQueryDto } from './dto/customer-query.dto'
 import { CreateContactDto } from './dto/contact.dto'
+import { DedupCheckDto } from './dto/dedup-check.dto'
 
 // 客户域（§8.2/8.3）：建档（customer.write）/ 检索 / 详情 / 维护
 @ApiTags('customers')
@@ -24,6 +25,14 @@ export class CustomersController {
   @RequirePermission('customer.write')
   create(@Body() dto: CreateCustomerDto, @CurrentUser() user: AuthUser) {
     return this.customersService.create(dto, user)
+  }
+
+  @Post('dedup-check')
+  @ApiOkResponse({ description: '疑似重复列表（置信度分级，§8.2 录入预检）' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.write')
+  checkDuplicate(@Body() dto: DedupCheckDto) {
+    return this.customersService.checkDuplicate(dto)
   }
 
   @Get()

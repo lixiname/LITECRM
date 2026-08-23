@@ -463,6 +463,28 @@
         "tags": ["customers"]
       }
     },
+    "/customers/dedup-check": {
+      "post": {
+        "operationId": "CustomersController_checkDuplicate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DedupCheckDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "疑似重复列表（置信度分级，§8.2 录入预检）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
     "/customers/{id}": {
       "get": {
         "operationId": "CustomersController_findOne",
@@ -1021,6 +1043,24 @@
           }
         },
         "required": ["name", "contacts"]
+      },
+      "DedupCheckDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "客户名称"
+          },
+          "phone": {
+            "type": "string",
+            "description": "联系人电话（电话通道，归一化精确比对）"
+          },
+          "address": {
+            "type": "string",
+            "description": "地址（地址通道，去量词后精确比对）"
+          }
+        },
+        "required": ["name"]
       },
       "UpdateCustomerDto": {
         "type": "object",

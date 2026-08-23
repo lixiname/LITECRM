@@ -4,16 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { contacts, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { normalizeBusinessName } from './customer-normalizer'
+import { normalizeBusinessName, normalizePhone } from './customer-normalizer'
+import { scoreDuplicate, type DedupInput, type DedupScored } from './dedup'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateCustomerDto } from './dto/create-customer.dto'
 import type { UpdateCustomerDto } from './dto/update-customer.dto'
 import type { CustomerQueryDto } from './dto/customer-query.dto'
 import type { CreateContactDto } from './dto/contact.dto'
+import type { DedupCheckDto } from './dto/dedup-check.dto'
 
 // 客户域（§8.2/8.3）：建档、检索、详情、维护、联系人
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
@@ -34,6 +36,88 @@ export class CustomersService {
         throw new ConflictException('客户已存在（名称/编码/信用代码查重命中）')
       throw e
     }
+  }
+
+  // 查重预检（§8.2 五步）：候选生成（Blocking）→ 相似度比较 → 置信度分级
+  async checkDuplicate(dto: DedupCheckDto): Promise<DedupScored[]> {
+    const key = normalizeBusinessName(dto.name)
+    const phone = dto.phone ? normalizePhone(dto.phone) : null
+    if (!key) return []
+
+    const candidates = await this.queryDedupCandidates(key, phone)
+    const input: DedupInput = {
+      name: dto.name,
+      normalizedKey: key,
+      phone,
+      address: dto.address ?? null,
+    }
+
+    const results: DedupScored[] = []
+    for (const c of candidates) {
+      const scored = scoreDuplicate(c, input)
+      if (scored) results.push(scored)
+    }
+    // 按置信度降序：high > medium > low（§8.2 前端弹疑似列表）
+    const rank = { high: 0, medium: 1, low: 2 }
+    return results.sort((a, b) => rank[a.confidence] - rank[b.confidence])
+  }
+
+  // 候选生成（Blocking，§8.2 步③）：名称/trigram/首字 候选 + 电话命中候选（分步查询，JS 归一化比较）
+  private async queryDedupCandidates(key: string, phone: string | null) {
+    const cols = {
+      id: customers.id,
+      name: customers.name,
+      normalizedKey: customers.normalizedKey,
+      city: customers.city,
+      address: customers.address,
+      trigramSimilarity: sql<number>`similarity(${customers.normalizedKey}, ${key})`,
+    }
+
+    // ① 名称通道候选：trigram 预筛（% 运算符 ~0.3）或同商号首字
+    const nameHits = await db
+      .select(cols)
+      .from(customers)
+      .where(
+        and(
+          sql`${customers.status} != 'invalid'`,
+          sql`(${customers.normalizedKey} % ${key} OR left(${customers.normalizedKey}, 1) = ${key.charAt(0)})`,
+        ),
+      )
+      .limit(10)
+
+    // ② 电话通道候选：联系人电话归一化后精确命中
+    let phoneIds: string[] = []
+    if (phone) {
+      const hits = await db
+        .select({ customerId: contacts.customerId })
+        .from(contacts)
+        .where(sql`regexp_replace(${contacts.phone}, '[^0-9]', '', 'g') = ${phone}`)
+      phoneIds = [...new Set(hits.map((h) => h.customerId))]
+      const missing = phoneIds.filter((id) => !nameHits.some((c) => c.id === id))
+      if (missing.length > 0) {
+        const extra = await db.select(cols).from(customers).where(inArray(customers.id, missing))
+        nameHits.push(...extra)
+      }
+    }
+
+    // ③ 电话匹配标记（JS 归一化比较，§8.2 电话精确=高置信度）
+    const candidates = nameHits.map((c) => ({ ...c, phoneMatched: false }))
+    if (phone && candidates.length > 0) {
+      const contactList = await db
+        .select({ customerId: contacts.customerId, phone: contacts.phone })
+        .from(contacts)
+        .where(
+          inArray(
+            contacts.customerId,
+            candidates.map((c) => c.id),
+          ),
+        )
+      const matchedIds = new Set(
+        contactList.filter((c) => normalizePhone(c.phone ?? '') === phone).map((c) => c.customerId),
+      )
+      for (const c of candidates) if (matchedIds.has(c.id)) c.phoneMatched = true
+    }
+    return candidates
   }
 
   private async insertCustomer(dto: CreateCustomerDto, ownerId: string, actor: AuthUser) {
@@ -88,21 +172,25 @@ export class CustomersService {
     if (query.industry) conditions.push(eq(customers.industry, query.industry))
     if (query.customerType) conditions.push(eq(customers.customerType, query.customerType))
 
-    // 关键字：完全 > 前缀 > 包含 > 城市兜底（§7.3 检索排序）
+    // 关键字（§7.3 检索排序）：完全 > 前缀 > 包含 > 别名 > trigram > 城市
     const kw = query.keyword?.trim()
     const orderBy: SQL = kw
       ? sql`CASE
           WHEN ${customers.name} = ${kw} THEN 0
           WHEN ${customers.name} ILIKE ${kw + '%'} THEN 1
           WHEN ${customers.name} ILIKE ${'%' + kw + '%'} THEN 2
-          WHEN ${customers.city} ILIKE ${'%' + kw + '%'} THEN 3
-          ELSE 4 END`
+          WHEN ${customers.aliasNames} @> ${JSON.stringify([kw])}::jsonb THEN 3
+          WHEN similarity(${customers.normalizedKey}, ${kw}) > 0.3 THEN 4
+          WHEN ${customers.city} ILIKE ${'%' + kw + '%'} THEN 5
+          ELSE 6 END`
       : desc(customers.updatedAt)
     if (kw) {
       conditions.push(
         sql`(${customers.name} = ${kw}
           OR ${customers.name} ILIKE ${kw + '%'}
           OR ${customers.name} ILIKE ${'%' + kw + '%'}
+          OR ${customers.aliasNames} @> ${JSON.stringify([kw])}::jsonb
+          OR similarity(${customers.normalizedKey}, ${kw}) > 0.3
           OR ${customers.city} ILIKE ${'%' + kw + '%'})`,
       )
     }

@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/dedup-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_checkDuplicate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/{id}": {
         parameters: {
             query?: never;
@@ -415,6 +431,14 @@ export interface components {
             notes?: string;
             /** @description 联系人（至少一个，且至少一个含电话） */
             contacts: components["schemas"]["CreateContactDto"][];
+        };
+        DedupCheckDto: {
+            /** @description 客户名称 */
+            name: string;
+            /** @description 联系人电话（电话通道，归一化精确比对） */
+            phone?: string;
+            /** @description 地址（地址通道，去量词后精确比对） */
+            address?: string;
         };
         UpdateCustomerDto: {
             /** @description 客户名称 */
@@ -830,6 +854,28 @@ export interface operations {
         responses: {
             /** @description 建档成功 */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_checkDuplicate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DedupCheckDto"];
+            };
+        };
+        responses: {
+            /** @description 疑似重复列表（置信度分级，§8.2 录入预检） */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
