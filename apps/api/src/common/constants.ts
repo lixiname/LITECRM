@@ -34,3 +34,27 @@ export const ROLE_DATA_SCOPE: Record<Role, DataScope> = {
   assistant: 'full',
   admin: 'full',
 }
+
+// ===== M2 客户域枚举（§7.2：varchar + CHECK + 应用层枚举，不用 PG enum）=====
+
+// 客户分级容量（§7.2 capacity_config 的 level）
+export const CUSTOMER_LEVELS = ['S', 'A', 'B', 'C'] as const
+export type CustomerLevel = (typeof CUSTOMER_LEVELS)[number]
+
+// 客户状态（§8.3：active 在案 / invalid 无效 / public 公海）
+export const CUSTOMER_STATUSES = ['active', 'invalid', 'public'] as const
+export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number]
+
+// 接管申请状态机（§8.3）
+export const CLAIM_STATUSES = ['pending', 'approved', 'rejected', 'withdrawn'] as const
+export type ClaimStatus = (typeof CLAIM_STATUSES)[number]
+
+// 客户维度配置（§7.2 customer_dimension_options 的 dimension）
+export const CUSTOMER_DIMENSIONS = [
+  'industry', // 产业
+  'sub_industry', // 二级行业
+  'customer_type', // 客户类型
+  'product_line', // 产品线
+  'source', // 客户来源
+] as const
+export type CustomerDimension = (typeof CUSTOMER_DIMENSIONS)[number]

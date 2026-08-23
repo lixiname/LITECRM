@@ -2,5 +2,23 @@
 import { baseColumns } from './common'
 import { capacityConfig, userCapacityOverrides, users } from './org'
 import { auditLogs } from './audit'
+import {
+  contacts,
+  customerClaimRequests,
+  customerDimensionOptions,
+  customers,
+  customerTransfers,
+} from './customers'
 
-export { baseColumns, users, capacityConfig, userCapacityOverrides, auditLogs }
+export {
+  baseColumns,
+  users,
+  capacityConfig,
+  userCapacityOverrides,
+  auditLogs,
+  customers,
+  contacts,
+  customerTransfers,
+  customerClaimRequests,
+  customerDimensionOptions,
+}

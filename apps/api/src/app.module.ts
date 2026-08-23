@@ -6,6 +6,8 @@ import { AccessModule } from './access/access.module'
 import { AuthModule } from './auth/auth.module'
 import { OrgModule } from './org/org.module'
 import { AuditModule } from './audit/audit.module'
+import { CatalogModule } from './catalog/catalog.module'
+import { CustomersModule } from './customers/customers.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -15,6 +17,8 @@ import { AuditModule } from './audit/audit.module'
     AuthModule,
     OrgModule,
     AuditModule,
+    CatalogModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

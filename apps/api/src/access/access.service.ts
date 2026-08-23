@@ -61,11 +61,29 @@ export class AccessService {
   }
 
   // 组织树：返回 actor 可见的用户 id 集合（self / team / full）
-  async getVisibleUserIds(actor: Actor): Promise<string[]> {
+  async getVisibleUserIds(actor: { id: string; role: Role }): Promise<string[]> {
     const scope = ROLE_DATA_SCOPE[actor.role]
     if (scope === 'self') return [actor.id]
     const all = await db.select({ id: users.id, reportsToId: users.reportsToId }).from(users)
     if (scope === 'full') return all.map((u) => u.id)
     return computeTeamVisibleIds(all, actor.id)
+  }
+
+  // 管理链判定：actor 是否是 targetUserId 的上级（沿 reports_to_id 上溯，§8.3 assertCanContribute）
+  // 权限基础设施，业务服务禁止自行遍历组织树（§6.3 约束）
+  async isManagerOf(actorId: string, targetUserId: string | null): Promise<boolean> {
+    if (!targetUserId || actorId === targetUserId) return false
+    const all = await db.select({ id: users.id, reportsToId: users.reportsToId }).from(users)
+    const byId = new Map(all.map((u) => [u.id, u.reportsToId]))
+
+    let cur: string | null = targetUserId
+    const seen = new Set<string>()
+    while (cur) {
+      if (cur === actorId) return true
+      if (seen.has(cur)) break // 环保护
+      seen.add(cur)
+      cur = byId.get(cur) ?? null
+    }
+    return false
   }
 }

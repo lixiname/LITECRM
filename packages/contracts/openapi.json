@@ -252,6 +252,347 @@
         },
         "tags": ["Users"]
       }
+    },
+    "/catalog/{dimension}": {
+      "get": {
+        "operationId": "CatalogController_listByDimension",
+        "parameters": [
+          {
+            "name": "dimension",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "某维度启用选项（建档下拉用）"
+          }
+        },
+        "tags": ["catalog"]
+      }
+    },
+    "/catalog": {
+      "get": {
+        "operationId": "CatalogController_listAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "全部字典项（含停用，admin 维护用）"
+          }
+        },
+        "tags": ["catalog"]
+      },
+      "post": {
+        "operationId": "CatalogController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDimensionOptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "新增字典项"
+          }
+        },
+        "tags": ["catalog"]
+      }
+    },
+    "/catalog/{id}": {
+      "patch": {
+        "operationId": "CatalogController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDimensionOptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新字典项"
+          }
+        },
+        "tags": ["catalog"]
+      },
+      "delete": {
+        "operationId": "CatalogController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "停用字典项（软删）"
+          }
+        },
+        "tags": ["catalog"]
+      }
+    },
+    "/customers": {
+      "post": {
+        "operationId": "CustomersController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "建档成功"
+          }
+        },
+        "tags": ["customers"]
+      },
+      "get": {
+        "operationId": "CustomersController_findAll",
+        "parameters": [
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "description": "检索词（完全>前缀>包含>城市/别名兜底）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "description": "城市筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "industry",
+            "required": false,
+            "in": "query",
+            "description": "产业筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerType",
+            "required": false,
+            "in": "query",
+            "description": "客户类型筛选",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "required": false,
+            "in": "query",
+            "description": "分级筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["S", "A", "B", "C"]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "状态筛选",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "invalid", "public"]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码（从 1 开始）",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "每页条数（默认 20，最大 50）",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "客户列表（数据范围过滤 + 五级检索 + 分页）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/{id}": {
+      "get": {
+        "operationId": "CustomersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "客户详情（含联系人）"
+          }
+        },
+        "tags": ["customers"]
+      },
+      "patch": {
+        "operationId": "CustomersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新客户（owner/管理链/admin）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/{id}/contacts": {
+      "post": {
+        "operationId": "CustomersController_addContact",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "新增联系人"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/contacts/{contactId}": {
+      "patch": {
+        "operationId": "CustomersController_updateContact",
+        "parameters": [
+          {
+            "name": "contactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateContactDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新联系人"
+          }
+        },
+        "tags": ["customers"]
+      },
+      "delete": {
+        "operationId": "CustomersController_removeContact",
+        "parameters": [
+          {
+            "name": "contactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除联系人"
+          }
+        },
+        "tags": ["customers"]
+      }
     }
   },
   "info": {
@@ -521,6 +862,228 @@
           "isActive": {
             "type": "boolean",
             "description": "是否启用"
+          }
+        }
+      },
+      "CustomerDimension": {
+        "type": "string",
+        "enum": ["industry", "sub_industry", "customer_type", "product_line", "source"],
+        "description": "维度"
+      },
+      "CreateDimensionOptionDto": {
+        "type": "object",
+        "properties": {
+          "dimension": {
+            "description": "维度",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerDimension"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "选项名称（维度内唯一）"
+          },
+          "sortOrder": {
+            "type": "number",
+            "description": "排序权重"
+          }
+        },
+        "required": ["dimension", "name"]
+      },
+      "UpdateDimensionOptionDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "选项名称（维度内唯一）"
+          },
+          "sortOrder": {
+            "type": "number",
+            "description": "排序权重"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "是否启用"
+          }
+        }
+      },
+      "CustomerLevel": {
+        "type": "string",
+        "enum": ["S", "A", "B", "C"],
+        "description": "分级容量 S/A/B/C"
+      },
+      "CreateContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "姓名（可空=裸电话）"
+          },
+          "title": {
+            "type": "string",
+            "description": "职位"
+          },
+          "phone": {
+            "type": "string",
+            "description": "电话（每个客户至少一个联系人含电话）"
+          },
+          "isKeyContact": {
+            "type": "boolean",
+            "description": "是否首要联系人（每客户至多一个）"
+          }
+        }
+      },
+      "CreateCustomerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "客户名称（可地址式）"
+          },
+          "aliasNames": {
+            "description": "别名/简称",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customerCode": {
+            "type": "string",
+            "description": "客户编码（ERP，权威硬查重键）"
+          },
+          "unifiedSocialCreditCode": {
+            "type": "string",
+            "description": "统一社会信用代码（权威硬查重键）"
+          },
+          "industry": {
+            "type": "string",
+            "description": "产业（字典快照）"
+          },
+          "subIndustry": {
+            "type": "string",
+            "description": "二级行业（字典快照）"
+          },
+          "customerType": {
+            "type": "string",
+            "description": "客户类型（字典快照）"
+          },
+          "productLines": {
+            "description": "产品线（字典快照）",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "city": {
+            "type": "string",
+            "description": "城市"
+          },
+          "province": {
+            "type": "string",
+            "description": "省份"
+          },
+          "address": {
+            "type": "string",
+            "description": "地址"
+          },
+          "website": {
+            "type": "string",
+            "description": "网址"
+          },
+          "source": {
+            "type": "string",
+            "description": "客户来源（字典快照）"
+          },
+          "level": {
+            "description": "分级容量 S/A/B/C",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerLevel"
+              }
+            ]
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "指定负责人（缺省=建档人，§8.3）"
+          },
+          "notes": {
+            "type": "string",
+            "description": "备注"
+          },
+          "contacts": {
+            "description": "联系人（至少一个，且至少一个含电话）",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateContactDto"
+            }
+          }
+        },
+        "required": ["name", "contacts"]
+      },
+      "UpdateCustomerDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "客户名称"
+          },
+          "customerCode": {
+            "type": "object",
+            "description": "客户编码"
+          },
+          "unifiedSocialCreditCode": {
+            "type": "object",
+            "description": "统一社会信用代码"
+          },
+          "industry": {
+            "type": "object",
+            "description": "产业"
+          },
+          "subIndustry": {
+            "type": "object",
+            "description": "二级行业"
+          },
+          "customerType": {
+            "type": "object",
+            "description": "客户类型"
+          },
+          "city": {
+            "type": "object",
+            "description": "城市"
+          },
+          "province": {
+            "type": "object",
+            "description": "省份"
+          },
+          "address": {
+            "type": "object",
+            "description": "地址"
+          },
+          "website": {
+            "type": "object",
+            "description": "网址"
+          },
+          "source": {
+            "type": "object",
+            "description": "客户来源"
+          },
+          "level": {
+            "description": "分级容量",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerLevel"
+              }
+            ]
+          },
+          "notes": {
+            "type": "object",
+            "description": "备注"
+          },
+          "ownerId": {
+            "type": "object",
+            "description": "指定负责人（需容量校验）"
           }
         }
       }

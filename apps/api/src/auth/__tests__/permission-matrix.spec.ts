@@ -127,7 +127,6 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       const visible = await accessService.getVisibleUserIds({
         id: managerId,
         role: 'executive',
-        reportsToId: adminId,
       })
       expect([...visible].sort()).toEqual([managerId, sales1Id, sales2Id].sort())
       expect(visible).not.toContain(adminId) // 上级不在 team 范围
@@ -138,7 +137,6 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       const visible = await accessService.getVisibleUserIds({
         id: sales1Id,
         role: 'sales',
-        reportsToId: null,
       })
       expect(visible).toEqual([sales1Id])
     })
@@ -151,14 +149,12 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       const adminVisible = await accessService.getVisibleUserIds({
         id: adminId,
         role: 'admin',
-        reportsToId: null,
       })
       expect(adminVisible.length).toBe(all.length)
 
       const assistantVisible = await accessService.getVisibleUserIds({
         id: assistantId,
         role: 'assistant',
-        reportsToId: null,
       })
       expect(assistantVisible.length).toBe(all.length)
     })

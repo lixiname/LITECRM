@@ -116,6 +116,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalog/{dimension}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_listByDimension"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_listAll"];
+        put?: never;
+        post: operations["CatalogController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalog/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CatalogController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["CatalogController_update"];
+        trace?: never;
+    };
+    "/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_findAll"];
+        put?: never;
+        post: operations["CustomersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CustomersController_update"];
+        trace?: never;
+    };
+    "/customers/{id}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_addContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/contacts/{contactId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CustomersController_removeContact"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomersController_updateContact"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -231,6 +343,108 @@ export interface components {
             region?: string;
             /** @description 是否启用 */
             isActive?: boolean;
+        };
+        /**
+         * @description 维度
+         * @enum {string}
+         */
+        CustomerDimension: "industry" | "sub_industry" | "customer_type" | "product_line" | "source";
+        CreateDimensionOptionDto: {
+            /** @description 维度 */
+            dimension: components["schemas"]["CustomerDimension"];
+            /** @description 选项名称（维度内唯一） */
+            name: string;
+            /** @description 排序权重 */
+            sortOrder?: number;
+        };
+        UpdateDimensionOptionDto: {
+            /** @description 选项名称（维度内唯一） */
+            name?: string;
+            /** @description 排序权重 */
+            sortOrder?: number;
+            /** @description 是否启用 */
+            isActive?: boolean;
+        };
+        /**
+         * @description 分级容量 S/A/B/C
+         * @enum {string}
+         */
+        CustomerLevel: "S" | "A" | "B" | "C";
+        CreateContactDto: {
+            /** @description 姓名（可空=裸电话） */
+            name?: string;
+            /** @description 职位 */
+            title?: string;
+            /** @description 电话（每个客户至少一个联系人含电话） */
+            phone?: string;
+            /** @description 是否首要联系人（每客户至多一个） */
+            isKeyContact?: boolean;
+        };
+        CreateCustomerDto: {
+            /** @description 客户名称（可地址式） */
+            name: string;
+            /** @description 别名/简称 */
+            aliasNames?: string[];
+            /** @description 客户编码（ERP，权威硬查重键） */
+            customerCode?: string;
+            /** @description 统一社会信用代码（权威硬查重键） */
+            unifiedSocialCreditCode?: string;
+            /** @description 产业（字典快照） */
+            industry?: string;
+            /** @description 二级行业（字典快照） */
+            subIndustry?: string;
+            /** @description 客户类型（字典快照） */
+            customerType?: string;
+            /** @description 产品线（字典快照） */
+            productLines?: string[];
+            /** @description 城市 */
+            city?: string;
+            /** @description 省份 */
+            province?: string;
+            /** @description 地址 */
+            address?: string;
+            /** @description 网址 */
+            website?: string;
+            /** @description 客户来源（字典快照） */
+            source?: string;
+            /** @description 分级容量 S/A/B/C */
+            level?: components["schemas"]["CustomerLevel"];
+            /** @description 指定负责人（缺省=建档人，§8.3） */
+            ownerId?: string;
+            /** @description 备注 */
+            notes?: string;
+            /** @description 联系人（至少一个，且至少一个含电话） */
+            contacts: components["schemas"]["CreateContactDto"][];
+        };
+        UpdateCustomerDto: {
+            /** @description 客户名称 */
+            name?: string;
+            /** @description 客户编码 */
+            customerCode?: Record<string, never>;
+            /** @description 统一社会信用代码 */
+            unifiedSocialCreditCode?: Record<string, never>;
+            /** @description 产业 */
+            industry?: Record<string, never>;
+            /** @description 二级行业 */
+            subIndustry?: Record<string, never>;
+            /** @description 客户类型 */
+            customerType?: Record<string, never>;
+            /** @description 城市 */
+            city?: Record<string, never>;
+            /** @description 省份 */
+            province?: Record<string, never>;
+            /** @description 地址 */
+            address?: Record<string, never>;
+            /** @description 网址 */
+            website?: Record<string, never>;
+            /** @description 客户来源 */
+            source?: Record<string, never>;
+            /** @description 分级容量 */
+            level?: components["schemas"]["CustomerLevel"];
+            /** @description 备注 */
+            notes?: Record<string, never>;
+            /** @description 指定负责人（需容量校验） */
+            ownerId?: Record<string, never>;
         };
     };
     responses: never;
@@ -459,6 +673,279 @@ export interface operations {
                 content: {
                     "application/json": string;
                 };
+            };
+        };
+    };
+    CatalogController_listByDimension: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dimension: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 某维度启用选项（建档下拉用） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_listAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 全部字典项（含停用，admin 维护用） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDimensionOptionDto"];
+            };
+        };
+        responses: {
+            /** @description 新增字典项 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 停用字典项（软删） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CatalogController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDimensionOptionDto"];
+            };
+        };
+        responses: {
+            /** @description 更新字典项 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_findAll: {
+        parameters: {
+            query?: {
+                /** @description 检索词（完全>前缀>包含>城市/别名兜底） */
+                keyword?: string;
+                /** @description 城市筛选 */
+                city?: string;
+                /** @description 产业筛选 */
+                industry?: string;
+                /** @description 客户类型筛选 */
+                customerType?: string;
+                /** @description 分级筛选 */
+                level?: "S" | "A" | "B" | "C";
+                /** @description 状态筛选 */
+                status?: "active" | "invalid" | "public";
+                /** @description 页码（从 1 开始） */
+                page?: number;
+                /** @description 每页条数（默认 20，最大 50） */
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 客户列表（数据范围过滤 + 五级检索 + 分页） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomerDto"];
+            };
+        };
+        responses: {
+            /** @description 建档成功 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 客户详情（含联系人） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCustomerDto"];
+            };
+        };
+        responses: {
+            /** @description 更新客户（owner/管理链/admin） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_addContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContactDto"];
+            };
+        };
+        responses: {
+            /** @description 新增联系人 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_removeContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 删除联系人 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_updateContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateContactDto"];
+            };
+        };
+        responses: {
+            /** @description 更新联系人 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
