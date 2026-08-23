@@ -212,6 +212,54 @@ export interface paths {
         patch: operations["CustomersController_update"];
         trace?: never;
     };
+    "/customers/{id}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_transfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_release"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_claim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/{id}/contacts": {
         parameters: {
             query?: never;
@@ -469,6 +517,21 @@ export interface components {
             notes?: Record<string, never>;
             /** @description 指定负责人（需容量校验） */
             ownerId?: Record<string, never>;
+        };
+        TransferCustomerDto: {
+            /** @description 新负责人 ID（需容量校验） */
+            toOwnerId: string;
+            /** @description 移交原因（审计） */
+            reason: string;
+        };
+        ReleaseCustomerDto: {
+            /**
+             * @description 去向：pool=公海（他人可认领）/ invalid=无效（记录保留）
+             * @enum {string}
+             */
+            target: "pool" | "invalid";
+            /** @description 释放原因（审计） */
+            reason: string;
         };
     };
     responses: never;
@@ -919,6 +982,74 @@ export interface operations {
         };
         responses: {
             /** @description 更新客户（owner/管理链/admin） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_transfer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferCustomerDto"];
+            };
+        };
+        responses: {
+            /** @description 所有权转移（容量校验，写移交历史） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_release: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReleaseCustomerDto"];
+            };
+        };
+        responses: {
+            /** @description 主动释放（pool=公海 / invalid=无效） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_claim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 公海认领（容量校验，owner→本人） */
             200: {
                 headers: {
                     [name: string]: unknown;

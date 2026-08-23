@@ -535,6 +535,89 @@
         "tags": ["customers"]
       }
     },
+    "/customers/{id}/transfer": {
+      "post": {
+        "operationId": "CustomersController_transfer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "所有权转移（容量校验，写移交历史）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/{id}/release": {
+      "post": {
+        "operationId": "CustomersController_release",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "主动释放（pool=公海 / invalid=无效）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/{id}/claim": {
+      "post": {
+        "operationId": "CustomersController_claim",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "公海认领（容量校验，owner→本人）"
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
     "/customers/{id}/contacts": {
       "post": {
         "operationId": "CustomersController_addContact",
@@ -1126,6 +1209,35 @@
             "description": "指定负责人（需容量校验）"
           }
         }
+      },
+      "TransferCustomerDto": {
+        "type": "object",
+        "properties": {
+          "toOwnerId": {
+            "type": "string",
+            "description": "新负责人 ID（需容量校验）"
+          },
+          "reason": {
+            "type": "string",
+            "description": "移交原因（审计）"
+          }
+        },
+        "required": ["toOwnerId", "reason"]
+      },
+      "ReleaseCustomerDto": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "去向：pool=公海（他人可认领）/ invalid=无效（记录保留）",
+            "enum": ["pool", "invalid"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "释放原因（审计）"
+          }
+        },
+        "required": ["target", "reason"]
       }
     }
   }

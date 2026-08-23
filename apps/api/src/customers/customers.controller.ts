@@ -6,18 +6,24 @@ import { PermissionsGuard } from '../access/permissions.guard'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
 import { CustomersService } from './customers.service'
+import { OwnershipService } from './ownership.service'
 import { CreateCustomerDto } from './dto/create-customer.dto'
 import { UpdateCustomerDto } from './dto/update-customer.dto'
 import { CustomerQueryDto } from './dto/customer-query.dto'
 import { CreateContactDto } from './dto/contact.dto'
 import { DedupCheckDto } from './dto/dedup-check.dto'
+import { TransferCustomerDto } from './dto/transfer-customer.dto'
+import { ReleaseCustomerDto } from './dto/release-customer.dto'
 
 // 客户域（§8.2/8.3）：建档（customer.write）/ 检索 / 详情 / 维护
 @ApiTags('customers')
 @Controller('customers')
 @UseGuards(JwtAuthGuard)
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(
+    private readonly customersService: CustomersService,
+    private readonly ownershipService: OwnershipService,
+  ) {}
 
   @Post()
   @ApiCreatedResponse({ description: '建档成功' })
@@ -51,6 +57,32 @@ export class CustomersController {
   @ApiOkResponse({ description: '更新客户（owner/管理链/admin）' })
   update(@Param('id') id: string, @Body() dto: UpdateCustomerDto, @CurrentUser() user: AuthUser) {
     return this.customersService.update(id, dto, user)
+  }
+
+  // ===== 归属治理（§8.3）=====
+
+  @Post(':id/transfer')
+  @ApiOkResponse({ description: '所有权转移（容量校验，写移交历史）' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.transfer')
+  transfer(
+    @Param('id') id: string,
+    @Body() dto: TransferCustomerDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.ownershipService.transfer(id, dto, user)
+  }
+
+  @Post(':id/release')
+  @ApiOkResponse({ description: '主动释放（pool=公海 / invalid=无效）' })
+  release(@Param('id') id: string, @Body() dto: ReleaseCustomerDto, @CurrentUser() user: AuthUser) {
+    return this.ownershipService.release(id, dto, user)
+  }
+
+  @Post(':id/claim')
+  @ApiOkResponse({ description: '公海认领（容量校验，owner→本人）' })
+  claim(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.ownershipService.claim(id, user)
   }
 
   // ===== 联系人（§7.2）=====

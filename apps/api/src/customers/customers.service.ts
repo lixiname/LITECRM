@@ -8,6 +8,7 @@ import { and, asc, desc, eq, inArray, or, sql, type SQL } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { contacts, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
+import { CapacityService } from './capacity.service'
 import { normalizeBusinessName, normalizePhone } from './customer-normalizer'
 import { scoreDuplicate, type DedupInput, type DedupScored } from './dedup'
 import type { AuthUser } from '../auth/auth.service'
@@ -21,13 +22,19 @@ import type { DedupCheckDto } from './dto/dedup-check.dto'
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
 @Injectable()
 export class CustomersService {
-  constructor(private readonly accessService: AccessService) {}
+  constructor(
+    private readonly accessService: AccessService,
+    private readonly capacityService: CapacityService,
+  ) {}
 
-  // 建档（§8.3）：默认 owner=建档人；指定 ownerId 时 D 阶段补容量校验
+  // 建档（§8.3）：默认 owner=建档人；指定负责人需容量校验
   // 查重硬拦截（§8.2 步②）：唯一键冲突（normalized_key/code/信用代码）→ 409
   async create(dto: CreateCustomerDto, actor: AuthUser) {
     assertContactHasPhone(dto.contacts)
     const ownerId = dto.ownerId ?? actor.id
+    if (dto.ownerId && dto.ownerId !== actor.id) {
+      await this.capacityService.assertWithinCapacity(dto.ownerId)
+    }
 
     try {
       return await this.insertCustomer(dto, ownerId, actor)
