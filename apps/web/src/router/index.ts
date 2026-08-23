@@ -39,6 +39,30 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/opportunities',
+      name: 'opportunities',
+      component: () => import('@/pages/OpportunitiesPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/opportunities/:id',
+      name: 'opportunity-detail',
+      component: () => import('@/pages/OpportunityDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/complaints',
+      name: 'complaints',
+      component: () => import('@/pages/ComplaintsPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/complaints/:id',
+      name: 'complaint-detail',
+      component: () => import('@/pages/ComplaintDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/claims',
       name: 'claims',
       component: () => import('@/pages/ClaimsPage.vue'),

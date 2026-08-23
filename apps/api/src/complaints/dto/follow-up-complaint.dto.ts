@@ -1,6 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsISO8601, IsIn, IsOptional, IsString, MinLength } from 'class-validator'
-import { FOLLOW_UP_OUTCOMES, type FollowUpOutcome } from '../../common/constants'
+import {
+  COMPLAINT_STATUSES,
+  FOLLOW_UP_OUTCOMES,
+  type ComplaintStatus,
+  type FollowUpOutcome,
+} from '../../common/constants'
 
 // 客诉跟进（§8.6）：content 必填；FOLLOWED_UP → 必填下次确认日；RESOLVED → 必填解决结果
 export class FollowUpComplaintDto {
@@ -22,4 +27,12 @@ export class FollowUpComplaintDto {
   @IsOptional()
   @IsISO8601()
   nextFollowUpDate?: string
+
+  // 响应类型声明（Swagger 生成枚举；请求端不传）
+  @ApiPropertyOptional({
+    description: '客诉状态（类型声明）',
+    enum: COMPLAINT_STATUSES,
+    enumName: 'ComplaintStatus',
+  })
+  status?: ComplaintStatus
 }

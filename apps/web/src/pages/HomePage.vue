@@ -4,6 +4,10 @@
       <h1 class="home__title">Lite CRM · 桌面端</h1>
       <div class="home__actions">
         <el-button v-if="auth.isLoggedIn" @click="router.push('/customers')">客户管理</el-button>
+        <el-button v-if="auth.isLoggedIn" @click="router.push('/opportunities')"
+          >商机管理</el-button
+        >
+        <el-button v-if="auth.isLoggedIn" @click="router.push('/complaints')">客诉管理</el-button>
         <el-button v-if="auth.hasAbility('approve.claim')" @click="router.push('/claims')">
           接管审批
         </el-button>

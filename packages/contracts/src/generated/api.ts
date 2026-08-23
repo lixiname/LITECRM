@@ -862,6 +862,16 @@ export interface components {
             /** @description 下次跟进日期 */
             nextFollowUpDate: string;
         };
+        /**
+         * @description 推进后阶段（类型声明）
+         * @enum {string}
+         */
+        OpportunityStage: "intent" | "following" | "ordered" | "lost" | "demand_disappeared";
+        /**
+         * @description 成交交易性质（类型声明）
+         * @enum {string}
+         */
+        TradeType: "equipment" | "consumable" | "part" | "service";
         AdvanceOpportunityDto: {
             /** @description 跟进结论 */
             conclusion?: string;
@@ -871,6 +881,10 @@ export interface components {
             nextFollowUpDate?: string;
             /** @description 报价单金额（填了=转订单，生成 Deal） */
             quoteAmount?: number;
+            /** @description 推进后阶段（类型声明） */
+            stage?: components["schemas"]["OpportunityStage"];
+            /** @description 成交交易性质（类型声明） */
+            tradeType?: components["schemas"]["TradeType"];
         };
         CloseOpportunityDto: {
             /**
@@ -906,6 +920,11 @@ export interface components {
          * @enum {string}
          */
         FollowUpOutcome: "followed_up" | "resolved";
+        /**
+         * @description 客诉状态（类型声明）
+         * @enum {string}
+         */
+        ComplaintStatus: "registered" | "resolved";
         FollowUpComplaintDto: {
             /** @description 本次处理确认 */
             content: string;
@@ -915,6 +934,8 @@ export interface components {
             resolution?: string;
             /** @description 下次确认日期（outcome=followed_up 必填） */
             nextFollowUpDate?: string;
+            /** @description 客诉状态（类型声明） */
+            status?: components["schemas"]["ComplaintStatus"];
         };
     };
     responses: never;

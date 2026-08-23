@@ -2,6 +2,31 @@
   <div class="detail">
     <van-nav-bar :title="detail?.name ?? '客户详情'" left-arrow @click-left="router.back()" />
 
+    <van-cell-group
+      v-if="auth.hasAbility('customer.write') && detail?.status === 'active'"
+      inset
+      title="快速登记"
+    >
+      <van-cell
+        title="记一笔拜访"
+        icon="guide-o"
+        is-link
+        @click="router.push(`/customers/${customerId}/visit/new`)"
+      />
+      <van-cell
+        title="新建商机"
+        icon="chart-trending-o"
+        is-link
+        @click="router.push(`/customers/${customerId}/opportunity/new`)"
+      />
+      <van-cell
+        title="登记客诉"
+        icon="warning-o"
+        is-link
+        @click="router.push(`/customers/${customerId}/complaint/new`)"
+      />
+    </van-cell-group>
+
     <van-cell-group v-if="detail" inset title="基本信息">
       <van-cell title="城市" :value="detail.city ?? '-'" />
       <van-cell title="产业" :value="detail.industry ?? '-'" />

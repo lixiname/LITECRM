@@ -24,6 +24,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/customers/:id/visit/new',
+      name: 'visit-new',
+      component: () => import('@/pages/VisitFormPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
+      path: '/customers/:id/opportunity/new',
+      name: 'opportunity-new',
+      component: () => import('@/pages/OpportunityFormPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
+      path: '/customers/:id/complaint/new',
+      name: 'complaint-new',
+      component: () => import('@/pages/ComplaintFormPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/pages/LoginPage.vue'),

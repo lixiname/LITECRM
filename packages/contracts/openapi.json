@@ -1828,6 +1828,16 @@
           "nextFollowUpDate"
         ]
       },
+      "OpportunityStage": {
+        "type": "string",
+        "enum": ["intent", "following", "ordered", "lost", "demand_disappeared"],
+        "description": "推进后阶段（类型声明）"
+      },
+      "TradeType": {
+        "type": "string",
+        "enum": ["equipment", "consumable", "part", "service"],
+        "description": "成交交易性质（类型声明）"
+      },
       "AdvanceOpportunityDto": {
         "type": "object",
         "properties": {
@@ -1846,6 +1856,22 @@
           "quoteAmount": {
             "type": "number",
             "description": "报价单金额（填了=转订单，生成 Deal）"
+          },
+          "stage": {
+            "description": "推进后阶段（类型声明）",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpportunityStage"
+              }
+            ]
+          },
+          "tradeType": {
+            "description": "成交交易性质（类型声明）",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TradeType"
+              }
+            ]
           }
         }
       },
@@ -1905,6 +1931,11 @@
         "enum": ["followed_up", "resolved"],
         "description": "跟进结果"
       },
+      "ComplaintStatus": {
+        "type": "string",
+        "enum": ["registered", "resolved"],
+        "description": "客诉状态（类型声明）"
+      },
       "FollowUpComplaintDto": {
         "type": "object",
         "properties": {
@@ -1927,6 +1958,14 @@
           "nextFollowUpDate": {
             "type": "string",
             "description": "下次确认日期（outcome=followed_up 必填）"
+          },
+          "status": {
+            "description": "客诉状态（类型声明）",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ComplaintStatus"
+              }
+            ]
           }
         },
         "required": ["content", "outcome"]
