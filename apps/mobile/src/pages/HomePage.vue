@@ -11,6 +11,7 @@
     <div v-if="auth.isLoggedIn" class="home__body">
       <van-cell-group inset>
         <van-cell title="客户管理" is-link @click="router.push('/customers')" />
+        <van-cell title="快速记一笔" is-link @click="router.push('/expenses')" />
       </van-cell-group>
 
       <van-cell-group inset title="当前用户">
