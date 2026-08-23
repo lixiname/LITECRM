@@ -1562,7 +1562,17 @@
       },
       "CustomerDimension": {
         "type": "string",
-        "enum": ["industry", "sub_industry", "customer_type", "product_line", "source"],
+        "enum": [
+          "industry",
+          "sub_industry",
+          "customer_type",
+          "product_line",
+          "source",
+          "complaint_type",
+          "trade_type",
+          "opportunity_source",
+          "visit_type"
+        ],
         "description": "维度"
       },
       "CreateDimensionOptionDto": {
@@ -1909,11 +1919,6 @@
         "enum": ["offline_visit", "remote", "other"],
         "description": "拜访方式"
       },
-      "VisitType": {
-        "type": "string",
-        "enum": ["new_customer", "existing_maintenance", "industry_relation"],
-        "description": "拜访类型"
-      },
       "CreateVisitDto": {
         "type": "object",
         "properties": {
@@ -1935,12 +1940,8 @@
             ]
           },
           "visitType": {
-            "description": "拜访类型",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/VisitType"
-              }
-            ]
+            "type": "string",
+            "description": "拜访类型（字典：visit_type）"
           },
           "businessSituation": {
             "type": "string",
@@ -2040,11 +2041,6 @@
         },
         "required": ["targetType", "targetId", "ownerId", "content"]
       },
-      "OpportunitySource": {
-        "type": "string",
-        "enum": ["referral", "cold_call", "exhibition", "online", "other"],
-        "description": "发现渠道"
-      },
       "AmountType": {
         "type": "string",
         "enum": ["oral", "quoted"],
@@ -2062,12 +2058,8 @@
             "description": "需求简述"
           },
           "source": {
-            "description": "发现渠道",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/OpportunitySource"
-              }
-            ]
+            "type": "string",
+            "description": "发现渠道（字典：opportunity_source）"
           },
           "amountType": {
             "description": "金额类型",
@@ -2121,11 +2113,6 @@
         "enum": ["intent", "following", "ordered", "lost", "demand_disappeared"],
         "description": "推进后阶段（类型声明）"
       },
-      "TradeType": {
-        "type": "string",
-        "enum": ["equipment", "consumable", "part", "service"],
-        "description": "成交交易性质（类型声明）"
-      },
       "AdvanceOpportunityDto": {
         "type": "object",
         "properties": {
@@ -2154,12 +2141,8 @@
             ]
           },
           "tradeType": {
-            "description": "成交交易性质（类型声明）",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TradeType"
-              }
-            ]
+            "type": "string",
+            "description": "成交交易性质（字典：trade_type）"
           }
         }
       },
@@ -2178,11 +2161,6 @@
         },
         "required": ["result", "reason"]
       },
-      "ComplaintType": {
-        "type": "string",
-        "enum": ["product_quality", "delivery", "service", "logistics", "price", "other"],
-        "description": "客诉类型"
-      },
       "CreateComplaintDto": {
         "type": "object",
         "properties": {
@@ -2196,12 +2174,8 @@
             "description": "发生时间"
           },
           "type": {
-            "description": "客诉类型",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ComplaintType"
-              }
-            ]
+            "type": "string",
+            "description": "客诉类型（字典：complaint_type）"
           },
           "description": {
             "type": "string",

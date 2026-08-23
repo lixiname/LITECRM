@@ -1,11 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsISO8601, IsIn, IsNumber, IsOptional, IsString, Min } from 'class-validator'
-import {
-  OPPORTUNITY_STAGES,
-  TRADE_TYPES,
-  type OpportunityStage,
-  type TradeType,
-} from '../../common/constants'
+import { IsISO8601, IsNumber, IsOptional, IsString, Min } from 'class-validator'
+import { OPPORTUNITY_STAGES, type OpportunityStage } from '../../common/constants'
 
 // 推进商机（§8.5）：结论 + 下一步；转订单（quoteAmount 非空）→ 幂等生成 Deal，成交金额以 quoteAmount 为准
 export class AdvanceOpportunityDto {
@@ -38,10 +33,6 @@ export class AdvanceOpportunityDto {
   })
   stage?: OpportunityStage
 
-  @ApiPropertyOptional({
-    description: '成交交易性质（类型声明）',
-    enum: TRADE_TYPES,
-    enumName: 'TradeType',
-  })
-  tradeType?: TradeType
+  @ApiPropertyOptional({ description: '成交交易性质（字典：trade_type）' })
+  tradeType?: string
 }

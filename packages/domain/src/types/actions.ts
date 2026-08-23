@@ -1,15 +1,12 @@
 import type { components } from '@crm/contracts'
 
 // 业务动作域类型（§7.2 非 API 类型留 domain 层；枚举从 contracts import）
+// 字典化的业务分类（complaint_type/trade_type/opportunity_source/visit_type）为 string，选项可配置见字典
 export type VisitMethod = components['schemas']['VisitMethod']
-export type VisitType = components['schemas']['VisitType']
 export type OpportunityStage = components['schemas']['OpportunityStage']
 export type AmountType = components['schemas']['AmountType']
-export type OpportunitySource = components['schemas']['OpportunitySource']
-export type ComplaintType = components['schemas']['ComplaintType']
 export type ComplaintStatus = components['schemas']['ComplaintStatus']
 export type FollowUpOutcome = components['schemas']['FollowUpOutcome']
-export type TradeType = components['schemas']['TradeType']
 
 export interface VisitRecord {
   id: string
@@ -17,7 +14,7 @@ export interface VisitRecord {
   ownerId: string
   occurredAt: string
   method: VisitMethod
-  visitType: VisitType | null
+  visitType: string | null
   businessSituation: string | null
   equipmentSituation: string | null
   personnelChanges: string | null
@@ -32,7 +29,7 @@ export interface Opportunity {
   ownerId: string
   name: string
   stage: OpportunityStage
-  source: OpportunitySource
+  source: string
   productLine: string | null
   amountType: AmountType
   amount: string | null
@@ -52,7 +49,7 @@ export interface Deal {
   id: string
   customerId: string
   amount: string | null
-  tradeType: TradeType | null
+  tradeType: string | null
   occurredAt: string
   sourceOpportunityId: string | null
 }
@@ -62,7 +59,7 @@ export interface Complaint {
   customerId: string
   ownerId: string
   occurredAt: string
-  type: ComplaintType
+  type: string
   status: ComplaintStatus
   description: string
   nextFollowUpDate: string | null
@@ -71,7 +68,7 @@ export interface Complaint {
   createdAt: string
 }
 
-// ===== UI 选项常量 =====
+// ===== UI 选项常量（字典 key → 显示文案映射；选项集合本身在 customer_dimension_options 可配置）=====
 
 export const VISIT_METHOD_OPTIONS: { value: VisitMethod; label: string }[] = [
   { value: 'offline_visit', label: '线下拜访' },
@@ -79,7 +76,7 @@ export const VISIT_METHOD_OPTIONS: { value: VisitMethod; label: string }[] = [
   { value: 'other', label: '其他' },
 ]
 
-export const VISIT_TYPE_OPTIONS: { value: VisitType; label: string }[] = [
+export const VISIT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'new_customer', label: '新客户开发' },
   { value: 'existing_maintenance', label: '存量维护' },
   { value: 'industry_relation', label: '行业关系' },
@@ -93,7 +90,7 @@ export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string
   { value: 'demand_disappeared', label: '需求消失' },
 ]
 
-export const OPPORTUNITY_SOURCE_OPTIONS: { value: OpportunitySource; label: string }[] = [
+export const OPPORTUNITY_SOURCE_OPTIONS: { value: string; label: string }[] = [
   { value: 'referral', label: '转介绍' },
   { value: 'cold_call', label: '陌拜' },
   { value: 'exhibition', label: '展会' },
@@ -101,7 +98,7 @@ export const OPPORTUNITY_SOURCE_OPTIONS: { value: OpportunitySource; label: stri
   { value: 'other', label: '其他' },
 ]
 
-export const COMPLAINT_TYPE_OPTIONS: { value: ComplaintType; label: string }[] = [
+export const COMPLAINT_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'product_quality', label: '产品质量' },
   { value: 'delivery', label: '交期' },
   { value: 'service', label: '服务' },

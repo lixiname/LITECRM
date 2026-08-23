@@ -8,6 +8,7 @@ import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customers, deals, opportunities, opportunityEvents } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
+import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto'
 import type { AdvanceOpportunityDto } from './dto/advance-opportunity.dto'
@@ -20,10 +21,14 @@ import type { CloseOpportunityDto } from './dto/close-opportunity.dto'
  */
 @Injectable()
 export class OpportunitiesService {
-  constructor(private readonly accessService: AccessService) {}
+  constructor(
+    private readonly accessService: AccessService,
+    private readonly catalogService: CatalogService,
+  ) {}
 
   // 新建（§8.5）：意向金额+下一步必填；写 event(created)
   async create(dto: CreateOpportunityDto, actor: AuthUser) {
+    await this.catalogService.assertDimensionValue('opportunity_source', dto.source)
     const customer = await this.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 

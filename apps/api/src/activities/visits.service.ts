@@ -4,6 +4,7 @@ import { db, type DbClient } from '../common/db/db'
 import { customers, visitRecords } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { PlanningService } from '../planning/planning.service'
+import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
 
@@ -13,9 +14,11 @@ export class VisitsService {
   constructor(
     private readonly accessService: AccessService,
     private readonly planningService: PlanningService,
+    private readonly catalogService: CatalogService,
   ) {}
 
   async create(dto: CreateVisitDto, actor: AuthUser) {
+    if (dto.visitType) await this.catalogService.assertDimensionValue('visit_type', dto.visitType)
     const customer = await this.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 

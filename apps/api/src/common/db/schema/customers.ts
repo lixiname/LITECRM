@@ -152,7 +152,7 @@ export const customerDimensionOptions = pgTable(
   (table) => [
     check(
       'dimension_check',
-      sql`${table.dimension} in ('industry','sub_industry','customer_type','product_line','source')`,
+      sql`${table.dimension} in ('industry','sub_industry','customer_type','product_line','source','complaint_type','trade_type','opportunity_source','visit_type')`,
     ),
     uniqueIndex('dimension_name_uq').on(table.dimension, table.name),
   ],

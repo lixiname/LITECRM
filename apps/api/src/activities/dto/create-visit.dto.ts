@@ -1,14 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsDate, IsIn, IsISO8601, IsOptional, IsString, IsUUID } from 'class-validator'
-import {
-  VISIT_METHODS,
-  VISIT_TYPES,
-  type VisitMethod,
-  type VisitType,
-} from '../../common/constants'
+import { VISIT_METHODS, type VisitMethod } from '../../common/constants'
 
-// 拜访登记（§8.4 P0）：必填 customerId/occurredAt/method；填 nextFollowUpDate → 强一致生成周计划项（M4）
+// 拜访登记（§8.4 P0）：必填 customerId/occurredAt/method；visitType 走字典（visit_type）
 export class CreateVisitDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -23,10 +18,10 @@ export class CreateVisitDto {
   @IsIn(VISIT_METHODS)
   method!: VisitMethod
 
-  @ApiPropertyOptional({ description: '拜访类型', enum: VISIT_TYPES, enumName: 'VisitType' })
+  @ApiPropertyOptional({ description: '拜访类型（字典：visit_type）' })
   @IsOptional()
-  @IsIn(VISIT_TYPES)
-  visitType?: VisitType
+  @IsString()
+  visitType?: string
 
   @ApiPropertyOptional({ description: '生意情况' })
   @IsOptional()

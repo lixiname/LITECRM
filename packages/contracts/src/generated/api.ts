@@ -780,7 +780,7 @@ export interface components {
          * @description 维度
          * @enum {string}
          */
-        CustomerDimension: "industry" | "sub_industry" | "customer_type" | "product_line" | "source";
+        CustomerDimension: "industry" | "sub_industry" | "customer_type" | "product_line" | "source" | "complaint_type" | "trade_type" | "opportunity_source" | "visit_type";
         CreateDimensionOptionDto: {
             /** @description 维度 */
             dimension: components["schemas"]["CustomerDimension"];
@@ -944,11 +944,6 @@ export interface components {
          * @enum {string}
          */
         VisitMethod: "offline_visit" | "remote" | "other";
-        /**
-         * @description 拜访类型
-         * @enum {string}
-         */
-        VisitType: "new_customer" | "existing_maintenance" | "industry_relation";
         CreateVisitDto: {
             /** @description 客户 ID */
             customerId: string;
@@ -959,8 +954,8 @@ export interface components {
             occurredAt: string;
             /** @description 拜访方式 */
             method: components["schemas"]["VisitMethod"];
-            /** @description 拜访类型 */
-            visitType?: components["schemas"]["VisitType"];
+            /** @description 拜访类型（字典：visit_type） */
+            visitType?: string;
             /** @description 生意情况 */
             businessSituation?: string;
             /** @description 设备使用 */
@@ -1008,11 +1003,6 @@ export interface components {
             content: string;
         };
         /**
-         * @description 发现渠道
-         * @enum {string}
-         */
-        OpportunitySource: "referral" | "cold_call" | "exhibition" | "online" | "other";
-        /**
          * @description 金额类型
          * @enum {string}
          */
@@ -1022,8 +1012,8 @@ export interface components {
             customerId: string;
             /** @description 需求简述 */
             name: string;
-            /** @description 发现渠道 */
-            source: components["schemas"]["OpportunitySource"];
+            /** @description 发现渠道（字典：opportunity_source） */
+            source: string;
             /** @description 金额类型 */
             amountType: components["schemas"]["AmountType"];
             /** @description 意向金额（与成交金额解耦，成交时以报价单金额为准） */
@@ -1046,11 +1036,6 @@ export interface components {
          * @enum {string}
          */
         OpportunityStage: "intent" | "following" | "ordered" | "lost" | "demand_disappeared";
-        /**
-         * @description 成交交易性质（类型声明）
-         * @enum {string}
-         */
-        TradeType: "equipment" | "consumable" | "part" | "service";
         AdvanceOpportunityDto: {
             /** @description 跟进结论 */
             conclusion?: string;
@@ -1062,8 +1047,8 @@ export interface components {
             quoteAmount?: number;
             /** @description 推进后阶段（类型声明） */
             stage?: components["schemas"]["OpportunityStage"];
-            /** @description 成交交易性质（类型声明） */
-            tradeType?: components["schemas"]["TradeType"];
+            /** @description 成交交易性质（字典：trade_type） */
+            tradeType?: string;
         };
         CloseOpportunityDto: {
             /**
@@ -1074,11 +1059,6 @@ export interface components {
             /** @description 结案说明 */
             reason: string;
         };
-        /**
-         * @description 客诉类型
-         * @enum {string}
-         */
-        ComplaintType: "product_quality" | "delivery" | "service" | "logistics" | "price" | "other";
         CreateComplaintDto: {
             /** @description 客户 ID */
             customerId: string;
@@ -1087,8 +1067,8 @@ export interface components {
              * @description 发生时间
              */
             occurredAt: string;
-            /** @description 客诉类型 */
-            type: components["schemas"]["ComplaintType"];
+            /** @description 客诉类型（字典：complaint_type） */
+            type: string;
             /** @description 问题描述 */
             description: string;
             /** @description 下次确认日期 */

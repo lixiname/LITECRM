@@ -9,14 +9,9 @@ import {
   IsUUID,
   MinLength,
 } from 'class-validator'
-import {
-  AMOUNT_TYPES,
-  OPPORTUNITY_SOURCES,
-  type AmountType,
-  type OpportunitySource,
-} from '../../common/constants'
+import { AMOUNT_TYPES, type AmountType } from '../../common/constants'
 
-// 新建商机（§8.5）：意向金额（类型+金额）必填、下一步动作/日期必填
+// 新建商机（§8.5）：意向金额（类型+金额）必填、下一步动作/日期必填；source 走字典（opportunity_source）
 export class CreateOpportunityDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -27,13 +22,9 @@ export class CreateOpportunityDto {
   @MinLength(1, { message: '需求简述不能为空' })
   name!: string
 
-  @ApiProperty({
-    description: '发现渠道',
-    enum: OPPORTUNITY_SOURCES,
-    enumName: 'OpportunitySource',
-  })
-  @IsIn(OPPORTUNITY_SOURCES)
-  source!: OpportunitySource
+  @ApiProperty({ description: '发现渠道（字典：opportunity_source）' })
+  @IsString()
+  source!: string
 
   @ApiProperty({ description: '金额类型', enum: AMOUNT_TYPES, enumName: 'AmountType' })
   @IsIn(AMOUNT_TYPES)

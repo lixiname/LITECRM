@@ -8,6 +8,7 @@ import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { complaintFollowUps, complaints, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
+import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateComplaintDto } from './dto/create-complaint.dto'
 import type { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
@@ -19,10 +20,14 @@ import type { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
  */
 @Injectable()
 export class ComplaintsService {
-  constructor(private readonly accessService: AccessService) {}
+  constructor(
+    private readonly accessService: AccessService,
+    private readonly catalogService: CatalogService,
+  ) {}
 
   // 登记（§8.6）：status=registered + 触发客户风险告警（M5）
   async create(dto: CreateComplaintDto, actor: AuthUser) {
+    await this.catalogService.assertDimensionValue('complaint_type', dto.type)
     const customer = await this.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 

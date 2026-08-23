@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { and, asc, eq } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customerDimensionOptions } from '../common/db/schema'
@@ -6,9 +11,25 @@ import type { CustomerDimension } from '../common/constants'
 import type { CreateDimensionOptionDto } from './dto/create-dimension-option.dto'
 import type { UpdateDimensionOptionDto } from './dto/update-dimension-option.dto'
 
-// 客户维度配置（§7.2：5 类字典，供客户建档表单下拉；admin 维护）
+// 客户维度配置（§7.2：字典，供建档/业务表单下拉；admin 维护）
 @Injectable()
 export class CatalogService {
+  // 字典值存在性校验（业务分类字典化后，各 service 录入时校验 value 已在字典）
+  async assertDimensionValue(dimension: CustomerDimension, value: string): Promise<void> {
+    const [opt] = await db
+      .select({ id: customerDimensionOptions.id })
+      .from(customerDimensionOptions)
+      .where(
+        and(
+          eq(customerDimensionOptions.dimension, dimension),
+          eq(customerDimensionOptions.name, value),
+          eq(customerDimensionOptions.isActive, true),
+        ),
+      )
+      .limit(1)
+    if (!opt) throw new BadRequestException(`字典项不存在：${dimension}/${value}`)
+  }
+
   async listAll(): Promise<(typeof customerDimensionOptions.$inferSelect)[]> {
     return db
       .select()

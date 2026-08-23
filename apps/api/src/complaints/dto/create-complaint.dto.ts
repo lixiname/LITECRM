@@ -1,9 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
-import { IsDate, IsIn, IsISO8601, IsString, IsUUID, MinLength } from 'class-validator'
-import { COMPLAINT_TYPES, type ComplaintType } from '../../common/constants'
+import { IsDate, IsISO8601, IsString, IsUUID, MinLength } from 'class-validator'
 
-// 登记客诉（§8.6）：description 必填、nextFollowUpDate 必填、触发客户风险告警（M5）
+// 登记客诉（§8.6）：description 必填、nextFollowUpDate 必填、触发客户风险告警（M5）；type 走字典（complaint_type）
 export class CreateComplaintDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -14,9 +13,9 @@ export class CreateComplaintDto {
   @IsDate()
   occurredAt!: Date
 
-  @ApiProperty({ description: '客诉类型', enum: COMPLAINT_TYPES, enumName: 'ComplaintType' })
-  @IsIn(COMPLAINT_TYPES)
-  type!: ComplaintType
+  @ApiProperty({ description: '客诉类型（字典：complaint_type）' })
+  @IsString()
+  type!: string
 
   @ApiProperty({ description: '问题描述' })
   @IsString()

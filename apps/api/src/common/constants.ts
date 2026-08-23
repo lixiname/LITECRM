@@ -49,25 +49,27 @@ export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number]
 export const CLAIM_STATUSES = ['pending', 'approved', 'rejected', 'withdrawn'] as const
 export type ClaimStatus = (typeof CLAIM_STATUSES)[number]
 
-// 客户维度配置（§7.2 customer_dimension_options 的 dimension）
+// 字典维度（§7.2 customer_dimension_options；客户维度 + 业务分类选项，全部可配置）
 export const CUSTOMER_DIMENSIONS = [
   'industry', // 产业
   'sub_industry', // 二级行业
   'customer_type', // 客户类型
   'product_line', // 产品线
   'source', // 客户来源
+  'complaint_type', // 客诉类型（§7.2 字典）
+  'trade_type', // 成交交易性质（§7.2 字典）
+  'opportunity_source', // 商机发现渠道
+  'visit_type', // 拜访类型
 ] as const
 export type CustomerDimension = (typeof CUSTOMER_DIMENSIONS)[number]
 
 // ===== M3 业务动作域枚举（§7.2：varchar + CHECK + 应用层枚举）=====
 
-// 拜访方式（§7.2 visit_records.method）
+// 拜访方式（§7.2 visit_records.method；固定枚举不字典化）
 export const VISIT_METHODS = ['offline_visit', 'remote', 'other'] as const
 export type VisitMethod = (typeof VISIT_METHODS)[number]
 
-// 拜访类型（§7.2 visit_records.visit_type）
-export const VISIT_TYPES = ['new_customer', 'existing_maintenance', 'industry_relation'] as const
-export type VisitType = (typeof VISIT_TYPES)[number]
+// 拜访类型（visit_type）已字典化：dimension='visit_type'，见 customer_dimension_options
 
 // 商机阶段状态机（§8.5）
 export const OPPORTUNITY_STAGES = [
@@ -83,30 +85,13 @@ export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number]
 export const AMOUNT_TYPES = ['oral', 'quoted'] as const
 export type AmountType = (typeof AMOUNT_TYPES)[number]
 
-// 商机发现渠道（§7.2 opportunity.source，应用层枚举）
-export const OPPORTUNITY_SOURCES = [
-  'referral',
-  'cold_call',
-  'exhibition',
-  'online',
-  'other',
-] as const
-export type OpportunitySource = (typeof OPPORTUNITY_SOURCES)[number]
+// 商机发现渠道（opportunity_source）已字典化：dimension='opportunity_source'
 
 // 商机事件类型（§7.2 opportunity_events.type，只追加）
 export const OPPORTUNITY_EVENT_TYPES = ['created', 'stage_changed', 'updated'] as const
 export type OpportunityEventType = (typeof OPPORTUNITY_EVENT_TYPES)[number]
 
-// 客诉类型（§7.2 complaint.type，6 类）
-export const COMPLAINT_TYPES = [
-  'product_quality', // 产品质量
-  'delivery', // 交期
-  'service', // 服务
-  'logistics', // 物流
-  'price', // 价格
-  'other', // 其他
-] as const
-export type ComplaintType = (typeof COMPLAINT_TYPES)[number]
+// 客诉类型（complaint_type）已字典化：dimension='complaint_type'（§7.2 字典）
 
 // 客诉状态（§8.6：两态，核心管理终态）
 export const COMPLAINT_STATUSES = ['registered', 'resolved'] as const
@@ -116,9 +101,7 @@ export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number]
 export const FOLLOW_UP_OUTCOMES = ['followed_up', 'resolved'] as const
 export type FollowUpOutcome = (typeof FOLLOW_UP_OUTCOMES)[number]
 
-// 成交交易性质（§7.2 deals.trade_type）
-export const TRADE_TYPES = ['equipment', 'consumable', 'part', 'service'] as const
-export type TradeType = (typeof TRADE_TYPES)[number]
+// 成交交易性质（trade_type）已字典化：dimension='trade_type'（§7.2 字典）
 
 // ===== M4 计划费用域枚举（§7.2：varchar + CHECK + 应用层枚举）=====
 

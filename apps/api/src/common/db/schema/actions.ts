@@ -47,10 +47,6 @@ export const visitRecords = pgTable(
   },
   (table) => [
     check('visits_method_check', sql`${table.method} in ('offline_visit','remote','other')`),
-    check(
-      'visits_type_check',
-      sql`${table.visitType} in ('new_customer','existing_maintenance','industry_relation')`,
-    ),
     index('visits_customer_idx').on(table.customerId),
     index('visits_owner_occurred_idx').on(table.ownerId, table.occurredAt),
   ],
@@ -93,10 +89,6 @@ export const opportunities = pgTable(
       sql`${table.stage} in ('intent','following','ordered','lost','demand_disappeared')`,
     ),
     check('opportunities_amount_type_check', sql`${table.amountType} in ('oral','quoted')`),
-    check(
-      'opportunities_source_check',
-      sql`${table.source} in ('referral','cold_call','exhibition','online','other')`,
-    ),
     index('opportunities_customer_idx').on(table.customerId),
     index('opportunities_owner_stage_idx').on(table.ownerId, table.stage),
     index('opportunities_followup_idx').on(table.nextFollowUpDate),
@@ -149,10 +141,7 @@ export const deals = pgTable(
     entryRefId: uuid('entry_ref_id'),
   },
   (table) => [
-    check(
-      'deals_trade_type_check',
-      sql`${table.tradeType} in ('equipment','consumable','part','service')`,
-    ),
+    check('deals_trade_type_check_hidden', sql`true`), // 占位保持结构；trade_type 已字典化，由应用层校验
     index('deals_customer_idx').on(table.customerId),
   ],
 )
@@ -179,10 +168,6 @@ export const complaints = pgTable(
     entryRefId: uuid('entry_ref_id'),
   },
   (table) => [
-    check(
-      'complaints_type_check',
-      sql`${table.type} in ('product_quality','delivery','service','logistics','price','other')`,
-    ),
     check('complaints_status_check', sql`${table.status} in ('registered','resolved')`),
     index('complaints_customer_idx').on(table.customerId),
     index('complaints_status_followup_idx').on(table.status, table.nextFollowUpDate),
