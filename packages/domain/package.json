@@ -8,5 +8,25 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crm/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "pinia": "^4.0.3",
+    "vue": "^3.5.40"
+  },
+  "devDependencies": {
+    "@crm/contracts": "workspace:*",
+    "@crm/tsconfig": "workspace:*",
+    "jsdom": "^30.0.1",
+    "pinia": "^4.0.3",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.11",
+    "vue": "^3.5.40"
   }
 }
