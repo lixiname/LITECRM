@@ -2,7 +2,17 @@
   <div class="home">
     <header class="home__header">
       <h1 class="home__title">Lite CRM · 桌面端</h1>
-      <el-button v-if="auth.isLoggedIn" @click="handleLogout">退出登录</el-button>
+      <div class="home__actions">
+        <el-button
+          v-if="auth.hasAbility('user.manage')"
+          type="primary"
+          plain
+          @click="router.push('/users')"
+        >
+          用户管理
+        </el-button>
+        <el-button v-if="auth.isLoggedIn" @click="handleLogout">退出登录</el-button>
+      </div>
     </header>
 
     <el-card v-if="auth.isLoggedIn" class="home__card">
@@ -48,6 +58,11 @@ function handleLogout() {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--crm-spacing-lg);
+}
+.home__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--crm-spacing-sm);
 }
 .home__title {
   margin: 0;

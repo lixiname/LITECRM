@@ -17,6 +17,7 @@
     "contracts:check": "pnpm --filter @crm/contracts check",
     "db:generate": "pnpm --filter @crm/api db:generate",
     "db:migrate": "pnpm --filter @crm/api db:migrate",
+    "db:seed": "pnpm --filter @crm/api db:seed",
     "db:studio": "pnpm --filter @crm/api db:studio",
     "prepare": "husky"
   },
