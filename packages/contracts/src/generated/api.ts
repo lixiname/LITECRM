@@ -308,6 +308,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/claims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClaimsController_listPending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/claims/{id}/approve": {
         parameters: {
             query?: never;
@@ -552,6 +568,8 @@ export interface components {
             /** @description 地址（地址通道，去量词后精确比对） */
             address?: string;
         };
+        /** @enum {string} */
+        CustomerStatus: "active" | "invalid" | "public";
         UpdateCustomerDto: {
             /** @description 客户名称 */
             name?: string;
@@ -600,6 +618,34 @@ export interface components {
         CreateClaimDto: {
             /** @description 接管理由 */
             reason: string;
+        };
+        /**
+         * @description 状态
+         * @enum {string}
+         */
+        ClaimStatus: "pending" | "approved" | "rejected" | "withdrawn";
+        ClaimRequestDto: {
+            /** @description 申请 ID */
+            id: string;
+            /** @description 客户 ID */
+            customerId: string;
+            /** @description 客户名称（JOIN） */
+            customerName?: string;
+            /** @description 申请人 ID */
+            applicantId: string;
+            /** @description 申请人显示名（JOIN） */
+            applicantName?: string;
+            /** @description 发起时归属快照 */
+            currentOwnerId?: Record<string, never>;
+            /** @description 接管理由 */
+            reason: string;
+            /** @description 状态 */
+            status: components["schemas"]["ClaimStatus"];
+            /**
+             * Format: date-time
+             * @description 创建时间
+             */
+            createdAt: string;
         };
         ReviewClaimDto: {
             /** @description 审批意见（拒绝时必填） */
@@ -953,7 +999,7 @@ export interface operations {
                 /** @description 分级筛选 */
                 level?: "S" | "A" | "B" | "C";
                 /** @description 状态筛选 */
-                status?: "active" | "invalid" | "public";
+                status?: components["schemas"]["CustomerStatus"];
                 /** @description 页码（从 1 开始） */
                 page?: number;
                 /** @description 每页条数（默认 20，最大 50） */
@@ -1219,6 +1265,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ClaimsController_listPending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 待审批申请列表（executive/admin） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimRequestDto"][];
+                };
             };
         };
     };

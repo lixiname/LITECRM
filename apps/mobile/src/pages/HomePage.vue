@@ -9,6 +9,10 @@
     </van-nav-bar>
 
     <div v-if="auth.isLoggedIn" class="home__body">
+      <van-cell-group inset>
+        <van-cell title="客户管理" is-link @click="router.push('/customers')" />
+      </van-cell-group>
+
       <van-cell-group inset title="当前用户">
         <van-cell title="姓名" :value="auth.user?.displayName" />
         <van-cell title="账号" :value="auth.user?.username" />

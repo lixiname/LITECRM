@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common'
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
@@ -8,6 +8,7 @@ import type { AuthUser } from '../auth/auth.service'
 import { ClaimsService } from './claims.service'
 import { CreateClaimDto } from './dto/create-claim.dto'
 import { ReviewClaimDto } from './dto/review-claim.dto'
+import { ClaimRequestDto } from './dto/claim-request.dto'
 
 // 接管审批流（§8.3）：发起（customer.transfer）/ 审批·拒绝（approve.claim）/ 撤回
 @ApiTags('claims')
@@ -26,6 +27,18 @@ export class ClaimsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.claimsService.create(customerId, dto, user)
+  }
+
+  @Get()
+  @ApiOkResponse({
+    type: ClaimRequestDto,
+    isArray: true,
+    description: '待审批申请列表（executive/admin）',
+  })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('approve.claim')
+  listPending(@CurrentUser() user: AuthUser) {
+    return this.claimsService.listPending(user)
   }
 
   @Post(':id/approve')

@@ -432,8 +432,7 @@
             "in": "query",
             "description": "状态筛选",
             "schema": {
-              "type": "string",
-              "enum": ["active", "invalid", "public"]
+              "$ref": "#/components/schemas/CustomerStatus"
             }
           },
           {
@@ -725,6 +724,28 @@
         "responses": {
           "201": {
             "description": "发起接管申请"
+          }
+        },
+        "tags": ["claims"]
+      }
+    },
+    "/claims": {
+      "get": {
+        "operationId": "ClaimsController_listPending",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "待审批申请列表（executive/admin）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClaimRequestDto"
+                  }
+                }
+              }
+            }
           }
         },
         "tags": ["claims"]
@@ -1259,6 +1280,10 @@
         },
         "required": ["name"]
       },
+      "CustomerStatus": {
+        "type": "string",
+        "enum": ["active", "invalid", "public"]
+      },
       "UpdateCustomerDto": {
         "type": "object",
         "properties": {
@@ -1362,6 +1387,58 @@
           }
         },
         "required": ["reason"]
+      },
+      "ClaimStatus": {
+        "type": "string",
+        "enum": ["pending", "approved", "rejected", "withdrawn"],
+        "description": "状态"
+      },
+      "ClaimRequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "申请 ID"
+          },
+          "customerId": {
+            "type": "string",
+            "description": "客户 ID"
+          },
+          "customerName": {
+            "type": "string",
+            "description": "客户名称（JOIN）"
+          },
+          "applicantId": {
+            "type": "string",
+            "description": "申请人 ID"
+          },
+          "applicantName": {
+            "type": "string",
+            "description": "申请人显示名（JOIN）"
+          },
+          "currentOwnerId": {
+            "type": "object",
+            "description": "发起时归属快照"
+          },
+          "reason": {
+            "type": "string",
+            "description": "接管理由"
+          },
+          "status": {
+            "description": "状态",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClaimStatus"
+              }
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "创建时间"
+          }
+        },
+        "required": ["id", "customerId", "applicantId", "reason", "status", "createdAt"]
       },
       "ReviewClaimDto": {
         "type": "object",

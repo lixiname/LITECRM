@@ -35,7 +35,11 @@ export class CustomerQueryDto {
   @IsIn(CUSTOMER_LEVELS)
   level?: CustomerLevel
 
-  @ApiPropertyOptional({ description: '状态筛选', enum: CUSTOMER_STATUSES })
+  @ApiPropertyOptional({
+    description: '状态筛选',
+    enum: CUSTOMER_STATUSES,
+    enumName: 'CustomerStatus',
+  })
   @IsOptional()
   @IsIn(CUSTOMER_STATUSES)
   status?: CustomerStatus

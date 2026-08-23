@@ -21,6 +21,36 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/customers',
+      name: 'customers',
+      component: () => import('@/pages/CustomersPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/customers/new',
+      name: 'customer-new',
+      component: () => import('@/pages/CreateCustomerPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
+      path: '/customers/:id',
+      name: 'customer-detail',
+      component: () => import('@/pages/CustomerDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/claims',
+      name: 'claims',
+      component: () => import('@/pages/ClaimsPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'approve.claim' },
+    },
+    {
+      path: '/catalog',
+      name: 'catalog',
+      component: () => import('@/pages/CatalogPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'user.manage' },
+    },
+    {
       path: '/users',
       name: 'users',
       component: () => import('@/pages/UsersPage.vue'),

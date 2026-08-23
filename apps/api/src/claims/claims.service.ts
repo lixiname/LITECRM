@@ -5,9 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { customerClaimRequests, customerTransfers, customers } from '../common/db/schema'
+import { customerClaimRequests, customerTransfers, customers, users } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { CapacityService } from '../customers/capacity.service'
 import type { AuthUser } from '../auth/auth.service'
@@ -110,6 +110,30 @@ export class ClaimsService {
       .set({ status: 'withdrawn' })
       .where(eq(customerClaimRequests.id, id))
     return { id: claim.id, status: 'withdrawn' }
+  }
+
+  // 待审批列表（§8.3 审批入口）：executive/admin 可见，附带客户名/申请人名；审批时仍校验候选池
+  async listPending(actor: AuthUser) {
+    if (actor.role !== 'executive' && actor.role !== 'admin') {
+      throw new ForbiddenException('无权查看接管审批')
+    }
+    return db
+      .select({
+        id: customerClaimRequests.id,
+        customerId: customerClaimRequests.customerId,
+        customerName: customers.name,
+        applicantId: customerClaimRequests.applicantId,
+        applicantName: users.displayName,
+        currentOwnerId: customerClaimRequests.currentOwnerId,
+        reason: customerClaimRequests.reason,
+        status: customerClaimRequests.status,
+        createdAt: customerClaimRequests.createdAt,
+      })
+      .from(customerClaimRequests)
+      .innerJoin(customers, eq(customerClaimRequests.customerId, customers.id))
+      .innerJoin(users, eq(customerClaimRequests.applicantId, users.id))
+      .where(eq(customerClaimRequests.status, 'pending'))
+      .orderBy(desc(customerClaimRequests.createdAt))
   }
 
   // ===== 内部工具 =====
