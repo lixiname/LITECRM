@@ -8,7 +8,13 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/pages/HomePage.vue'),
+      component: () => import('@/pages/WeekViewPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/mine',
+      name: 'mine',
+      component: () => import('@/pages/MinePage.vue'),
       meta: { requiresAuth: true },
     },
     {
