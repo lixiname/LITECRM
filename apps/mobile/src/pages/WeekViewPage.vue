@@ -155,9 +155,9 @@ function anyOverdue(day: DayVM, type: WeekViewItemType): boolean {
   return day.items.some((i) => i.type === type && i.overdue)
 }
 
-// 空 card 记一笔：跳客户列表（预填日期填报流后续实现）
+// 空 card 记一笔：进 QuickAdd（类型面板 + 客户选择，预填日期）
 function goQuickAdd(day: DayVM) {
-  void router.push({ path: '/customers', query: { from: 'quick', date: day.date } })
+  void router.push({ path: '/quick-add', query: { date: day.date } })
 }
 
 function fmt(d: Date): string {

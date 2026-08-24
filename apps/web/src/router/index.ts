@@ -76,6 +76,12 @@ const router = createRouter({
           meta: { title: '费用管理' },
         },
         {
+          path: 'week-view',
+          name: 'week-view',
+          component: () => import('@/pages/WeekViewPage.vue'),
+          meta: { title: '周计划' },
+        },
+        {
           path: 'claims',
           name: 'claims',
           component: () => import('@/pages/ClaimsPage.vue'),

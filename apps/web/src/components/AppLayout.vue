@@ -7,6 +7,7 @@
         <el-menu-item index="/opportunities">商机</el-menu-item>
         <el-menu-item index="/complaints">客诉</el-menu-item>
         <el-menu-item index="/expenses">费用</el-menu-item>
+        <el-menu-item index="/week-view">周计划</el-menu-item>
         <el-menu-item v-if="auth.hasAbility('approve.claim')" index="/claims"
           >接管审批</el-menu-item
         >

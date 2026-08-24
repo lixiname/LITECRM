@@ -24,6 +24,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/quick-add',
+      name: 'quick-add',
+      component: () => import('@/pages/QuickAddPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/expenses',
       name: 'expenses',
       component: () => import('@/pages/ExpensesPage.vue'),

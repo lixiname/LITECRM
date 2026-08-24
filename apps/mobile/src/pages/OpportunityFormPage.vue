@@ -94,6 +94,9 @@ const form = reactive({
   nextAction: '',
   nextFollowUpDate: '',
 })
+// 周览/记一笔预填日期（query.date → 下次跟进日期）
+const qDate = route.query.date as string | undefined
+if (qDate) form.nextFollowUpDate = qDate
 const sourceLabel = ref('')
 const amountTypeLabel = ref('口头')
 const showSource = ref(false)

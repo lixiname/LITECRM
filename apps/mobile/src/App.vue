@@ -5,7 +5,7 @@
     <van-tabbar v-if="showTabbar" route safe-area-inset-bottom>
       <van-tabbar-item replace to="/" icon="calendar-o">日程</van-tabbar-item>
       <van-tabbar-item replace to="/customers" icon="manager-o">客户</van-tabbar-item>
-      <van-tabbar-item replace to="/expenses" icon="gold-coin-o">记一笔</van-tabbar-item>
+      <van-tabbar-item replace to="/quick-add" icon="gold-coin-o">记一笔</van-tabbar-item>
       <van-tabbar-item replace to="/mine" icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
   </div>

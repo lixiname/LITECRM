@@ -68,6 +68,14 @@ const form = reactive({
   description: '',
   nextFollowUpDate: '',
 })
+// 周览/记一笔预填日期（query.date → occurredAt 保留当前时分 + 跟进日期）
+const qDate = route.query.date as string | undefined
+if (qDate) {
+  const now = new Date()
+  const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  form.occurredAt = `${qDate}T${hm}`
+  form.nextFollowUpDate = qDate
+}
 const typeLabel = ref('')
 const showType = ref(false)
 const saving = ref(false)
