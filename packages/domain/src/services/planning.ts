@@ -1,4 +1,4 @@
-import { apiGet } from './http'
+import { apiGet, apiPost } from './http'
 
 export interface BusinessWeek {
   id: string
@@ -33,6 +33,16 @@ export function listBusinessWeeks(): Promise<BusinessWeek[]> {
 /** 我的周计划（含计划项） */
 export function getMyPlan(businessWeekId: string): Promise<WeeklyPlan | null> {
   return apiGet<WeeklyPlan | null>(`/plans?businessWeekId=${businessWeekId}`)
+}
+
+/** 周览点空白加计划（§2.4 日历式）：按日期自动定位业务周 + 确保周计划 */
+export function createPlanItemByDate(dto: {
+  plannedDate: string
+  action: string
+  customerId?: string
+  notes?: string
+}): Promise<WeeklyPlanItem> {
+  return apiPost<WeeklyPlanItem>('/plans/items-by-date', dto)
 }
 
 /** 我的未读意见 */

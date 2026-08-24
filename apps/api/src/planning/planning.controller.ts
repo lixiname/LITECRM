@@ -41,6 +41,12 @@ export class PlanningController {
     return this.planningService.getMyPlan(businessWeekId, user)
   }
 
+  @Post('plans/items-by-date')
+  @ApiCreatedResponse({ description: '按日期加计划项（周览点空白加计划，自动定位业务周）' })
+  addPlanItemByDate(@Body() dto: CreatePlanItemDto, @CurrentUser() user: AuthUser) {
+    return this.planningService.addPlanItemByDate(dto, user)
+  }
+
   @Post('plans/:id/items')
   @ApiCreatedResponse({ description: '加计划项' })
   addPlanItem(

@@ -111,6 +111,22 @@ export class PlanningService {
     await tx.insert(weeklyPlanItems).values({ planId, plannedDate, customerId, action })
   }
 
+  // 周览"点空白加计划"（交互设计 §2.4 日历式）：按日期自动定位业务周 + 确保周计划 + 插入计划项
+  async addPlanItemByDate(dto: CreatePlanItemDto, actor: AuthUser) {
+    const planId = await this.ensurePlanForWeek(actor.id, dto.plannedDate)
+    const [item] = await db
+      .insert(weeklyPlanItems)
+      .values({
+        planId,
+        plannedDate: dto.plannedDate,
+        customerId: dto.customerId ?? null,
+        action: dto.action,
+        notes: dto.notes ?? null,
+      })
+      .returning()
+    return item
+  }
+
   // ===== 周计划项（本人）=====
 
   // 我的周计划（§8.7：owner + business_week）
