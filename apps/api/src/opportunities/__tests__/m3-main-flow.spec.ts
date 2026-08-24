@@ -4,7 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppModule } from '../../app.module'
-import { seedAccounts } from '../../../scripts/seed'
+import { seedAccounts, seedDimensions } from '../../../scripts/seed'
 import { db } from '../../common/db/db'
 import { deals, opportunities } from '../../common/db/schema'
 
@@ -14,6 +14,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
 
   beforeAll(async () => {
     await seedAccounts()
+    await seedDimensions() // 初始化基础字典（visit_type/opportunity_source/complaint_type 等）
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
     app = moduleRef.createNestApplication()
     app.setGlobalPrefix('api')
@@ -59,6 +60,18 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
     await db.execute(sql`DELETE FROM deals WHERE ${sql.raw(inM3)}`).catch(() => {})
     await db.execute(sql`DELETE FROM visit_records WHERE ${sql.raw(inM3)}`).catch(() => {})
     await db.execute(sql`DELETE FROM opportunities WHERE ${sql.raw(inM3)}`).catch(() => {})
+    // 归属治理子表 + 联系人（客户有 contacts 时直接删客户会撞外键，须先删）
+    await db
+      .execute(sql`DELETE FROM customer_claim_requests WHERE ${sql.raw(inM3)}`)
+      .catch(() => {})
+    await db.execute(sql`DELETE FROM customer_transfers WHERE ${sql.raw(inM3)}`).catch(() => {})
+    await db.execute(sql`DELETE FROM contacts WHERE ${sql.raw(inM3)}`).catch(() => {})
+    // 拜访联动生成的计划项（nextFollowUpDate → 强一致生成，customer_id 引用客户）
+    await db
+      .execute(
+        sql`DELETE FROM weekly_plan_items WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M3_%')`,
+      )
+      .catch(() => {})
     await db.execute(sql`DELETE FROM customers WHERE name LIKE 'M3_%'`).catch(() => {})
   }
 
