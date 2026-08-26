@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="工业设备销售 CRM 建设蓝图与立项简报：核心问题、业务能力、建设边界和实施节奏。"
+    />
+    <title>工业设备销售 CRM 建设蓝图与立项简报</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --page: #f5f7fb;
+        --surface: #ffffff;
+        --surface-soft: #eef3fa;
+        --surface-strong: #e3ebf6;
+        --text: #172033;
+        --muted: #5f6b7c;
+        --line: #d8e0eb;
+        --primary: #1f5f99;
+        --primary-soft: #e2eef8;
+        --accent: #0f766e;
+        --accent-soft: #dff5f0;
+        --warn: #a45a09;
+        --warn-soft: #fff1d7;
+        --danger: #9f3a38;
+        --danger-soft: #fde8e7;
+        --shadow: 0 16px 40px rgba(31, 55, 85, 0.1);
+        --radius: 18px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page: #0d1420;
+          --surface: #141e2c;
+          --surface-soft: #1a2737;
+          --surface-strong: #223247;
+          --text: #eef4fb;
+          --muted: #aab8ca;
+          --line: #33445a;
+          --primary: #7eb6e8;
+          --primary-soft: #19344c;
+          --accent: #74d4c8;
+          --accent-soft: #153d3a;
+          --warn: #f0bd72;
+          --warn-soft: #47351c;
+          --danger: #f0a09d;
+          --danger-soft: #482626;
+          --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+        font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', system-ui, sans-serif;
+        line-height: 1.72;
+      }
+
+      a {
+        color: var(--primary);
+      }
+
+      button,
+      a.button {
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        padding: 9px 16px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      button:hover,
+      a.button:hover {
+        border-color: var(--primary);
+      }
+
+      button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
+        outline-offset: 3px;
+      }
+
+      .button.primary {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--page);
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .hero {
+        padding: 44px 0 36px;
+        background:
+          radial-gradient(circle at 8% 12%, var(--primary-soft), transparent 34%),
+          radial-gradient(circle at 92% 20%, var(--accent-soft), transparent 34%);
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+        gap: 54px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 11px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3 {
+        line-height: 1.28;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin: 18px 0 12px;
+        font-size: clamp(34px, 4.4vw, 54px);
+        letter-spacing: -0.04em;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(27px, 3.4vw, 40px);
+      }
+
+      h3 {
+        margin: 0 0 8px;
+        font-size: 19px;
+      }
+
+      .subtitle {
+        max-width: 880px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .thesis {
+        max-width: 980px;
+        margin: 22px 0 0;
+        padding: 17px 20px;
+        border-left: 5px solid var(--primary);
+        border-radius: 0 var(--radius) var(--radius) 0;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        font-size: clamp(18px, 2vw, 23px);
+        font-weight: 650;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .summary-grid,
+      .problem-grid,
+      .pillar-grid,
+      .scope-grid,
+      .outcome-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .summary-grid {
+        margin-top: 34px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .card p,
+      .card ul {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .summary-number {
+        color: var(--primary);
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .sticky-nav {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        backdrop-filter: blur(12px);
+      }
+
+      .sticky-nav .shell {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-top: 9px;
+        padding-bottom: 9px;
+      }
+
+      .sticky-nav a {
+        flex: 0 0 auto;
+        border-radius: 999px;
+        color: var(--muted);
+        padding: 6px 11px;
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .sticky-nav a:hover {
+        background: var(--surface-soft);
+        color: var(--text);
+      }
+
+      main section {
+        padding: 76px 0;
+        border-bottom: 1px solid var(--line);
+        scroll-margin-top: 58px;
+      }
+
+      .section-head {
+        display: grid;
+        grid-template-columns: minmax(0, 0.72fr) minmax(280px, 1fr);
+        gap: 40px;
+        align-items: end;
+        margin-bottom: 30px;
+      }
+
+      .section-index {
+        display: block;
+        margin-bottom: 7px;
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+
+      .section-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+      }
+
+      .problem-grid .card:nth-child(1) {
+        border-top: 5px solid var(--primary);
+      }
+
+      .problem-grid .card:nth-child(2) {
+        border-top: 5px solid var(--warn);
+      }
+
+      .problem-grid .card:nth-child(3) {
+        border-top: 5px solid var(--danger);
+      }
+
+      .current-map {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 140px minmax(0, 0.7fr);
+        gap: 18px;
+        align-items: center;
+        margin-top: 24px;
+        padding: 24px;
+        border-radius: var(--radius);
+        background: var(--surface-soft);
+      }
+
+      .source-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .map-node,
+      .map-center,
+      .map-result {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+        padding: 14px;
+        text-align: center;
+      }
+
+      .map-node strong,
+      .map-result strong {
+        display: block;
+      }
+
+      .map-node span,
+      .map-result span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .map-center {
+        position: relative;
+        background: var(--warn-soft);
+        color: var(--warn);
+        font-weight: 800;
+      }
+
+      .map-center::before,
+      .map-center::after {
+        content: '→';
+        position: absolute;
+        top: 50%;
+        color: var(--muted);
+        font-size: 24px;
+        transform: translateY(-50%);
+      }
+
+      .map-center::before {
+        left: -24px;
+      }
+
+      .map-center::after {
+        right: -24px;
+      }
+
+      .map-result {
+        border-color: color-mix(in srgb, var(--danger) 34%, var(--line));
+        background: var(--danger-soft);
+      }
+
+      .pillar-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .pillar {
+        border-top: 4px solid var(--primary);
+      }
+
+      .pillar:nth-child(2) {
+        border-top-color: var(--accent);
+      }
+
+      .pillar:nth-child(3) {
+        border-top-color: var(--warn);
+      }
+
+      .pillar:nth-child(4) {
+        border-top-color: var(--danger);
+      }
+
+      .reasoning-chain {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 28px;
+        margin-top: 28px;
+      }
+
+      .reasoning-step {
+        position: relative;
+        border-top: 3px solid var(--primary);
+        padding-top: 12px;
+      }
+
+      .reasoning-step:not(:last-child)::after {
+        content: '→';
+        position: absolute;
+        top: 24px;
+        right: -21px;
+        color: var(--muted);
+        font-size: 20px;
+      }
+
+      .reasoning-step strong,
+      .reasoning-step span {
+        display: block;
+      }
+
+      .reasoning-step span {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .strategy-house {
+        display: grid;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .house-roof {
+        width: min(88%, 900px);
+        margin: 0 auto;
+        background: var(--primary);
+        color: #ffffff;
+        clip-path: polygon(50% 0, 100% 100%, 0 100%);
+        padding: 44px 28px 20px;
+        text-align: center;
+      }
+
+      .house-roof strong,
+      .house-roof span {
+        display: block;
+      }
+
+      .house-roof span {
+        margin-top: 6px;
+        font-size: 14px;
+      }
+
+      .house-pillars {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .house-pillar {
+        min-height: 132px;
+        border: 1px solid var(--line);
+        border-top: 5px solid var(--accent);
+        background: var(--surface);
+        padding: 20px 16px;
+        text-align: center;
+      }
+
+      .house-pillar strong,
+      .house-pillar span {
+        display: block;
+      }
+
+      .house-pillar span {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .house-foundation {
+        background: var(--surface-strong);
+        padding: 16px 20px;
+        text-align: center;
+      }
+
+      .house-foundation strong {
+        color: var(--primary);
+      }
+
+      .value-flow {
+        margin-top: 34px;
+      }
+
+      .value-flow svg {
+        width: 100%;
+        height: auto;
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .value-flow .node rect {
+        fill: var(--surface-soft);
+        stroke: var(--line);
+        stroke-width: 1.5;
+      }
+
+      .value-flow .node text {
+        fill: var(--text);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .value-flow .arrow {
+        stroke: var(--primary);
+        stroke-width: 2.5;
+        fill: none;
+        marker-end: url(#arrowhead);
+      }
+
+      .value-flow .exception {
+        fill: var(--warn-soft);
+        stroke: var(--warn);
+      }
+
+      .value-flow .exception-text {
+        fill: var(--warn);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .mobile-flow {
+        display: none;
+        margin: 0;
+        padding-left: 24px;
+      }
+
+      .mobile-flow li {
+        margin: 8px 0;
+      }
+
+      .role-layout {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .role-panel:last-child {
+        grid-column: 1 / -1;
+      }
+
+      .role-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .role-meta div {
+        border-radius: 14px;
+        background: var(--surface-soft);
+        padding: 14px;
+      }
+
+      .role-meta strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--primary);
+      }
+
+      .role-meta span {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .scope-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .scope-grid ul,
+      .outcome-grid ul {
+        padding-left: 18px;
+      }
+
+      .scope-now {
+        border-top: 5px solid var(--primary);
+      }
+
+      .scope-next {
+        border-top: 5px solid var(--accent);
+      }
+
+      .scope-later {
+        border-top: 5px solid var(--warn);
+      }
+
+      .scope-not {
+        border-top: 5px solid var(--danger);
+      }
+
+      .roadmap {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .roadmap::before {
+        content: '';
+        position: absolute;
+        top: 28px;
+        right: 8%;
+        left: 8%;
+        height: 3px;
+        background: var(--line);
+      }
+
+      .phase {
+        position: relative;
+        padding-top: 54px;
+      }
+
+      .phase::before {
+        content: attr(data-phase);
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        z-index: 1;
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--primary);
+        color: var(--page);
+        font-weight: 800;
+        transform: translateX(-50%);
+      }
+
+      .phase .card {
+        height: 100%;
+        box-shadow: none;
+      }
+
+      .outcome-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .decision-list {
+        display: grid;
+        gap: 12px;
+        padding: 0;
+        counter-reset: decision;
+        list-style: none;
+      }
+
+      .decision-list li {
+        position: relative;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 18px 18px 18px 60px;
+        counter-increment: decision;
+      }
+
+      .decision-list li::before {
+        content: counter(decision);
+        position: absolute;
+        top: 16px;
+        left: 18px;
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      details {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--surface);
+        padding: 0 18px;
+      }
+
+      details + details {
+        margin-top: 12px;
+      }
+
+      summary {
+        cursor: pointer;
+        padding: 16px 0;
+        font-weight: 750;
+      }
+
+      details > div {
+        padding: 0 0 18px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 10px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .source-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .note {
+        border-left: 4px solid var(--accent);
+        background: var(--accent-soft);
+        padding: 14px 16px;
+      }
+
+      .brief-summary {
+        display: grid;
+        gap: 10px;
+        max-width: 920px;
+        margin: 0;
+        border-left: 1px solid var(--line);
+        padding-left: 30px;
+      }
+
+      .brief-summary p {
+        margin: 0;
+      }
+
+      .brief-summary strong {
+        display: inline-block;
+        min-width: 92px;
+      }
+
+      .context-line {
+        margin: 18px 0 0;
+        color: color-mix(in srgb, #ffffff 74%, transparent);
+        font-size: 14px;
+      }
+
+      .compact-intro {
+        max-width: 920px;
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+
+      .issue-table td:first-child,
+      .scope-table td:first-child,
+      .roadmap-table td:first-child,
+      .criteria-table td:first-child {
+        width: 16%;
+        color: var(--primary);
+        font-weight: 800;
+      }
+
+      .core-tension {
+        margin-top: 20px;
+        border-left: 4px solid var(--warn);
+        background: var(--warn-soft);
+        padding: 14px 18px;
+      }
+
+      .capability-map {
+        display: grid;
+        gap: 10px;
+      }
+
+      .capability-band {
+        display: grid;
+        grid-template-columns: 148px 1fr;
+        gap: 18px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding: 16px 0;
+      }
+
+      .capability-band:first-child {
+        border-top: 4px solid var(--primary);
+      }
+
+      .capability-band:last-child {
+        border-bottom: 4px solid var(--primary);
+      }
+
+      .capability-band > strong {
+        color: var(--primary);
+      }
+
+      .capability-items {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .capability-items span {
+        background: var(--surface-soft);
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+      }
+
+      .process-strip {
+        display: flex;
+        align-items: stretch;
+        margin-top: 26px;
+      }
+
+      .process-step {
+        position: relative;
+        flex: 1 1 0;
+        border-top: 3px solid var(--accent);
+        padding: 12px 18px 8px 8px;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .process-step:not(:last-child)::after {
+        content: '→';
+        position: absolute;
+        top: 10px;
+        right: -5px;
+        color: var(--muted);
+      }
+
+      .exception-line {
+        margin: 14px 0 0;
+        color: var(--warn);
+        text-align: center;
+      }
+
+      .operating-principle {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .operating-principle div {
+        border-top: 3px solid var(--primary);
+        padding-top: 10px;
+      }
+
+      .operating-principle strong,
+      .operating-principle span {
+        display: block;
+      }
+
+      .operating-principle span {
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .research-summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+
+      .research-summary > div {
+        border-top: 3px solid var(--primary);
+        padding-top: 12px;
+      }
+
+      footer {
+        padding: 36px 0 56px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 24px;
+        }
+
+        .brief-summary {
+          border-top: 1px solid var(--line);
+          border-left: 0;
+          padding-top: 20px;
+          padding-left: 0;
+        }
+
+        .summary-grid,
+        .problem-grid,
+        .pillar-grid,
+        .scope-grid,
+        .house-pillars {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .section-head {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+
+        .capability-items {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .roadmap {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .roadmap::before {
+          display: none;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .shell {
+          width: min(100% - 22px, 1180px);
+        }
+
+        .hero {
+          padding-top: 42px;
+        }
+
+        main section {
+          padding: 56px 0;
+        }
+
+        .summary-grid,
+        .problem-grid,
+        .pillar-grid,
+        .scope-grid,
+        .outcome-grid,
+        .roadmap,
+        .reasoning-chain,
+        .house-pillars,
+        .role-layout,
+        .role-meta {
+          grid-template-columns: 1fr;
+        }
+
+        .capability-band,
+        .operating-principle,
+        .research-summary {
+          grid-template-columns: 1fr;
+        }
+
+        .capability-items {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .process-strip {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .process-step {
+          border-top-width: 2px;
+          padding-right: 8px;
+        }
+
+        .process-step::after {
+          display: none;
+        }
+
+        .table-wrap table {
+          min-width: 720px;
+        }
+
+        .reasoning-step:not(:last-child)::after {
+          content: '↓';
+          top: auto;
+          right: 50%;
+          bottom: -27px;
+        }
+
+        .house-roof {
+          width: 100%;
+          clip-path: none;
+          padding: 20px 16px;
+        }
+
+        .role-panel:last-child {
+          grid-column: auto;
+        }
+
+        .current-map {
+          grid-template-columns: 1fr;
+        }
+
+        .map-center::before,
+        .map-center::after {
+          display: none;
+        }
+
+        .value-flow svg {
+          display: none;
+        }
+
+        .mobile-flow {
+          display: block;
+        }
+
+        .phase {
+          padding-top: 48px;
+        }
+      }
+
+      @media print {
+        :root {
+          --page: #ffffff;
+          --surface: #ffffff;
+          --surface-soft: #f2f5f8;
+          --surface-strong: #e8edf3;
+          --text: #111827;
+          --muted: #4b5563;
+          --line: #cdd5df;
+          --primary: #1f5f99;
+          --primary-soft: #e2eef8;
+          --accent: #0f766e;
+          --accent-soft: #e0f3f0;
+          --warn: #95520a;
+          --warn-soft: #fff2d9;
+          --danger: #963c3a;
+          --danger-soft: #fde9e8;
+          --shadow: none;
+        }
+
+        body {
+          background: #ffffff;
+          font-size: 11pt;
+        }
+
+        .hero {
+          padding: 24px 0 20px;
+        }
+
+        .sticky-nav,
+        .hero-actions {
+          display: none;
+        }
+
+        main section {
+          padding: 28px 0;
+          break-inside: avoid;
+        }
+
+        .card,
+        .value-flow svg {
+          box-shadow: none;
+        }
+
+        details {
+          break-inside: avoid;
+        }
+
+        details > div {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="shell">
+        <div class="hero-grid">
+          <div>
+            <h1>工业设备销售 CRM 建设蓝图与立项简报</h1>
+            <div class="thesis">
+              先解决销售跟进与商机失真问题，形成可持续推进、可管理的销售过程；订单、出货与回款作为后续延伸。
+            </div>
+          </div>
+          <div class="brief-summary" aria-label="项目结论摘要">
+            <p><strong>当前重点：</strong>解决跟进过程不可见、意向长期失真和报价之后缺少持续推进的问题。</p>
+            <p><strong>后续方向：</strong>在销售过程稳定后，再衔接订单、出货、应收和回款等正式经营结果。</p>
+            <p><strong>本次确认：</strong>项目定位、总体能力边界、分阶段建设顺序，以及各岗位共同维护同一套业务事实的原则。</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="sticky-nav" aria-label="简报目录">
+      <div class="shell">
+        <a href="#problems">核心问题</a>
+        <a href="#blueprint">能力蓝图</a>
+        <a href="#scope">建设边界</a>
+        <a href="#operation">运行机制</a>
+        <a href="#roadmap">建设节奏</a>
+        <a href="#criteria">成功标准</a>
+        <a href="#decisions">审批事项</a>
+        <a href="#appendix">调研依据</a>
+      </div>
+    </nav>
+
+    <main>
+      <section id="problems">
+        <div class="shell">
+          <h2>CRM建设面对的三个问题</h2>
+          <p class="compact-intro">跟进不连续和意向不可信是当前建设重点；销售过程与经营结果断开纳入总体蓝图，在后续阶段衔接。</p>
+
+          <div class="table-wrap">
+            <table class="issue-table">
+              <thead>
+                <tr>
+                  <th>问题</th>
+                  <th>当前表现</th>
+                  <th>直接后果</th>
+                  <th>需要建立的机制</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>跟进不连续</td>
+                  <td>拜访记录后通常没有明确下一步，销售依赖微信、脑记或个人台账自行安排。</td>
+                  <td>销售容易遗忘，区域经理也无法及时发现长期未推进的客户。</td>
+                  <td>每次有效沟通形成下一步、期限或明确结束原因。</td>
+                </tr>
+                <tr>
+                  <td>意向不可信</td>
+                  <td>正式或口头报价由业助登记到Excel，后续状态依靠逐笔询问销售。</td>
+                  <td>大量报价长期悬在意向池中，无法判断哪些仍有效、哪些已经停滞。</td>
+                  <td>报价关联具体商机，按跟进反馈持续确认有效、待确认、停滞、暂停或丢失。</td>
+                </tr>
+                <tr>
+                  <td>过程结果断开</td>
+                  <td>客户、报价、订单、出货和回款分散在不同人员、系统和台账中。</td>
+                  <td>管理层看不到过程如何转化为结果，销售也难以查看本人客户的订单与回款。</td>
+                  <td>围绕同一客户和采购需求串联销售过程，并回接ERP或财务中的正式经营结果。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="core-tension">
+            <strong>核心矛盾：</strong>管理需要真实过程，但销售认为填报不能帮助自己。系统必须让一次记录同时服务个人待办、客户历史、商机更新、自动周报和管理视图，才可能形成持续使用。
+          </div>
+        </div>
+      </section>
+
+      <section id="blueprint">
+        <div class="shell">
+          <h2>CRM应当具备的业务能力</h2>
+          <p class="compact-intro">能力蓝图表达公司准备建立什么业务能力，不等同于页面清单，也不意味着所有能力一次完成。</p>
+
+          <div class="capability-map" aria-label="CRM业务能力地图">
+            <div class="capability-band">
+              <strong>经营结果</strong>
+              <div class="capability-items">
+                <span>销售行动可见</span>
+                <span>商机漏斗可信</span>
+                <span>成交过程可追（后续）</span>
+                <span>回款风险可管（后续）</span>
+                <span>客户产品结构可分析</span>
+              </div>
+            </div>
+            <div class="capability-band">
+              <strong>经营管理</strong>
+              <div class="capability-items">
+                <span>异常与停滞管理</span>
+                <span>客户分级</span>
+                <span>产品分级</span>
+                <span>分级名额与调整</span>
+                <span>区域与团队分析</span>
+              </div>
+            </div>
+            <div class="capability-band">
+              <strong>销售主线</strong>
+              <div class="capability-items">
+                <span>客户与联系人</span>
+                <span>互动与下一步</span>
+                <span>商机与报价协同</span>
+                <span>订单与出货（后续）</span>
+                <span>应收与回款（后续）</span>
+              </div>
+            </div>
+            <div class="capability-band">
+              <strong>数据与治理</strong>
+              <div class="capability-items">
+                <span>客户产品主数据</span>
+                <span>组织与数据权限</span>
+                <span>统一状态口径</span>
+                <span>变更留痕与审计</span>
+                <span>ERP与钉钉衔接</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="process-strip" aria-label="销售过程主线及后续延伸">
+            <div class="process-step">客户开发</div>
+            <div class="process-step">拜访沟通</div>
+            <div class="process-step">下一步</div>
+            <div class="process-step">具体商机</div>
+            <div class="process-step">报价跟进</div>
+            <div class="process-step">下单出货（后续）</div>
+            <div class="process-step">应收回款（后续）</div>
+          </div>
+          <p class="exception-line">无下一步、逾期或报价后长期无反馈，应自动进入异常清单并触发状态确认。</p>
+        </div>
+      </section>
+
+      <section id="scope">
+        <div class="shell">
+          <h2>建设范围与边界</h2>
+          <div class="table-wrap">
+            <table class="scope-table">
+              <thead>
+                <tr>
+                  <th>范围</th>
+                  <th>包含内容</th>
+                  <th>边界说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>核心过程</td>
+                  <td>客户与联系人、互动时间线、下一步、待办、商机、报价协同和异常识别</td>
+                  <td>优先解决销售持续推进和漏斗可信问题。</td>
+                </tr>
+                <tr>
+                  <td>经营管理</td>
+                  <td>区域与团队视图、自动周报、客户与产品分级、分级名额及调整留痕</td>
+                  <td>先具备承载能力；具体分级规则由后续业务设计确认，不在立项阶段定死。</td>
+                </tr>
+                <tr>
+                  <td>结果闭环</td>
+                  <td>订单、出货、应收节点、到账和逾期，并向责任销售提供查询</td>
+                  <td>CRM关联和呈现结果，ERP与财务仍是正式经营数据来源。</td>
+                </tr>
+                <tr>
+                  <td>后续深化</td>
+                  <td>ERP自动同步、报价工具深化、钉钉、语音或智能录入、经营预测和AI</td>
+                  <td>在核心流程、数据口径和实际价值稳定后建设。</td>
+                </tr>
+                <tr>
+                  <td>明确不做</td>
+                  <td>替代ERP或财务、一次性建设完整CPQ、原样搬运Excel、长期保留重复填报</td>
+                  <td>避免项目同时演变为CRM、ERP、报价和财务系统重建。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="operation">
+        <div class="shell">
+          <h2>系统怎样进入日常工作</h2>
+          <div class="operating-principle">
+            <div><strong>事实就近维护</strong><span>谁最接近事实，谁负责确认；不让其他岗位代填业务判断。</span></div>
+            <div><strong>同一事实只录一次</strong><span>自动进入个人工作台、客户时间线、周报和管理视图。</span></div>
+            <div><strong>管理围绕异常</strong><span>从逐人询问转为处理无下一步、逾期、停滞和高风险事项。</span></div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>角色</th>
+                  <th>负责确认的事实</th>
+                  <th>系统应提供的帮助</th>
+                  <th>不再重复做的事情</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>销售</td>
+                  <td>客户反馈、商机判断、下一步及预计时间</td>
+                  <td>今日待办、客户历史和报价跟进；后续增加订单与回款查询</td>
+                  <td>个人小台账、基础进展重复汇报和手工周报</td>
+                </tr>
+                <tr>
+                  <td>业助</td>
+                  <td>报价任务状态、完成时间和必要报价事实</td>
+                  <td>结构化报价需求、待处理队列和客户上下文</td>
+                  <td>另建意向Excel并逐笔追问销售</td>
+                </tr>
+                <tr>
+                  <td>区域经理</td>
+                  <td>团队状态确认、资源协调和必要管理介入</td>
+                  <td>团队行动、逾期、停滞和重点商机异常视图</td>
+                  <td>逐人询问基础进展并人工汇总周报</td>
+                </tr>
+                <tr>
+                  <td>后台 / 财务（后续衔接）</td>
+                  <td>订单、出货、应收、到账和逾期等正式事实</td>
+                  <td>责任销售、客户上下文和统一异常清单</td>
+                  <td>零散找表和逐个通知销售</td>
+                </tr>
+                <tr>
+                  <td>管理层</td>
+                  <td>管理规则、数据口径、客户产品分级及资源配置原则</td>
+                  <td>真实漏斗和结构分析；后续增加订单与回款风险</td>
+                  <td>把历史累计报价直接作为有效销售预测</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="roadmap">
+        <div class="shell">
+          <h2>建议的建设节奏</h2>
+          <p class="compact-intro">按业务闭环逐层建设。实地参访的友商已在纯线上获客和金蝶云星空基础上实现从销售到交付的较完整贯通，说明全链条管理具备现实可行性；但我司以线下直销和现有 Open 5000 为基础，数据采集与系统衔接条件不同。Open 5000 具备打通条件，但接口确认、数据整理和实施需要时间，因此应先稳定销售过程，再逐步延伸。每个阶段先确认规则和数据责任，再进入详细设计与开发。</p>
+
+          <div class="table-wrap">
+            <table class="roadmap-table">
+              <thead>
+                <tr>
+                  <th>阶段</th>
+                  <th>建设重点</th>
+                  <th>阶段完成的判断</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>一：行动基础</td>
+                  <td>客户、拜访、下一步、个人待办和客户时间线</td>
+                  <td>销售能够安排每日跟进，经理能够看到团队实际行动和无下一步事项。</td>
+                </tr>
+                <tr>
+                  <td>二：可信漏斗</td>
+                  <td>商机、报价衔接、状态确认、停滞识别、自动周报，以及客户与产品分级基础</td>
+                  <td>有效、待确认、停滞、暂停和丢失意向能够区分，分级结果能够指导关注重点。</td>
+                </tr>
+                <tr>
+                  <td>三：结果闭环</td>
+                  <td>订单、出货、应收和回款围绕客户与商机关联</td>
+                  <td>销售过程能够追踪到订单和现金结果，销售能够查看本人客户的相关状态。</td>
+                </tr>
+                <tr>
+                  <td>四：集成优化</td>
+                  <td>ERP、报价工具、钉钉、智能录入、客户产品结构分析和经营预测</td>
+                  <td>减少人工衔接，形成更稳定的数据更新和经营分析能力。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="criteria">
+        <div class="shell">
+          <h2>如何判断项目产生了价值</h2>
+          <p class="compact-intro">验收不能只看页面是否上线，还应观察工作方式和数据质量是否发生变化。具体量化目标在现状数据可取得后另行确定。</p>
+
+          <div class="table-wrap">
+            <table class="criteria-table">
+              <thead>
+                <tr>
+                  <th>判断维度</th>
+                  <th>应该出现的变化</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>销售使用价值</td><td>销售能够直接查看今日事项、客户历史和经营结果，个人小台账与重复周报逐步减少。</td></tr>
+                <tr><td>过程透明</td><td>区域经理能够按日发现无下一步、逾期、长期无反馈和需要介入的事项。</td></tr>
+                <tr><td>漏斗可信</td><td>报价后持续更新客户反馈，历史累计报价不再全部混入有效意向。</td></tr>
+                <tr><td>前后台协同</td><td>报价、订单、出货和回款回到对应客户与商机，不再依靠多套台账反复核对。</td></tr>
+                <tr><td>经营管理</td><td>客户与产品分级能够落实到关注重点、销售资源和后续结构分析，而不只是静态标签。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="decisions">
+        <div class="shell">
+          <h2>管理层需要确认的事项</h2>
+          <ol class="decision-list">
+            <li>同意将项目定位为以销售过程管理为核心的CRM，而不是客户资料库或新的填报系统。</li>
+            <li>同意以“销售行动—可信商机”为当前建设主线，按阶段延伸至订单与回款，并纳入客户与产品分级等经营管理能力。</li>
+            <li>同意按阶段逐层建设，复杂报价、深度集成、经营预测和AI后置。</li>
+            <li>同意以“同一事实只维护一次”为原则，系统已能生成或取得的信息不再长期重复维护Excel和手工周报。</li>
+            <li>同意由项目负责人继续牵头业务规则、详细产品设计和开发排期，相关岗位负责确认本岗位的关键事实与口径。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="appendix">
+        <div class="shell">
+          <h2>附录：调研依据与现有成果</h2>
+
+          <div class="research-summary">
+            <div>
+              <h3>行业调研结论</h3>
+              <p>对Salesforce、Dynamics 365、SAP、Oracle、HubSpot、Zoho、Pipedrive和Freshsales等产品的调研表明，成熟CRM虽然规模不同，但共同围绕客户上下文、销售行动、商机管道、权限治理、移动使用和外部集成展开。</p>
+              <p>对本项目的直接启示是：先建立可靠的客户、行动和商机事实，再扩展预测、AI和复杂自动化；移动端首先应帮助销售完成当天工作，而不是复制桌面端全部功能。</p>
+            </div>
+            <div>
+              <h3>现有 Lite CRM 的作用</h3>
+              <p>现有原型及PRD、技术蓝图和交互设计来自前期访谈与探索，已经验证客户、拜访、商机、权限和周计划等部分思路，也暴露出报价协同、订单、出货和回款覆盖不足。</p>
+              <p>这些成果是业务探索、技术验证和可复用资产，不代表最终范围已经确定。后续应依据本蓝图决定保留、调整、补充或暂缓。</p>
+            </div>
+          </div>
+
+          <details>
+            <summary>友商实地参访与启示</summary>
+            <div>
+              <p>前期实地参访的一家同行企业，已经实现从销售到交付的较完整链条管理。其业务以纯线上获客为主，ERP采用金蝶云星空；我司则以线下直销为主，现有ERP为 Open 5000，两者在客户触点、数据形成方式和系统集成条件上存在明显差异。</p>
+              <ol>
+                <li><strong>可行性：</strong>销售、订单与交付数据贯通并非概念设想，在同行经营中已有实际案例。</li>
+                <li><strong>不可照搬：</strong>线上线索天然易留痕，我司大量客户互动发生在线下和个人微信中，销售过程数据需要先解决方便记录和持续更新。</li>
+                <li><strong>基础差异：</strong>Open 5000 具备打通条件，但仍需完成接口确认、数据口径梳理和对接实施，所需时间应纳入后续阶段安排。</li>
+                <li><strong>项目启示：</strong>总体蓝图应保留销售到交付的延伸方向，但当前优先完成客户、跟进、商机和报价后的持续推进，再根据 Open 5000 的实际对接工作量安排订单与交付衔接。</li>
+              </ol>
+            </div>
+          </details>
+
+          <details>
+            <summary>行业能力对照</summary>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>能力</th><th>业界普遍关注</th><th>本项目取舍</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>客户主数据</td><td>企业、联系人、负责人、查重和关系</td><td>建立长期客户基础，避免信息只在个人手中</td></tr>
+                  <tr><td>互动与活动</td><td>时间线、任务、提醒、日历和下一步</td><td>以线下拜访及后续行动为核心</td></tr>
+                  <tr><td>商机与管道</td><td>阶段、金额、预计时间、输赢原因和预测</td><td>先解决报价后状态失真和停滞识别</td></tr>
+                  <tr><td>权限与治理</td><td>角色、组织、数据范围、审计和规则</td><td>适应按区域、小组和岗位划分的数据范围</td></tr>
+                  <tr><td>外部集成</td><td>报价、邮件、日历、ERP和开放接口</td><td>CRM负责销售过程，ERP与财务保留正式经营事实</td></tr>
+                  <tr><td>智能能力</td><td>摘要、风险识别、下一行动和辅助录入</td><td>作为后续增效能力，不替代基础流程和数据治理</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details>
+            <summary>主要官方资料来源</summary>
+            <div>
+              <ul class="source-links">
+                <li><a href="https://www.salesforce.com/products/mobile">Salesforce Mobile</a></li>
+                <li><a href="https://learn.microsoft.com/en-us/dynamics365/sales/overview">Dynamics 365 Sales</a></li>
+                <li><a href="https://www.sap.com/products/crm/sales-cloud/features.html">SAP Sales Cloud</a></li>
+                <li><a href="https://docs.oracle.com/en/cloud/saas/sales/oasal/overview-of-cx-sales-mobile.html">Oracle CX Sales Mobile</a></li>
+                <li><a href="https://www.hubspot.com/products/mobile">HubSpot Mobile</a></li>
+                <li><a href="https://www.zoho.com/crm/mobility.html">Zoho CRM Mobility</a></li>
+                <li><a href="https://www.pipedrive.com/en/crm/features/mobile-crm">Pipedrive Mobile CRM</a></li>
+                <li><a href="https://www.freshworks.com/crm/features/">Freshsales</a></li>
+              </ul>
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
