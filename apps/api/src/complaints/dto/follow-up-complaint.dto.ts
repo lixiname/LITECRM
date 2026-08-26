@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsISO8601, IsIn, IsOptional, IsString, MinLength } from 'class-validator'
+import {
+  IsISO8601,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  MinLength,
+} from 'class-validator'
 import {
   COMPLAINT_STATUSES,
   FOLLOW_UP_OUTCOMES,
@@ -9,6 +18,11 @@ import {
 
 // 客诉跟进（§8.6）：content 必填；FOLLOWED_UP → 必填下次确认日；RESOLVED → 必填解决结果
 export class FollowUpComplaintDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  version!: number
+
   @ApiProperty({ description: '本次处理确认' })
   @IsString()
   @MinLength(1, { message: '处理确认不能为空' })
@@ -23,10 +37,20 @@ export class FollowUpComplaintDto {
   @IsString()
   resolution?: string
 
-  @ApiPropertyOptional({ description: '下次确认日期（outcome=followed_up 必填）' })
+  @ApiPropertyOptional({ description: '本次完成的旧行动' })
+  @IsOptional()
+  @IsUUID()
+  sourceActionId?: string
+
+  @ApiPropertyOptional({ description: '下一处理行动计划时间（followed_up 必填）' })
   @IsOptional()
   @IsISO8601()
-  nextFollowUpDate?: string
+  nextActionAt?: string
+
+  @ApiPropertyOptional({ description: '下一处理行动内容（followed_up 必填）' })
+  @IsOptional()
+  @IsString()
+  nextActionContent?: string
 
   // 响应类型声明（Swagger 生成枚举；请求端不传）
   @ApiPropertyOptional({

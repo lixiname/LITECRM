@@ -6,9 +6,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppModule } from '../../app.module'
 import { seedAccounts } from '../../../scripts/seed'
 import { db } from '../../common/db/db'
-import { weeklyPlanItems, weeklyPlans } from '../../common/db/schema'
+import { followUpActions } from '../../common/db/schema'
 
-// M4 验收（里程碑：周计划联动、费用作废不改总额 单测绿）
+// M4 验收（里程碑：统一行动周视图、费用作废不改总额）
 describe('M4 计划费用域（§8.7/§8.8）', () => {
   let app: INestApplication
 
@@ -50,7 +50,9 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
   async function cleanup() {
     await db.execute(sql`DELETE FROM management_comments`).catch(() => {})
     await db
-      .execute(sql`DELETE FROM weekly_plan_items WHERE plan_id IN (SELECT id FROM weekly_plans)`)
+      .execute(
+        sql`DELETE FROM follow_up_actions WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
+      )
       .catch(() => {})
     await db.execute(sql`DELETE FROM weekly_plans`).catch(() => {})
     await db.execute(sql`DELETE FROM business_weeks`).catch(() => {})
@@ -60,10 +62,20 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         sql`DELETE FROM visit_records WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
       )
       .catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM customer_grade_changes WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
+      )
+      .catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM contacts WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
+      )
+      .catch(() => {})
     await db.execute(sql`DELETE FROM customers WHERE name LIKE 'M4_%'`).catch(() => {})
   }
 
-  it('拜访联动：nextFollowUpDate → 同事务生成业务周 + 周计划 + 计划项', async () => {
+  it('拜访联动：拜访事实与下一行动同事务写入，周视图只查询行动', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M4_联动客户')
 
@@ -74,26 +86,25 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         customerId: customer.id,
         occurredAt: new Date().toISOString(),
         method: 'offline_visit',
-        nextFollowUpDate: '2026-09-02',
+        nextActionAt: '2026-09-02T09:00:00+08:00',
+        nextActionContent: '确认过滤设备选型参数',
       })
     expect(res.status).toBe(201)
 
-    const [item] = await db
-      .select({
-        id: weeklyPlanItems.id,
-        action: weeklyPlanItems.action,
-        planId: weeklyPlanItems.planId,
-      })
-      .from(weeklyPlanItems)
-      .where(sql`action LIKE '拜访客户%'`)
-    expect(item).toBeDefined()
-    expect(item.action).toContain('拜访客户')
-
-    const [plan] = await db
+    const [action] = await db
       .select()
-      .from(weeklyPlans)
-      .where(sql`id = ${item.planId}`)
-    expect(plan).toBeDefined()
+      .from(followUpActions)
+      .where(
+        sql`${followUpActions.sourceType} = 'visit' AND ${followUpActions.sourceId} = ${res.body.id}`,
+      )
+    expect(action).toBeDefined()
+    expect(action.content).toBe('确认过滤设备选型参数')
+
+    const week = await request(app.getHttpServer())
+      .get('/api/week-view?start=2026-09-01&end=2026-09-07')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(week.status).toBe(200)
+    expect(week.body.actions.some((item: { id: string }) => item.id === action.id)).toBe(true)
   })
 
   it('费用作废不改总额：draft → submitted → voided（剔除统计留痕）', async () => {

@@ -5,9 +5,10 @@ import { PlanningController } from './planning.controller'
 import { PlanningService } from './planning.service'
 import { WeekViewController } from './week-view.controller'
 import { WeekViewService } from './week-view.service'
+import { FollowUpActionsModule } from '../follow-up-actions/follow-up-actions.module'
 
 @Module({
-  imports: [AuthModule, AccessModule],
+  imports: [AuthModule, AccessModule, FollowUpActionsModule],
   controllers: [PlanningController, WeekViewController],
   providers: [PlanningService, WeekViewService],
   exports: [PlanningService],

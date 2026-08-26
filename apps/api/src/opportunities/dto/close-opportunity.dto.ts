@@ -1,8 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsIn, IsString, MinLength } from 'class-validator'
+import { IsIn, IsInt, IsString, Min, MinLength } from 'class-validator'
 
 // 结案（§8.5：lost 丢失 / demand_disappeared 需求消失，说明必填）
 export class CloseOpportunityDto {
+  @ApiProperty({ minimum: 1 })
+  @IsInt()
+  @Min(1)
+  version!: number
+
   @ApiProperty({ description: '结案结果', enum: ['lost', 'demand_disappeared'] })
   @IsIn(['lost', 'demand_disappeared'])
   result!: 'lost' | 'demand_disappeared'

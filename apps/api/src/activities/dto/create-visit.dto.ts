@@ -38,13 +38,13 @@ export class CreateVisitDto {
   @IsString()
   personnelChanges?: string
 
-  @ApiPropertyOptional({ description: '下次拜访日期（触发周计划生成）' })
+  @ApiPropertyOptional({ description: '下一行动计划时间；与行动内容同时填写' })
   @IsOptional()
   @IsISO8601()
-  nextFollowUpDate?: string
+  nextActionAt?: string
 
-  @ApiPropertyOptional({ description: '下次拜访动作' })
+  @ApiPropertyOptional({ description: '下一行动内容；与计划时间同时填写' })
   @IsOptional()
   @IsString()
-  nextFollowUpAction?: string
+  nextActionContent?: string
 }

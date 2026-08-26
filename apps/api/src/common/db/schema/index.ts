@@ -16,13 +16,15 @@ import {
   deals,
   opportunities,
   opportunityEvents,
+  opportunityFollowUps,
+  opportunityQuotes,
   visitRecords,
 } from './actions'
 import {
   businessWeeks,
   dailyExpenses,
+  followUpActions,
   managementComments,
-  weeklyPlanItems,
   weeklyPlans,
 } from './planning'
 
@@ -40,13 +42,15 @@ export {
   customerGradeChanges,
   visitRecords,
   opportunities,
+  opportunityFollowUps,
+  opportunityQuotes,
   opportunityEvents,
   deals,
   complaints,
   complaintFollowUps,
   businessWeeks,
   weeklyPlans,
-  weeklyPlanItems,
+  followUpActions,
   managementComments,
   dailyExpenses,
 }

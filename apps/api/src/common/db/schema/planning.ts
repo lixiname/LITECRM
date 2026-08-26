@@ -12,17 +12,10 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { baseColumns } from './common'
+import { complaints, opportunities } from './actions'
 import { customers } from './customers'
 import { users } from './org'
-import { visitRecords } from './actions'
 
-/**
- * 计划费用域（规格 §7.2 04）：
- * business_weeks（业务周）/ weekly_plans + weekly_plan_items（周计划）/
- * management_comments（指导意见，多态）/ daily_expenses（费用，轻量统计非报销）
- */
-
-// 业务周（§8.7：13 周窗口 company-wide，管理员配置；week_start 唯一）
 export const businessWeeks = pgTable(
   'business_weeks',
   {
@@ -35,7 +28,7 @@ export const businessWeeks = pgTable(
   (table) => [uniqueIndex('business_weeks_start_uq').on(table.weekStart)],
 )
 
-// 周计划（§8.7：owner + business_week 唯一）
+// 周计划只保存周目标/复盘摘要；行动明细按 owner + planned_at 动态查询。
 export const weeklyPlans = pgTable(
   'weekly_plans',
   {
@@ -46,7 +39,7 @@ export const weeklyPlans = pgTable(
     businessWeekId: uuid('business_week_id')
       .notNull()
       .references(() => businessWeeks.id),
-    notes: text('notes'),
+    summary: text('summary'),
   },
   (table) => [
     uniqueIndex('weekly_plans_owner_week_uq').on(table.ownerId, table.businessWeekId),
@@ -54,48 +47,86 @@ export const weeklyPlans = pgTable(
   ],
 )
 
-// 周计划项（§8.7：plannedDate 在业务周内；customerId 可空；action 必填；拜访联动自动生成）
-export const weeklyPlanItems = pgTable(
-  'weekly_plan_items',
+// 未来行动唯一事实源。
+export const followUpActions = pgTable(
+  'follow_up_actions',
   {
     ...baseColumns,
-    planId: uuid('plan_id')
+    ownerId: uuid('owner_id')
       .notNull()
-      .references(() => weeklyPlans.id),
-    plannedDate: date('planned_date').notNull(),
-    customerId: uuid('customer_id').references(() => customers.id), // 可空：同行关系维护
-    action: text('action').notNull(), // 行动计划
-    notes: text('notes'),
+      .references(() => users.id),
+    customerId: uuid('customer_id').references(() => customers.id),
+    opportunityId: uuid('opportunity_id').references(() => opportunities.id),
+    complaintId: uuid('complaint_id').references(() => complaints.id),
+    sourceType: text('source_type').notNull(),
+    sourceId: uuid('source_id'),
+    plannedAt: timestamp('planned_at', { withTimezone: true }).notNull(),
+    content: text('content').notNull(),
+    status: text('status').notNull().default('pending'),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    cancelReason: text('cancel_reason'),
   },
-  (table) => [index('plan_items_plan_idx').on(table.planId)],
+  (table) => [
+    check(
+      'follow_up_actions_source_type_check',
+      sql`${table.sourceType} in ('manual','visit','opportunity','opportunity_follow_up','opportunity_quote','complaint','complaint_follow_up')`,
+    ),
+    check(
+      'follow_up_actions_status_check',
+      sql`${table.status} in ('pending','completed','cancelled')`,
+    ),
+    check(
+      'follow_up_actions_lifecycle_check',
+      sql`(${table.status} = 'pending' and ${table.completedAt} is null and ${table.cancelReason} is null)
+        or (${table.status} = 'completed' and ${table.completedAt} is not null and ${table.cancelReason} is null)
+        or (${table.status} = 'cancelled' and ${table.completedAt} is null and length(trim(${table.cancelReason})) > 0)`,
+    ),
+    check(
+      'follow_up_actions_target_check',
+      sql`${table.opportunityId} is null or ${table.customerId} is not null`,
+    ),
+    check(
+      'follow_up_actions_complaint_target_check',
+      sql`${table.complaintId} is null or ${table.customerId} is not null`,
+    ),
+    uniqueIndex('follow_up_actions_source_uq')
+      .on(table.sourceType, table.sourceId)
+      .where(sql`${table.sourceId} is not null`),
+    index('follow_up_actions_owner_status_planned_idx').on(
+      table.ownerId,
+      table.status,
+      table.plannedAt,
+    ),
+    index('follow_up_actions_opportunity_status_idx').on(table.opportunityId, table.status),
+    index('follow_up_actions_complaint_status_idx').on(table.complaintId, table.status),
+    index('follow_up_actions_customer_status_idx').on(table.customerId, table.status),
+  ],
 )
 
-// 指导意见（§8.7：author 须为被指导者上级；read_at 已读闭环；红点）
 export const managementComments = pgTable(
   'management_comments',
   {
     ...baseColumns,
-    targetType: text('target_type').notNull(), // weekly_plan/weekly_plan_item/visit
-    targetId: uuid('target_id').notNull(), // 多态弱引用
+    targetType: text('target_type').notNull(),
+    targetId: uuid('target_id').notNull(),
     ownerId: uuid('owner_id')
       .notNull()
-      .references(() => users.id), // 被指导人
+      .references(() => users.id),
     authorId: uuid('author_id')
       .notNull()
-      .references(() => users.id), // 指导人（上级）
+      .references(() => users.id),
     content: text('content').notNull(),
-    readAt: timestamp('read_at', { withTimezone: true }), // 已读
+    readAt: timestamp('read_at', { withTimezone: true }),
   },
   (table) => [
     check(
       'comments_target_type_check',
-      sql`${table.targetType} in ('weekly_plan','weekly_plan_item','visit')`,
+      sql`${table.targetType} in ('weekly_plan','follow_up_action','visit')`,
     ),
     index('comments_owner_unread_idx').on(table.ownerId, table.readAt),
   ],
 )
 
-// 每日费用（§8.8：每人每天一条 upsert；五类分项；三态）
 export const dailyExpenses = pgTable(
   'daily_expenses',
   {
@@ -110,7 +141,7 @@ export const dailyExpenses = pgTable(
     entertainment: numeric('entertainment', { precision: 12, scale: 2 }).default('0').notNull(),
     lodging: numeric('lodging', { precision: 12, scale: 2 }).default('0').notNull(),
     notes: text('notes'),
-    status: text('status').notNull().default('draft'), // draft/submitted/voided
+    status: text('status').notNull().default('draft'),
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
     entrySource: text('entry_source'),
     entryRefId: uuid('entry_ref_id'),

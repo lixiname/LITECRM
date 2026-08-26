@@ -19,30 +19,22 @@
           @click="showSource = true"
         />
         <van-field
-          v-model="amountTypeLabel"
-          label="金额类型"
-          readonly
-          is-link
-          :rules="[{ required: true }]"
-          @click="showAmountType = true"
-        />
-        <van-field
-          v-model.number="form.amount"
-          label="意向金额"
+          v-model.number="form.estimatedAmount"
+          label="意向规模"
           type="number"
           placeholder="元"
-          :rules="[{ required: true, message: '请填意向金额' }]"
+          :rules="[{ required: true, message: '请填意向规模估计' }]"
         />
         <van-field
-          v-model="form.nextAction"
-          label="下一步"
-          placeholder="下一步动作"
+          v-model="form.firstActionContent"
+          label="第一步行动"
+          placeholder="如：约见技术负责人"
           :rules="[{ required: true }]"
         />
         <van-field
-          v-model="form.nextFollowUpDate"
-          label="下次跟进"
-          type="date"
+          v-model="form.firstActionAt"
+          label="行动时间"
+          type="datetime-local"
           :rules="[{ required: true }]"
         />
       </van-cell-group>
@@ -61,13 +53,6 @@
         @cancel="showSource = false"
       />
     </van-popup>
-    <van-popup v-model:show="showAmountType" position="bottom" round>
-      <van-picker
-        :columns="AMOUNT_TYPE_OPTIONS"
-        @confirm="onPickAmountType"
-        @cancel="showAmountType = false"
-      />
-    </van-popup>
   </div>
 </template>
 
@@ -81,26 +66,18 @@ const route = useRoute()
 const router = useRouter()
 const customerId = route.params.id as string
 
-const AMOUNT_TYPE_OPTIONS = [
-  { text: '口头', value: 'oral' },
-  { text: '报价', value: 'quoted' },
-]
-
 const form = reactive({
   name: '',
   source: '' as string,
-  amountType: 'oral',
-  amount: undefined as number | undefined,
-  nextAction: '',
-  nextFollowUpDate: '',
+  estimatedAmount: undefined as number | undefined,
+  firstActionContent: '',
+  firstActionAt: '',
 })
-// 周览/记一笔预填日期（query.date → 下次跟进日期）
+// 周览/记一笔预填日期（query.date → 第一步行动时间）
 const qDate = route.query.date as string | undefined
-if (qDate) form.nextFollowUpDate = qDate
+if (qDate) form.firstActionAt = `${qDate}T09:00`
 const sourceLabel = ref('')
-const amountTypeLabel = ref('口头')
 const showSource = ref(false)
-const showAmountType = ref(false)
 const saving = ref(false)
 
 function onPickSource({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
@@ -108,16 +85,6 @@ function onPickSource({ selectedOptions }: { selectedOptions: { text: string; va
   sourceLabel.value = selectedOptions[0].text
   showSource.value = false
 }
-function onPickAmountType({
-  selectedOptions,
-}: {
-  selectedOptions: { text: string; value: string }[]
-}) {
-  form.amountType = selectedOptions[0].value
-  amountTypeLabel.value = selectedOptions[0].text
-  showAmountType.value = false
-}
-
 async function handleSubmit() {
   saving.value = true
   try {
@@ -125,10 +92,9 @@ async function handleSubmit() {
       customerId,
       name: form.name,
       source: form.source as never,
-      amountType: form.amountType as never,
-      amount: form.amount!,
-      nextAction: form.nextAction,
-      nextFollowUpDate: form.nextFollowUpDate,
+      estimatedAmount: form.estimatedAmount!,
+      firstActionContent: form.firstActionContent,
+      firstActionAt: new Date(form.firstActionAt).toISOString(),
     })
     showToast('商机已创建')
     router.back()

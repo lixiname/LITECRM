@@ -1,4 +1,5 @@
 import { apiGet, apiPost } from './http'
+import type { FollowUpAction } from '../types/actions'
 
 export interface BusinessWeek {
   id: string
@@ -8,21 +9,12 @@ export interface BusinessWeek {
   isActive: boolean
 }
 
-export interface WeeklyPlanItem {
-  id: string
-  planId: string
-  plannedDate: string
-  customerId: string | null
-  action: string
-  notes: string | null
-}
-
 export interface WeeklyPlan {
   id: string
   ownerId: string
   businessWeekId: string
-  notes: string | null
-  items: WeeklyPlanItem[]
+  summary: string | null
+  actions: FollowUpAction[]
 }
 
 /** 业务周列表 */
@@ -30,9 +22,11 @@ export function listBusinessWeeks(): Promise<BusinessWeek[]> {
   return apiGet<BusinessWeek[]>('/business-weeks')
 }
 
-/** 我的周计划（含计划项） */
-export function getMyPlan(businessWeekId: string): Promise<WeeklyPlan | null> {
-  return apiGet<WeeklyPlan | null>(`/plans?businessWeekId=${businessWeekId}`)
+/** 我的周计划摘要及该周行动。 */
+export function getMyPlan(
+  businessWeekId: string,
+): Promise<WeeklyPlan | { plan: null; actions: FollowUpAction[] }> {
+  return apiGet(`/plans?businessWeekId=${businessWeekId}`)
 }
 
 /** 周览点空白加计划（§2.4 日历式）：按日期自动定位业务周 + 确保周计划 */
@@ -41,8 +35,8 @@ export function createPlanItemByDate(dto: {
   action: string
   customerId?: string
   notes?: string
-}): Promise<WeeklyPlanItem> {
-  return apiPost<WeeklyPlanItem>('/plans/items-by-date', dto)
+}): Promise<FollowUpAction> {
+  return apiPost<FollowUpAction>('/plans/items-by-date', dto)
 }
 
 /** 我的未读意见 */

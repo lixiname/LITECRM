@@ -20,13 +20,21 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="意向金额" width="110">
-          <template #default="{ row }">{{ amountText((row as Opportunity).amount) }}</template>
+        <el-table-column label="意向规模" width="110">
+          <template #default="{ row }">{{
+            amountText((row as Opportunity).estimatedAmount)
+          }}</template>
         </el-table-column>
-        <el-table-column label="下次跟进" width="110">
-          <template #default="{ row }">{{ (row as Opportunity).nextFollowUpDate ?? '-' }}</template>
+        <el-table-column label="下一行动" min-width="180">
+          <template #default="{ row }">{{
+            (row as Opportunity).currentAction?.content ?? '-'
+          }}</template>
         </el-table-column>
-        <el-table-column prop="nextAction" label="下一步" min-width="140" />
+        <el-table-column label="计划时间" width="160">
+          <template #default="{ row }">{{
+            timeText((row as Opportunity).currentAction?.plannedAt)
+          }}</template>
+        </el-table-column>
       </el-table>
       <p v-if="opps && opps.length === 0" class="opps__empty">暂无商机</p>
     </el-card>
@@ -47,7 +55,7 @@ const router = useRouter()
 const { data: opps, loading } = useQuery('opportunities:list', () => listOpportunities())
 
 function stageTag(stage: OpportunityStage): 'success' | 'warning' | 'info' | 'danger' {
-  return stage === 'ordered'
+  return stage === 'won'
     ? 'success'
     : stage === 'lost' || stage === 'demand_disappeared'
       ? 'danger'
@@ -60,6 +68,9 @@ function stageLabel(stage: OpportunityStage): string {
 }
 function amountText(amount: string | null): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
+}
+function timeText(value: string | undefined): string {
+  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
 }
 </script>
 

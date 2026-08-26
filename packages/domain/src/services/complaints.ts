@@ -1,6 +1,6 @@
 import type { components } from '@crm/contracts'
 import { apiGet, apiPost } from './http'
-import type { Complaint } from '../types/actions'
+import type { Complaint, FollowUpAction } from '../types/actions'
 
 export type CreateComplaintInput = components['schemas']['CreateComplaintDto']
 export type FollowUpComplaintInput = components['schemas']['FollowUpComplaintDto']
@@ -13,6 +13,7 @@ export interface ComplaintDetail extends Complaint {
     resolution: string | null
     occurredAt: string
   }[]
+  actions: FollowUpAction[]
 }
 
 /** 登记客诉（§8.6） */

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 import { IsDate, IsISO8601, IsString, IsUUID, MinLength } from 'class-validator'
 
-// 登记客诉（§8.6）：description 必填、nextFollowUpDate 必填、触发客户风险告警（M5）；type 走字典（complaint_type）
+// 登记客诉：问题事实和第一步处理行动同事务写入。
 export class CreateComplaintDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -22,7 +22,12 @@ export class CreateComplaintDto {
   @MinLength(1, { message: '问题描述不能为空' })
   description!: string
 
-  @ApiProperty({ description: '下次确认日期' })
+  @ApiProperty({ description: '第一步处理行动计划时间' })
   @IsISO8601()
-  nextFollowUpDate!: string
+  firstActionAt!: string
+
+  @ApiProperty({ description: '第一步处理行动内容' })
+  @IsString()
+  @MinLength(1)
+  firstActionContent!: string
 }

@@ -45,10 +45,15 @@
         />
         <van-field v-model="form.personnelChanges" label="人员变动" placeholder="人员变动" />
         <van-field
-          v-model="form.nextFollowUpDate"
-          label="下次拜访"
-          type="date"
+          v-model="form.nextActionAt"
+          label="下一行动时间"
+          type="datetime-local"
           placeholder="选填"
+        />
+        <van-field
+          v-model="form.nextActionContent"
+          label="下一行动"
+          placeholder="如：联系技术负责人确认参数"
         />
       </van-cell-group>
 
@@ -89,15 +94,16 @@ const form = reactive({
   businessSituation: '',
   equipmentSituation: '',
   personnelChanges: '',
-  nextFollowUpDate: '',
+  nextActionAt: '',
+  nextActionContent: '',
 })
-// 周览/记一笔预填日期（query.date → occurredAt 保留当前时分 + 跟进日期）
+// 周览/记一笔预填日期（发生时间保留当前时分，下一行动默认当天 09:00）
 const qDate = route.query.date as string | undefined
 if (qDate) {
   const now = new Date()
   const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
   form.occurredAt = `${qDate}T${hm}`
-  form.nextFollowUpDate = qDate
+  form.nextActionAt = `${qDate}T09:00`
 }
 const methodLabel = ref('')
 const visitTypeLabel = ref('')
@@ -117,6 +123,10 @@ function onPickType({ selectedOptions }: { selectedOptions: { text: string; valu
 }
 
 async function handleSubmit() {
+  if (!!form.nextActionAt !== !!form.nextActionContent.trim()) {
+    showToast('下一行动时间和内容需同时填写')
+    return
+  }
   saving.value = true
   try {
     await createVisit({
@@ -127,7 +137,8 @@ async function handleSubmit() {
       businessSituation: form.businessSituation || undefined,
       equipmentSituation: form.equipmentSituation || undefined,
       personnelChanges: form.personnelChanges || undefined,
-      nextFollowUpDate: form.nextFollowUpDate || undefined,
+      nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : undefined,
+      nextActionContent: form.nextActionContent || undefined,
     })
     showToast('拜访已记录')
     router.back()

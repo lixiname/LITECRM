@@ -28,9 +28,15 @@
           :rules="[{ required: true, message: '请填写描述' }]"
         />
         <van-field
-          v-model="form.nextFollowUpDate"
-          label="下次确认"
-          type="date"
+          v-model="form.firstActionAt"
+          label="第一步行动时间"
+          type="datetime-local"
+          :rules="[{ required: true }]"
+        />
+        <van-field
+          v-model="form.firstActionContent"
+          label="第一步行动"
+          placeholder="如：联系客户确认工况"
           :rules="[{ required: true }]"
         />
       </van-cell-group>
@@ -66,15 +72,16 @@ const form = reactive({
   occurredAt: '',
   type: '' as string,
   description: '',
-  nextFollowUpDate: '',
+  firstActionAt: '',
+  firstActionContent: '',
 })
-// 周览/记一笔预填日期（query.date → occurredAt 保留当前时分 + 跟进日期）
+// 周览/记一笔预填日期（发生时间保留当前时分，第一步行动默认当天 09:00）
 const qDate = route.query.date as string | undefined
 if (qDate) {
   const now = new Date()
   const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
   form.occurredAt = `${qDate}T${hm}`
-  form.nextFollowUpDate = qDate
+  form.firstActionAt = `${qDate}T09:00`
 }
 const typeLabel = ref('')
 const showType = ref(false)
@@ -94,7 +101,8 @@ async function handleSubmit() {
       occurredAt: new Date(form.occurredAt).toISOString(),
       type: form.type as never,
       description: form.description,
-      nextFollowUpDate: form.nextFollowUpDate,
+      firstActionAt: new Date(form.firstActionAt).toISOString(),
+      firstActionContent: form.firstActionContent,
     })
     showToast('客诉已登记')
     router.back()

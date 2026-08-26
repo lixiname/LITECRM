@@ -1,13 +1,24 @@
 import type { components } from '@crm/contracts'
 import { apiGet, apiPost } from './http'
-import type { Deal, Opportunity } from '../types/actions'
+import type {
+  Deal,
+  FollowUpAction,
+  Opportunity,
+  OpportunityFollowUp,
+  OpportunityQuote,
+} from '../types/actions'
 
 export type CreateOpportunityInput = components['schemas']['CreateOpportunityDto']
-export type AdvanceOpportunityInput = components['schemas']['AdvanceOpportunityDto']
+export type CreateOpportunityFollowUpInput = components['schemas']['CreateOpportunityFollowUpDto']
+export type CreateOpportunityQuoteInput = components['schemas']['CreateOpportunityQuoteDto']
+export type WinOpportunityInput = components['schemas']['WinOpportunityDto']
 export type CloseOpportunityInput = components['schemas']['CloseOpportunityDto']
 
 export interface OpportunityDetail extends Opportunity {
+  followUps: OpportunityFollowUp[]
+  quotes: OpportunityQuote[]
   events: { id: string; type: string; occurredAt: string; payload: unknown }[]
+  actions: FollowUpAction[]
   deal: Deal | null
 }
 
@@ -21,14 +32,33 @@ export function listOpportunities(customerId?: string): Promise<Opportunity[]> {
   return apiGet<Opportunity[]>(`/opportunities${customerId ? `?customerId=${customerId}` : ''}`)
 }
 
-/** 商机详情（含事件流与成交 Deal） */
+/** 商机详情（含跟进、报价、行动、事件与成交） */
 export function getOpportunity(id: string): Promise<OpportunityDetail> {
   return apiGet<OpportunityDetail>(`/opportunities/${id}`)
 }
 
-/** 推进 / 转订单（quoteAmount 非空=生成 Deal） */
-export function advanceOpportunity(id: string, dto: AdvanceOpportunityInput): Promise<Opportunity> {
-  return apiPost<Opportunity>(`/opportunities/${id}/advance`, dto)
+/** 记录一次已发生的商机跟进，并安排下一行动。 */
+export function addOpportunityFollowUp(
+  id: string,
+  dto: CreateOpportunityFollowUpInput,
+): Promise<Opportunity> {
+  return apiPost<Opportunity>(`/opportunities/${id}/follow-ups`, dto)
+}
+
+/** 记录一次口头或正式报价；报价不会自动成交。 */
+export function addOpportunityQuote(
+  id: string,
+  dto: CreateOpportunityQuoteInput,
+): Promise<OpportunityQuote> {
+  return apiPost<OpportunityQuote>(`/opportunities/${id}/quotes`, dto)
+}
+
+/** 客户明确下单后确认成交，并生成唯一 Deal。 */
+export function winOpportunity(
+  id: string,
+  dto: WinOpportunityInput,
+): Promise<{ opportunity: Opportunity; deal: Deal }> {
+  return apiPost(`/opportunities/${id}/win`, dto)
 }
 
 /** 结案（lost / demand_disappeared） */

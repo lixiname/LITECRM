@@ -6,16 +6,22 @@ import { PermissionsGuard } from '../access/permissions.guard'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
 import { OpportunitiesService } from './opportunities.service'
+import { OpportunityCommandsService } from './opportunity-commands.service'
 import { CreateOpportunityDto } from './dto/create-opportunity.dto'
-import { AdvanceOpportunityDto } from './dto/advance-opportunity.dto'
 import { CloseOpportunityDto } from './dto/close-opportunity.dto'
+import { CreateOpportunityFollowUpDto } from './dto/create-opportunity-follow-up.dto'
+import { CreateOpportunityQuoteDto } from './dto/create-opportunity-quote.dto'
+import { WinOpportunityDto } from './dto/win-opportunity.dto'
 
-// 商机闭环（§8.5）：建档/推进/转成交/结案（customer.write）
+// 商机闭环：创建、结构化跟进、多次报价、明确下单、失败结案。
 @ApiTags('opportunities')
 @Controller('opportunities')
 @UseGuards(JwtAuthGuard)
 export class OpportunitiesController {
-  constructor(private readonly opportunitiesService: OpportunitiesService) {}
+  constructor(
+    private readonly opportunitiesService: OpportunitiesService,
+    private readonly opportunityCommands: OpportunityCommandsService,
+  ) {}
 
   @Post()
   @ApiCreatedResponse({ description: '新建商机（意向阶段）' })
@@ -37,19 +43,35 @@ export class OpportunitiesController {
     return this.opportunitiesService.findOne(id, user)
   }
 
-  @Post(':id/advance')
-  @ApiOkResponse({ description: '推进 / 转订单（quoteAmount 非空=生成 Deal）' })
-  advance(
+  @Post(':id/follow-ups')
+  @ApiOkResponse({ description: '追加商机跟进并安排下一行动' })
+  addFollowUp(
     @Param('id') id: string,
-    @Body() dto: AdvanceOpportunityDto,
+    @Body() dto: CreateOpportunityFollowUpDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.opportunitiesService.advance(id, dto, user)
+    return this.opportunityCommands.addFollowUp(id, dto, user)
+  }
+
+  @Post(':id/quotes')
+  @ApiOkResponse({ description: '追加口头或正式报价；不会自动成交' })
+  addQuote(
+    @Param('id') id: string,
+    @Body() dto: CreateOpportunityQuoteDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.opportunityCommands.addQuote(id, dto, user)
+  }
+
+  @Post(':id/win')
+  @ApiOkResponse({ description: '客户明确下单，生成唯一 Deal' })
+  win(@Param('id') id: string, @Body() dto: WinOpportunityDto, @CurrentUser() user: AuthUser) {
+    return this.opportunityCommands.win(id, dto, user)
   }
 
   @Post(':id/close')
   @ApiOkResponse({ description: '结案（lost / demand_disappeared）' })
   close(@Param('id') id: string, @Body() dto: CloseOpportunityDto, @CurrentUser() user: AuthUser) {
-    return this.opportunitiesService.close(id, dto, user)
+    return this.opportunityCommands.close(id, dto, user)
   }
 }

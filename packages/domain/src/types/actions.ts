@@ -3,10 +3,38 @@ import type { components } from '@crm/contracts'
 // 业务动作域类型（§7.2 非 API 类型留 domain 层；枚举从 contracts import）
 // 字典化的业务分类（complaint_type/trade_type/opportunity_source/visit_type）为 string，选项可配置见字典
 export type VisitMethod = components['schemas']['VisitMethod']
-export type OpportunityStage = components['schemas']['OpportunityStage']
-export type AmountType = components['schemas']['AmountType']
+export type OpportunityStage = 'intent' | 'following' | 'won' | 'lost' | 'demand_disappeared'
+export type OpportunityQuoteKind = components['schemas']['OpportunityQuoteKind']
 export type ComplaintStatus = components['schemas']['ComplaintStatus']
 export type FollowUpOutcome = components['schemas']['FollowUpOutcome']
+
+export type FollowUpActionStatus = 'pending' | 'completed' | 'cancelled'
+export type FollowUpActionSourceType =
+  | 'manual'
+  | 'visit'
+  | 'opportunity'
+  | 'opportunity_follow_up'
+  | 'opportunity_quote'
+  | 'complaint'
+  | 'complaint_follow_up'
+
+export interface FollowUpAction {
+  id: string
+  ownerId: string
+  customerId: string | null
+  opportunityId: string | null
+  complaintId: string | null
+  sourceType: FollowUpActionSourceType
+  sourceId: string | null
+  plannedAt: string
+  content: string
+  status: FollowUpActionStatus
+  completedAt: string | null
+  cancelReason: string | null
+  version: number
+  createdAt: string
+  updatedAt: string
+}
 
 export interface VisitRecord {
   id: string
@@ -18,9 +46,35 @@ export interface VisitRecord {
   businessSituation: string | null
   equipmentSituation: string | null
   personnelChanges: string | null
-  nextFollowUpDate: string | null
-  nextFollowUpAction: string | null
   createdAt: string
+}
+
+export interface OpportunityFollowUp {
+  id: string
+  opportunityId: string
+  actorId: string
+  sourceVisitId: string | null
+  occurredAt: string
+  conclusion: string
+  method: string | null
+  createdAt: string
+}
+
+export interface OpportunityQuote {
+  id: string
+  opportunityId: string
+  actorId: string
+  kind: OpportunityQuoteKind
+  quotedAt: string
+  amount: string
+  quoteNo: string | null
+  status: 'active' | 'superseded' | 'withdrawn'
+  supersedesQuoteId: string | null
+  note: string | null
+  documentRef: string | null
+  version: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Opportunity {
@@ -31,27 +85,29 @@ export interface Opportunity {
   stage: OpportunityStage
   source: string
   productLine: string | null
-  amountType: AmountType
-  amount: string | null
+  estimatedAmount: string | null
   approximate: boolean
-  amountNote: string | null
+  estimateNote: string | null
+  discoveredDate: string | null
   expectedCloseDate: string | null
   lastFollowUpAt: string | null
-  nextAction: string | null
-  nextFollowUpDate: string | null
   closedAt: string | null
   closeReason: string | null
   notes: string | null
+  version: number
+  currentAction?: FollowUpAction | null
+  latestQuote?: OpportunityQuote | null
   createdAt: string
 }
 
 export interface Deal {
   id: string
   customerId: string
-  amount: string | null
+  amount: string
   tradeType: string | null
   occurredAt: string
-  sourceOpportunityId: string | null
+  sourceOpportunityId: string
+  sourceQuoteId: string | null
 }
 
 export interface Complaint {
@@ -62,9 +118,10 @@ export interface Complaint {
   type: string
   status: ComplaintStatus
   description: string
-  nextFollowUpDate: string | null
   resolution: string | null
   resolvedAt: string | null
+  version: number
+  currentAction?: FollowUpAction | null
   createdAt: string
 }
 
@@ -85,7 +142,7 @@ export const VISIT_TYPE_OPTIONS: { value: string; label: string }[] = [
 export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string }[] = [
   { value: 'intent', label: '意向' },
   { value: 'following', label: '跟进中' },
-  { value: 'ordered', label: '已成交' },
+  { value: 'won', label: '已成交' },
   { value: 'lost', label: '已丢失' },
   { value: 'demand_disappeared', label: '需求消失' },
 ]

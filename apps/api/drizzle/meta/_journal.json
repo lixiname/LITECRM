@@ -43,6 +43,13 @@
       "when": 1787707534309,
       "tag": "0005_customer-grade-quota",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787709838592,
+      "tag": "0006_sales-facts-and-actions",
+      "breakpoints": true
     }
   ]
 }

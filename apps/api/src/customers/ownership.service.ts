@@ -4,11 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, gte, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { complaints, customerTransfers, customers, weeklyPlanItems } from '../common/db/schema'
+import { complaints, customerTransfers, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
+import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { TransferCustomerDto } from './dto/transfer-customer.dto'
 import type { ReleaseCustomerDto } from './dto/release-customer.dto'
@@ -22,6 +23,7 @@ export class OwnershipService {
   constructor(
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
+    private readonly actionsService: FollowUpActionsService,
   ) {}
 
   // 所有权转移（§8.3）：owner/管理链/admin 发起，同事务改归属 + 写 customer_transfers
@@ -50,6 +52,7 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: dto.reason,
       })
+      await this.actionsService.reassignPendingForCustomer(tx, customer.id, dto.toOwnerId)
       // TODO(M3)：商机/客诉当前归属 JOIN 客户自动跟随，无需同步（§7.2 归属语义）
       return updated
     })
@@ -87,15 +90,11 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: dto.reason,
       })
-      // §8.3 联动：未来计划项作废（人的执行计划，不随客户）
-      await tx
-        .delete(weeklyPlanItems)
-        .where(
-          and(
-            eq(weeklyPlanItems.customerId, customer.id),
-            gte(weeklyPlanItems.plannedDate, new Date().toISOString().slice(0, 10)),
-          ),
-        )
+      await this.actionsService.cancelPendingForCustomer(
+        tx,
+        customer.id,
+        `客户已释放：${dto.reason}`,
+      )
       return updated
     })
   }
@@ -135,6 +134,7 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: '公海认领',
       })
+      await this.actionsService.reassignPendingForCustomer(tx, customer.id, actor.id)
       return updated
     })
   }

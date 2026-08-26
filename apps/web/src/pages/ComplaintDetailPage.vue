@@ -24,8 +24,11 @@
             {{ complaint.status === 'resolved' ? '已解决' : '处理中' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="下次确认">{{
-          complaint.nextFollowUpDate ?? '-'
+        <el-descriptions-item label="下一行动">{{
+          complaint.actions[0]?.content ?? '-'
+        }}</el-descriptions-item>
+        <el-descriptions-item label="计划时间">{{
+          formatTime(complaint.actions[0]?.plannedAt)
         }}</el-descriptions-item>
         <el-descriptions-item label="解决结果" :span="2">{{
           complaint.resolution ?? '-'
@@ -58,9 +61,14 @@
         <el-form-item v-if="form.outcome === 'resolved'" label="解决结果" required>
           <el-input v-model="form.resolution" />
         </el-form-item>
-        <el-form-item v-else label="下次确认" required>
-          <el-input v-model="form.nextFollowUpDate" placeholder="YYYY-MM-DD" />
-        </el-form-item>
+        <template v-else>
+          <el-form-item label="下一行动" required>
+            <el-input v-model="form.nextActionContent" placeholder="下一步具体做什么" />
+          </el-form-item>
+          <el-form-item label="计划时间" required>
+            <el-input v-model="form.nextActionAt" type="datetime-local" />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="showFollow = false">取消</el-button>
@@ -91,7 +99,8 @@ const form = reactive({
   content: '',
   outcome: 'followed_up' as 'followed_up' | 'resolved',
   resolution: '',
-  nextFollowUpDate: '',
+  nextActionContent: '',
+  nextActionAt: '',
 })
 
 function typeLabel(type: string): string {
@@ -105,15 +114,20 @@ async function handleFollow() {
   if (!form.content.trim()) return ElMessage.warning('请填写处理确认')
   if (form.outcome === 'resolved' && !form.resolution.trim())
     return ElMessage.warning('请填写解决结果')
-  if (form.outcome === 'followed_up' && !form.nextFollowUpDate)
-    return ElMessage.warning('请填写下次确认日期')
+  if (form.outcome === 'followed_up' && (!form.nextActionAt || !form.nextActionContent.trim()))
+    return ElMessage.warning('请填写下一行动和计划时间')
+  if (!complaint.value) return
   acting.value = true
   try {
     await followUpComplaint(complaintId, {
+      version: complaint.value.version,
       content: form.content.trim(),
       outcome: form.outcome,
       resolution: form.outcome === 'resolved' ? form.resolution.trim() : undefined,
-      nextFollowUpDate: form.outcome === 'followed_up' ? form.nextFollowUpDate : undefined,
+      sourceActionId: complaint.value.actions[0]?.id,
+      nextActionAt:
+        form.outcome === 'followed_up' ? new Date(form.nextActionAt).toISOString() : undefined,
+      nextActionContent: form.outcome === 'followed_up' ? form.nextActionContent.trim() : undefined,
     })
     ElMessage.success('已记录')
     showFollow.value = false

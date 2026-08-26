@@ -23,8 +23,15 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="下次确认" width="110">
-          <template #default="{ row }">{{ (row as Complaint).nextFollowUpDate ?? '-' }}</template>
+        <el-table-column label="下一行动" min-width="180">
+          <template #default="{ row }">{{
+            (row as Complaint).currentAction?.content ?? '-'
+          }}</template>
+        </el-table-column>
+        <el-table-column label="计划时间" width="160">
+          <template #default="{ row }">{{
+            timeText((row as Complaint).currentAction?.plannedAt)
+          }}</template>
         </el-table-column>
       </el-table>
       <p v-if="items && items.length === 0" class="complaints__empty">暂无客诉</p>
@@ -41,6 +48,9 @@ const { data: items, loading } = useQuery('complaints:list', () => listComplaint
 
 function typeLabel(type: string): string {
   return COMPLAINT_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
+}
+function timeText(value: string | undefined): string {
+  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
 }
 </script>
 

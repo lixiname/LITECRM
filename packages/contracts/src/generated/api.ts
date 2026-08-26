@@ -292,6 +292,86 @@ export interface paths {
         patch: operations["CustomersController_updateContact"];
         trace?: never;
     };
+    "/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FollowUpActionsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FollowUpActionsController_week"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FollowUpActionsController_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FollowUpActionsController_reschedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FollowUpActionsController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/claims/customer/{customerId}": {
         parameters: {
             query?: never;
@@ -398,6 +478,150 @@ export interface paths {
         get: operations["VisitsController_listByCustomer"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpportunitiesController_list"];
+        put?: never;
+        post: operations["OpportunitiesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpportunitiesController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities/{id}/follow-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpportunitiesController_addFollowUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities/{id}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpportunitiesController_addQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities/{id}/win": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpportunitiesController_win"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/opportunities/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OpportunitiesController_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ComplaintsController_list"];
+        put?: never;
+        post: operations["ComplaintsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/complaints/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ComplaintsController_findOne"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/complaints/{id}/follow-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ComplaintsController_followUp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -526,118 +750,6 @@ export interface paths {
         get: operations["WeekViewController_getWeekView"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/opportunities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["OpportunitiesController_list"];
-        put?: never;
-        post: operations["OpportunitiesController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/opportunities/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["OpportunitiesController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/opportunities/{id}/advance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OpportunitiesController_advance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/opportunities/{id}/close": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["OpportunitiesController_close"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/complaints": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ComplaintsController_list"];
-        put?: never;
-        post: operations["ComplaintsController_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/complaints/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["ComplaintsController_findOne"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/complaints/{id}/follow-up": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["ComplaintsController_followUp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -937,6 +1049,27 @@ export interface components {
             /** @description 释放原因（审计） */
             reason: string;
         };
+        CreateFollowUpActionDto: {
+            /** @description 计划执行时间 */
+            plannedAt: string;
+            /** @description 行动内容 */
+            content: string;
+            /** @description 关联客户 */
+            customerId?: string;
+        };
+        CompleteFollowUpActionDto: {
+            version: number;
+        };
+        RescheduleFollowUpActionDto: {
+            version: number;
+            /** @description 新的计划执行时间 */
+            plannedAt: string;
+        };
+        CancelFollowUpActionDto: {
+            version: number;
+            /** @description 取消原因 */
+            reason: string;
+        };
         CreateClaimDto: {
             /** @description 接管理由 */
             reason: string;
@@ -996,10 +1129,141 @@ export interface components {
             equipmentSituation?: string;
             /** @description 人员变动 */
             personnelChanges?: string;
-            /** @description 下次拜访日期（触发周计划生成） */
-            nextFollowUpDate?: string;
-            /** @description 下次拜访动作 */
-            nextFollowUpAction?: string;
+            /** @description 下一行动计划时间；与行动内容同时填写 */
+            nextActionAt?: string;
+            /** @description 下一行动内容；与计划时间同时填写 */
+            nextActionContent?: string;
+        };
+        CreateOpportunityDto: {
+            /** @description 客户 ID */
+            customerId: string;
+            /** @description 需求简述 */
+            name: string;
+            /** @description 发现渠道（字典：opportunity_source） */
+            source: string;
+            /** @description 意向规模估计（不生成报价） */
+            estimatedAmount: number;
+            /** @description 约估 */
+            approximate?: boolean;
+            /** @description 金额表述 */
+            estimateNote?: string;
+            /** @description 需求发现日 */
+            discoveredDate?: string;
+            /** @description 大类产品线 */
+            productLine?: string;
+            /** @description 预计成交日 */
+            expectedCloseDate?: string;
+            /** @description 第一步行动内容 */
+            firstActionContent: string;
+            /** @description 第一步行动计划时间 */
+            firstActionAt: string;
+        };
+        CreateOpportunityFollowUpDto: {
+            version: number;
+            /** @description 本次跟进结论 */
+            conclusion: string;
+            /** @description 业务发生时间，缺省为当前时间 */
+            occurredAt?: string;
+            /** @description 沟通方式 */
+            method?: string;
+            /** @description 来源拜访记录 */
+            sourceVisitId?: string;
+            /** @description 本次完成的旧行动 */
+            sourceActionId?: string;
+            /** @description 下一行动内容 */
+            nextActionContent: string;
+            /** @description 下一行动计划时间 */
+            nextActionAt: string;
+        };
+        /** @enum {string} */
+        OpportunityQuoteKind: "oral" | "formal";
+        CreateOpportunityQuoteDto: {
+            version: number;
+            kind: components["schemas"]["OpportunityQuoteKind"];
+            /** @description 报价时间 */
+            quotedAt: string;
+            /** @description 报价总额 */
+            amount: number;
+            /** @description 正式报价单号 */
+            quoteNo?: string;
+            /** @description 明确替代的旧报价 */
+            supersedesQuoteId?: string;
+            /** @description 本次报价完成的旧行动 */
+            sourceActionId?: string;
+            /** @description 报价后的下一行动内容 */
+            nextActionContent: string;
+            /** @description 报价后的下一行动计划时间 */
+            nextActionAt: string;
+            note?: string;
+            /** @description 可选文件引用；不要求上传 */
+            documentRef?: string;
+        };
+        WinOpportunityDto: {
+            version: number;
+            /** @description 客户明确下单时间 */
+            occurredAt: string;
+            /** @description 成交金额 */
+            amount: number;
+            /** @description 客户接受的报价 */
+            acceptedQuoteId?: string;
+            productLine?: string;
+            /** @description 交易性质（字典：trade_type） */
+            tradeType?: string;
+            note?: string;
+        };
+        CloseOpportunityDto: {
+            version: number;
+            /**
+             * @description 结案结果
+             * @enum {string}
+             */
+            result: "lost" | "demand_disappeared";
+            /** @description 结案说明 */
+            reason: string;
+        };
+        CreateComplaintDto: {
+            /** @description 客户 ID */
+            customerId: string;
+            /**
+             * Format: date-time
+             * @description 发生时间
+             */
+            occurredAt: string;
+            /** @description 客诉类型（字典：complaint_type） */
+            type: string;
+            /** @description 问题描述 */
+            description: string;
+            /** @description 第一步处理行动计划时间 */
+            firstActionAt: string;
+            /** @description 第一步处理行动内容 */
+            firstActionContent: string;
+        };
+        /**
+         * @description 跟进结果
+         * @enum {string}
+         */
+        FollowUpOutcome: "followed_up" | "resolved";
+        /**
+         * @description 客诉状态（类型声明）
+         * @enum {string}
+         */
+        ComplaintStatus: "registered" | "resolved";
+        FollowUpComplaintDto: {
+            version: number;
+            /** @description 本次处理确认 */
+            content: string;
+            /** @description 跟进结果 */
+            outcome: components["schemas"]["FollowUpOutcome"];
+            /** @description 解决结果（outcome=resolved 必填） */
+            resolution?: string;
+            /** @description 本次完成的旧行动 */
+            sourceActionId?: string;
+            /** @description 下一处理行动计划时间（followed_up 必填） */
+            nextActionAt?: string;
+            /** @description 下一处理行动内容（followed_up 必填） */
+            nextActionContent?: string;
+            /** @description 客诉状态（类型声明） */
+            status?: components["schemas"]["ComplaintStatus"];
         };
         CreateBusinessWeekDto: {
             /** @description 业务周名称 */
@@ -1025,7 +1289,7 @@ export interface components {
          * @description 目标类型
          * @enum {string}
          */
-        CommentTargetType: "weekly_plan" | "weekly_plan_item" | "visit";
+        CommentTargetType: "weekly_plan" | "follow_up_action" | "visit";
         CreateCommentDto: {
             /** @description 目标类型 */
             targetType: components["schemas"]["CommentTargetType"];
@@ -1035,100 +1299,6 @@ export interface components {
             ownerId: string;
             /** @description 意见内容 */
             content: string;
-        };
-        /**
-         * @description 金额类型
-         * @enum {string}
-         */
-        AmountType: "oral" | "quoted";
-        CreateOpportunityDto: {
-            /** @description 客户 ID */
-            customerId: string;
-            /** @description 需求简述 */
-            name: string;
-            /** @description 发现渠道（字典：opportunity_source） */
-            source: string;
-            /** @description 金额类型 */
-            amountType: components["schemas"]["AmountType"];
-            /** @description 意向金额（与成交金额解耦，成交时以报价单金额为准） */
-            amount: number;
-            /** @description 约估 */
-            approximate?: boolean;
-            /** @description 金额表述 */
-            amountNote?: string;
-            /** @description 大类产品线 */
-            productLine?: string;
-            /** @description 预计成交日 */
-            expectedCloseDate?: string;
-            /** @description 下一步动作 */
-            nextAction: string;
-            /** @description 下次跟进日期 */
-            nextFollowUpDate: string;
-        };
-        /**
-         * @description 推进后阶段（类型声明）
-         * @enum {string}
-         */
-        OpportunityStage: "intent" | "following" | "ordered" | "lost" | "demand_disappeared";
-        AdvanceOpportunityDto: {
-            /** @description 跟进结论 */
-            conclusion?: string;
-            /** @description 下一步动作 */
-            nextAction?: string;
-            /** @description 下次跟进日期 */
-            nextFollowUpDate?: string;
-            /** @description 报价单金额（填了=转订单，生成 Deal） */
-            quoteAmount?: number;
-            /** @description 推进后阶段（类型声明） */
-            stage?: components["schemas"]["OpportunityStage"];
-            /** @description 成交交易性质（字典：trade_type） */
-            tradeType?: string;
-        };
-        CloseOpportunityDto: {
-            /**
-             * @description 结案结果
-             * @enum {string}
-             */
-            result: "lost" | "demand_disappeared";
-            /** @description 结案说明 */
-            reason: string;
-        };
-        CreateComplaintDto: {
-            /** @description 客户 ID */
-            customerId: string;
-            /**
-             * Format: date-time
-             * @description 发生时间
-             */
-            occurredAt: string;
-            /** @description 客诉类型（字典：complaint_type） */
-            type: string;
-            /** @description 问题描述 */
-            description: string;
-            /** @description 下次确认日期 */
-            nextFollowUpDate: string;
-        };
-        /**
-         * @description 跟进结果
-         * @enum {string}
-         */
-        FollowUpOutcome: "followed_up" | "resolved";
-        /**
-         * @description 客诉状态（类型声明）
-         * @enum {string}
-         */
-        ComplaintStatus: "registered" | "resolved";
-        FollowUpComplaintDto: {
-            /** @description 本次处理确认 */
-            content: string;
-            /** @description 跟进结果 */
-            outcome: components["schemas"]["FollowUpOutcome"];
-            /** @description 解决结果（outcome=resolved 必填） */
-            resolution?: string;
-            /** @description 下次确认日期（outcome=followed_up 必填） */
-            nextFollowUpDate?: string;
-            /** @description 客诉状态（类型声明） */
-            status?: components["schemas"]["ComplaintStatus"];
         };
         CreateExpenseDto: {
             /** @description 费用日期 */
@@ -1739,6 +1909,118 @@ export interface operations {
             };
         };
     };
+    FollowUpActionsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFollowUpActionDto"];
+            };
+        };
+        responses: {
+            /** @description 手工新增未来行动 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FollowUpActionsController_week: {
+        parameters: {
+            query: {
+                start: string;
+                end: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 范围内待办 + 更早逾期待办 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FollowUpActionsController_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteFollowUpActionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FollowUpActionsController_reschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleFollowUpActionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FollowUpActionsController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelFollowUpActionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     ClaimsController_create: {
         parameters: {
             query?: never;
@@ -1885,6 +2167,246 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 客户拜访时间线 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 商机列表（客户当前归属可见） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOpportunityDto"];
+            };
+        };
+        responses: {
+            /** @description 新建商机（意向阶段） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 商机详情（含事件流与成交 Deal） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_addFollowUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOpportunityFollowUpDto"];
+            };
+        };
+        responses: {
+            /** @description 追加商机跟进并安排下一行动 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_addQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOpportunityQuoteDto"];
+            };
+        };
+        responses: {
+            /** @description 追加口头或正式报价；不会自动成交 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_win: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WinOpportunityDto"];
+            };
+        };
+        responses: {
+            /** @description 客户明确下单，生成唯一 Deal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpportunitiesController_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseOpportunityDto"];
+            };
+        };
+        responses: {
+            /** @description 结案（lost / demand_disappeared） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ComplaintsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 客诉列表（客户当前归属可见） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ComplaintsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateComplaintDto"];
+            };
+        };
+        responses: {
+            /** @description 登记客诉 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ComplaintsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 客诉详情（含跟进事件） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ComplaintsController_followUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpComplaintDto"];
+            };
+        };
+        responses: {
+            /** @description 跟进 / 确认解决（终态禁止） */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2071,198 +2593,6 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OpportunitiesController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 商机列表（客户当前归属可见） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OpportunitiesController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOpportunityDto"];
-            };
-        };
-        responses: {
-            /** @description 新建商机（意向阶段） */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OpportunitiesController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 商机详情（含事件流与成交 Deal） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OpportunitiesController_advance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdvanceOpportunityDto"];
-            };
-        };
-        responses: {
-            /** @description 推进 / 转订单（quoteAmount 非空=生成 Deal） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    OpportunitiesController_close: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CloseOpportunityDto"];
-            };
-        };
-        responses: {
-            /** @description 结案（lost / demand_disappeared） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ComplaintsController_list: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 客诉列表（客户当前归属可见） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ComplaintsController_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateComplaintDto"];
-            };
-        };
-        responses: {
-            /** @description 登记客诉 */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ComplaintsController_findOne: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 客诉详情（含跟进事件） */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    ComplaintsController_followUp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["FollowUpComplaintDto"];
-            };
-        };
-        responses: {
-            /** @description 跟进 / 确认解决（终态禁止） */
             200: {
                 headers: {
                     [name: string]: unknown;

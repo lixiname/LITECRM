@@ -1,17 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsBoolean,
-  IsIn,
   IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MinLength,
+  Min,
 } from 'class-validator'
-import { AMOUNT_TYPES, type AmountType } from '../../common/constants'
 
-// 新建商机（§8.5）：意向金额（类型+金额）必填、下一步动作/日期必填；source 走字典（opportunity_source）
+// 新建商机：意向规模与第一步行动必填；意向规模不是报价。
 export class CreateOpportunityDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -26,13 +25,10 @@ export class CreateOpportunityDto {
   @IsString()
   source!: string
 
-  @ApiProperty({ description: '金额类型', enum: AMOUNT_TYPES, enumName: 'AmountType' })
-  @IsIn(AMOUNT_TYPES)
-  amountType!: AmountType
-
-  @ApiProperty({ description: '意向金额（与成交金额解耦，成交时以报价单金额为准）' })
+  @ApiProperty({ description: '意向规模估计（不生成报价）' })
   @IsNumber()
-  amount!: number
+  @Min(0)
+  estimatedAmount!: number
 
   @ApiPropertyOptional({ description: '约估' })
   @IsOptional()
@@ -42,7 +38,12 @@ export class CreateOpportunityDto {
   @ApiPropertyOptional({ description: '金额表述' })
   @IsOptional()
   @IsString()
-  amountNote?: string
+  estimateNote?: string
+
+  @ApiPropertyOptional({ description: '需求发现日' })
+  @IsOptional()
+  @IsISO8601()
+  discoveredDate?: string
 
   @ApiPropertyOptional({ description: '大类产品线' })
   @IsOptional()
@@ -54,12 +55,12 @@ export class CreateOpportunityDto {
   @IsISO8601()
   expectedCloseDate?: string
 
-  @ApiProperty({ description: '下一步动作' })
+  @ApiProperty({ description: '第一步行动内容' })
   @IsString()
   @MinLength(1, { message: '下一步动作必填' })
-  nextAction!: string
+  firstActionContent!: string
 
-  @ApiProperty({ description: '下次跟进日期' })
+  @ApiProperty({ description: '第一步行动计划时间' })
   @IsISO8601()
-  nextFollowUpDate!: string
+  firstActionAt!: string
 }

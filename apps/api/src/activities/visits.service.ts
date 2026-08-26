@@ -1,24 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { and, desc, eq, inArray } from 'drizzle-orm'
-import { db, type DbClient } from '../common/db/db'
+import { db } from '../common/db/db'
 import { customers, visitRecords } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { PlanningService } from '../planning/planning.service'
+import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
 import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
 
-// 拜访登记（§8.4）：客户可维护权限 + 归属快照；nextFollowUpDate → 强一致生成周计划项（§8.7 联动）
+// 拜访保存已发生事实；可选下一行动写入 follow_up_actions，不复制进拜访或周计划项。
 @Injectable()
 export class VisitsService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly planningService: PlanningService,
+    private readonly actionsService: FollowUpActionsService,
     private readonly catalogService: CatalogService,
   ) {}
 
   async create(dto: CreateVisitDto, actor: AuthUser) {
     if (dto.visitType) await this.catalogService.assertDimensionValue('visit_type', dto.visitType)
+    if (!!dto.nextActionAt !== !!dto.nextActionContent?.trim()) {
+      throw new BadRequestException('下一行动时间和内容必须同时填写')
+    }
     const customer = await this.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
@@ -34,20 +37,18 @@ export class VisitsService {
           businessSituation: dto.businessSituation ?? null,
           equipmentSituation: dto.equipmentSituation ?? null,
           personnelChanges: dto.personnelChanges ?? null,
-          nextFollowUpDate: dto.nextFollowUpDate ?? null,
-          nextFollowUpAction: dto.nextFollowUpAction ?? null,
         })
         .returning()
 
-      // §8.4/8.7 强一致联动：填了下次拜访日期 → 同事务生成周计划项
-      if (dto.nextFollowUpDate) {
-        await this.planningService.addLinkedPlanItem(
-          tx as DbClient,
-          actor.id,
-          dto.nextFollowUpDate,
-          dto.customerId,
-          `拜访客户 ${customer.name}`,
-        )
+      if (dto.nextActionAt && dto.nextActionContent) {
+        await this.actionsService.createLinked(tx, {
+          ownerId: customer.ownerId ?? actor.id,
+          customerId: dto.customerId,
+          sourceType: 'visit',
+          sourceId: visit.id,
+          plannedAt: new Date(dto.nextActionAt),
+          content: dto.nextActionContent,
+        })
       }
       return visit
     })

@@ -5,41 +5,29 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm'
-import { db, type DbClient } from '../common/db/db'
-import {
-  businessWeeks,
-  managementComments,
-  weeklyPlanItems,
-  weeklyPlans,
-} from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
+import { db } from '../common/db/db'
+import {
+  businessWeeks,
+  followUpActions,
+  managementComments,
+  weeklyPlans,
+} from '../common/db/schema'
+import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateBusinessWeekDto } from './dto/create-business-week.dto'
-import type { CreatePlanItemDto } from './dto/create-plan-item.dto'
 import type { CreateCommentDto } from './dto/create-comment.dto'
+import type { CreatePlanItemDto } from './dto/create-plan-item.dto'
 
-/**
- * 周计划（§8.7）：业务周（admin 配置 + 日期自动兜底自然周）→ 周计划（owner+week 唯一）→ 计划项。
- * 拜访联动：ensurePlanForWeek + 插入计划项（同事务，供 VisitsService 调用）。
- * 指导意见：author 须为被指导者上级（管理链）；read_at 已读闭环。
- */
 @Injectable()
 export class PlanningService {
-  constructor(private readonly accessService: AccessService) {}
-
-  // ===== 业务周 =====
+  constructor(
+    private readonly accessService: AccessService,
+    private readonly actionsService: FollowUpActionsService,
+  ) {}
 
   async createBusinessWeek(dto: CreateBusinessWeekDto) {
-    const [week] = await db
-      .insert(businessWeeks)
-      .values({
-        name: dto.name,
-        weekStart: dto.weekStart,
-        weekEnd: dto.weekEnd,
-        isActive: dto.isActive ?? true,
-      })
-      .onConflictDoNothing()
-      .returning()
+    const [week] = await db.insert(businessWeeks).values(dto).onConflictDoNothing().returning()
     if (!week) throw new ConflictException('该周起始日已存在业务周')
     return week
   }
@@ -48,131 +36,58 @@ export class PlanningService {
     return db.select().from(businessWeeks).orderBy(desc(businessWeeks.weekStart))
   }
 
-  // 定位日期所在业务周：存在则复用；不存在则自动创建自然周（周一~周日）——保证拜访联动可用
-  async ensureBusinessWeekForDate(date: string, tx: DbClient | typeof db = db) {
-    const [week] = await tx
-      .select()
-      .from(businessWeeks)
-      .where(
-        and(
-          eq(businessWeeks.isActive, true),
-          lte(businessWeeks.weekStart, date),
-          gte(businessWeeks.weekEnd, date),
-        ),
-      )
-      .limit(1)
-    if (week) return week
-
-    const [start, end] = weekRange(date)
-    const [created] = await tx
-      .insert(businessWeeks)
-      .values({ name: `业务周 ${start}`, weekStart: start, weekEnd: end })
-      .onConflictDoNothing()
-      .returning()
-    if (created) return created
-    const [again] = await tx
-      .select()
-      .from(businessWeeks)
-      .where(eq(businessWeeks.weekStart, start))
-      .limit(1)
-    return again!
-  }
-
-  // 定位/创建某用户某周计划（§8.7：owner + business_week 唯一）
-  async ensurePlanForWeek(
-    ownerId: string,
-    date: string,
-    tx: DbClient | typeof db = db,
-  ): Promise<string> {
-    const week = await this.ensureBusinessWeekForDate(date, tx)
-    const [plan] = await tx
-      .insert(weeklyPlans)
-      .values({ ownerId, businessWeekId: week.id })
-      .onConflictDoNothing()
-      .returning({ id: weeklyPlans.id })
-    if (plan) return plan.id
-    const [existing] = await tx
-      .select({ id: weeklyPlans.id })
-      .from(weeklyPlans)
-      .where(and(eq(weeklyPlans.ownerId, ownerId), eq(weeklyPlans.businessWeekId, week.id)))
-      .limit(1)
-    return existing!.id
-  }
-
-  // 拜访联动：往某周计划插入计划项（同事务）
-  async addLinkedPlanItem(
-    tx: DbClient,
-    ownerId: string,
-    plannedDate: string,
-    customerId: string,
-    action: string,
-  ): Promise<void> {
-    const planId = await this.ensurePlanForWeek(ownerId, plannedDate, tx)
-    await tx.insert(weeklyPlanItems).values({ planId, plannedDate, customerId, action })
-  }
-
-  // 周览"点空白加计划"（交互设计 §2.4 日历式）：按日期自动定位业务周 + 确保周计划 + 插入计划项
-  async addPlanItemByDate(dto: CreatePlanItemDto, actor: AuthUser) {
-    const planId = await this.ensurePlanForWeek(actor.id, dto.plannedDate)
-    const [item] = await db
-      .insert(weeklyPlanItems)
-      .values({
-        planId,
-        plannedDate: dto.plannedDate,
-        customerId: dto.customerId ?? null,
-        action: dto.action,
-        notes: dto.notes ?? null,
-      })
-      .returning()
-    return item
-  }
-
-  // ===== 周计划项（本人）=====
-
-  // 我的周计划（§8.7：owner + business_week）
   async getMyPlan(businessWeekId: string, actor: AuthUser) {
+    const [week] = await db
+      .select()
+      .from(businessWeeks)
+      .where(eq(businessWeeks.id, businessWeekId))
+      .limit(1)
+    if (!week) throw new NotFoundException('业务周不存在')
     const [plan] = await db
       .select()
       .from(weeklyPlans)
       .where(and(eq(weeklyPlans.ownerId, actor.id), eq(weeklyPlans.businessWeekId, businessWeekId)))
       .limit(1)
-    if (!plan) return null
-    const items = await db
+    const actions = await db
       .select()
-      .from(weeklyPlanItems)
-      .where(eq(weeklyPlanItems.planId, plan.id))
-      .orderBy(weeklyPlanItems.plannedDate)
-    return { ...plan, items }
+      .from(followUpActions)
+      .where(
+        and(
+          eq(followUpActions.ownerId, actor.id),
+          sql`${followUpActions.plannedAt}::date between ${week.weekStart} and ${week.weekEnd}`,
+        ),
+      )
+      .orderBy(followUpActions.plannedAt)
+    return plan ? { ...plan, actions } : { plan: null, actions }
   }
 
-  // 加计划项（§8.7：plannedDate 在业务周内；action 必填）
+  // 兼容原“加计划”入口：现在直接创建 manual 行动，不再生成 weekly_plan_item。
+  async addPlanItemByDate(dto: CreatePlanItemDto, actor: AuthUser) {
+    return this.actionsService.createManual(
+      {
+        plannedAt: asLocalWorkTime(dto.plannedDate),
+        content: dto.action,
+        customerId: dto.customerId,
+      },
+      actor,
+    )
+  }
+
   async addPlanItem(planId: string, dto: CreatePlanItemDto, actor: AuthUser) {
-    const [plan] = await db.select().from(weeklyPlans).where(eq(weeklyPlans.id, planId)).limit(1)
-    if (!plan || plan.ownerId !== actor.id) throw new ForbiddenException('仅本人周计划可添加')
-    const [week] = await db
-      .select()
-      .from(businessWeeks)
-      .where(eq(businessWeeks.id, plan.businessWeekId))
+    const [row] = await db
+      .select({ plan: weeklyPlans, week: businessWeeks })
+      .from(weeklyPlans)
+      .innerJoin(businessWeeks, eq(weeklyPlans.businessWeekId, businessWeeks.id))
+      .where(eq(weeklyPlans.id, planId))
       .limit(1)
-    if (week && (dto.plannedDate < week.weekStart || dto.plannedDate > week.weekEnd)) {
-      throw new ConflictException('计划日期需在业务周内')
+    if (!row || row.plan.ownerId !== actor.id)
+      throw new ForbiddenException('仅本人周计划可添加行动')
+    if (dto.plannedDate < row.week.weekStart || dto.plannedDate > row.week.weekEnd) {
+      throw new ConflictException('行动日期需在业务周内')
     }
-    const [item] = await db
-      .insert(weeklyPlanItems)
-      .values({
-        planId,
-        plannedDate: dto.plannedDate,
-        customerId: dto.customerId ?? null,
-        action: dto.action,
-        notes: dto.notes ?? null,
-      })
-      .returning()
-    return item
+    return this.addPlanItemByDate(dto, actor)
   }
 
-  // ===== 指导意见（§8.7）=====
-
-  // 发布意见：author 须为被指导者上级（管理链）
   async createComment(dto: CreateCommentDto, actor: AuthUser) {
     if (dto.ownerId === actor.id) throw new ForbiddenException('不能给自己留言')
     const isManager = await this.accessService.isManagerOf(actor.id, dto.ownerId)
@@ -190,40 +105,46 @@ export class PlanningService {
     return comment
   }
 
-  // 我的未读意见（红点闭环）
   async listUnreadComments(actor: AuthUser) {
     return db
       .select()
       .from(managementComments)
       .where(
-        and(eq(managementComments.ownerId, actor.id), sql`${managementComments.readAt} IS NULL`),
+        and(eq(managementComments.ownerId, actor.id), sql`${managementComments.readAt} is null`),
       )
       .orderBy(desc(managementComments.createdAt))
   }
 
-  // 标记已读
   async markCommentRead(id: string, actor: AuthUser) {
-    const [comment] = await db
-      .select()
-      .from(managementComments)
-      .where(eq(managementComments.id, id))
-      .limit(1)
-    if (!comment || comment.ownerId !== actor.id) throw new NotFoundException('意见不存在')
-    await db
+    const [updated] = await db
       .update(managementComments)
-      .set({ readAt: new Date() })
-      .where(eq(managementComments.id, id))
+      .set({
+        readAt: new Date(),
+        updatedAt: new Date(),
+        version: sql`${managementComments.version} + 1`,
+      })
+      .where(and(eq(managementComments.id, id), eq(managementComments.ownerId, actor.id)))
+      .returning()
+    if (!updated) throw new NotFoundException('意见不存在')
+    return updated
+  }
+
+  async findBusinessWeekByDate(date: string) {
+    const [week] = await db
+      .select()
+      .from(businessWeeks)
+      .where(
+        and(
+          eq(businessWeeks.isActive, true),
+          lte(businessWeeks.weekStart, date),
+          gte(businessWeeks.weekEnd, date),
+        ),
+      )
+      .limit(1)
+    return week ?? null
   }
 }
 
-// 自然周范围（周一~周日，UTC 一致）
-function weekRange(dateStr: string): [string, string] {
-  const d = new Date(`${dateStr}T00:00:00Z`)
-  const day = d.getUTCDay() // 0=周日
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(d)
-  monday.setUTCDate(d.getUTCDate() + diff)
-  const sunday = new Date(monday)
-  sunday.setUTCDate(monday.getUTCDate() + 6)
-  return [monday.toISOString().slice(0, 10), sunday.toISOString().slice(0, 10)]
+function asLocalWorkTime(date: string): string {
+  return `${date}T09:00:00+08:00`
 }

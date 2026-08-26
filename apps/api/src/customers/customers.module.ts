@@ -5,9 +5,10 @@ import { CustomersController } from './customers.controller'
 import { CustomersService } from './customers.service'
 import { OwnershipService } from './ownership.service'
 import { GradeQuotaService } from './grade-quota.service'
+import { FollowUpActionsModule } from '../follow-up-actions/follow-up-actions.module'
 
 @Module({
-  imports: [AuthModule, AccessModule],
+  imports: [AuthModule, AccessModule, FollowUpActionsModule],
   controllers: [CustomersController],
   providers: [CustomersService, OwnershipService, GradeQuotaService],
   exports: [CustomersService, OwnershipService, GradeQuotaService],

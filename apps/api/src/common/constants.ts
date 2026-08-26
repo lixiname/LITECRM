@@ -75,15 +75,17 @@ export type VisitMethod = (typeof VISIT_METHODS)[number]
 export const OPPORTUNITY_STAGES = [
   'intent', // 意向
   'following', // 跟进
-  'ordered', // 转成交（生成 Deal）
+  'won', // 客户明确下单（生成 Deal）
   'lost', // 丢失
   'demand_disappeared', // 需求消失
 ] as const
 export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number]
 
-// 商机金额类型（§7.2：意向金额精度分层）
-export const AMOUNT_TYPES = ['oral', 'quoted'] as const
-export type AmountType = (typeof AMOUNT_TYPES)[number]
+export const OPPORTUNITY_QUOTE_KINDS = ['oral', 'formal'] as const
+export type OpportunityQuoteKind = (typeof OPPORTUNITY_QUOTE_KINDS)[number]
+
+export const OPPORTUNITY_QUOTE_STATUSES = ['active', 'superseded', 'withdrawn'] as const
+export type OpportunityQuoteStatus = (typeof OPPORTUNITY_QUOTE_STATUSES)[number]
 
 // 商机发现渠道（opportunity_source）已字典化：dimension='opportunity_source'
 
@@ -110,5 +112,19 @@ export const EXPENSE_STATUSES = ['draft', 'submitted', 'voided'] as const
 export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number]
 
 // 指导意见多态目标（§8.7）
-export const COMMENT_TARGET_TYPES = ['weekly_plan', 'weekly_plan_item', 'visit'] as const
+export const FOLLOW_UP_ACTION_STATUSES = ['pending', 'completed', 'cancelled'] as const
+export type FollowUpActionStatus = (typeof FOLLOW_UP_ACTION_STATUSES)[number]
+
+export const FOLLOW_UP_ACTION_SOURCE_TYPES = [
+  'manual',
+  'visit',
+  'opportunity',
+  'opportunity_follow_up',
+  'opportunity_quote',
+  'complaint',
+  'complaint_follow_up',
+] as const
+export type FollowUpActionSourceType = (typeof FOLLOW_UP_ACTION_SOURCE_TYPES)[number]
+
+export const COMMENT_TARGET_TYPES = ['weekly_plan', 'follow_up_action', 'visit'] as const
 export type CommentTargetType = (typeof COMMENT_TARGET_TYPES)[number]
