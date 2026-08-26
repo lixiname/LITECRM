@@ -74,7 +74,7 @@ export class OpportunitiesService {
     const conditions = [inArray(customers.ownerId, visibleIds)]
     if (customerId) conditions.push(eq(opportunities.customerId, customerId))
     const rows = await db
-      .select({ ...getTableColumns(opportunities) })
+      .select({ ...getTableColumns(opportunities), customerName: customers.name })
       .from(opportunities)
       .innerJoin(customers, eq(opportunities.customerId, customers.id))
       .where(and(...conditions))

@@ -11,6 +11,17 @@
         @row-click="(row: Opportunity) => router.push(`/opportunities/${row.id}`)"
       >
         <el-table-column prop="name" label="商机" min-width="160" />
+        <el-table-column prop="customerName" label="所属客户" min-width="160">
+          <template #default="{ row }">
+            <el-button
+              link
+              type="primary"
+              @click.stop="void router.push(`/customers/${(row as Opportunity).customerId}`)"
+            >
+              {{ (row as Opportunity).customerName ?? '-' }}
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="阶段" width="90">
           <template #default="{ row }">
             <el-tag :type="stageTag((row as Opportunity).stage)">

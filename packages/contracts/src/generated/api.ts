@@ -1786,7 +1786,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 客户详情（含联系人） */
+            /** @description 客户详情（含联系人、商机摘要、历史成交、活动时间线） */
             200: {
                 headers: {
                     [name: string]: unknown;

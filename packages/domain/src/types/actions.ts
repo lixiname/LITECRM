@@ -80,6 +80,7 @@ export interface OpportunityQuote {
 export interface Opportunity {
   id: string
   customerId: string
+  customerName?: string
   ownerId: string
   name: string
   stage: OpportunityStage

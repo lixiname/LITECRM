@@ -75,6 +75,64 @@
       </el-table>
     </el-card>
 
+    <el-card v-if="detail" class="detail__card">
+      <template #header>成交与商机</template>
+      <el-descriptions :column="3" border>
+        <el-descriptions-item label="历史成交次数">{{
+          detail.dealSummary?.count ?? 0
+        }}</el-descriptions-item>
+        <el-descriptions-item label="历史成交总额">{{
+          moneyText(detail.dealSummary?.totalAmount)
+        }}</el-descriptions-item>
+        <el-descriptions-item label="最近成交">
+          {{ detail.latestDeals?.[0] ? `¥${detail.latestDeals[0].amount}` : '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-card>
+
+    <el-card v-if="detail" class="detail__card">
+      <template #header>相关商机</template>
+      <el-table :data="detail.opportunities ?? []" border>
+        <el-table-column prop="name" label="商机" min-width="140" />
+        <el-table-column label="阶段" width="90">
+          <template #default="{ row }">
+            <el-tag :type="stageTag((row as Opportunity).stage)">
+              {{ stageLabel((row as Opportunity).stage) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="意向规模" width="110">
+          <template #default="{ row }">{{
+            amountText((row as Opportunity).estimatedAmount)
+          }}</template>
+        </el-table-column>
+        <el-table-column label="下一行动" min-width="180">
+          <template #default="{ row }">{{
+            (row as Opportunity).currentAction?.content ?? '-'
+          }}</template>
+        </el-table-column>
+        <el-table-column label="最新报价" width="130">
+          <template #default="{ row }">{{
+            amountText((row as Opportunity).latestQuote?.amount)
+          }}</template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <el-card v-if="detail?.timeline?.length" class="detail__card">
+      <template #header>活动时间线（最近）</template>
+      <el-timeline>
+        <el-timeline-item
+          v-for="item in detail?.timeline ?? []"
+          :key="`${item.type}-${item.id}`"
+          :timestamp="timeText(item.occurredAt)"
+        >
+          <div class="timeline-item__title">{{ item.title }}</div>
+          <div>{{ item.summary }}</div>
+        </el-timeline-item>
+      </el-timeline>
+    </el-card>
+
     <!-- 移交 -->
     <el-dialog v-model="showTransfer" title="移交客户" width="420px">
       <el-form label-width="80px">
@@ -182,6 +240,8 @@ import {
   createClaim,
   addContact,
   listCustomerAssignees,
+  OPPORTUNITY_STAGE_OPTIONS,
+  type Opportunity,
   CUSTOMER_STATUS_OPTIONS,
   type CustomerStatus,
 } from '@crm/domain'
@@ -220,6 +280,28 @@ const availableAssignees = computed(
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
+}
+function stageTag(stage: Opportunity['stage']): 'success' | 'warning' | 'info' | 'danger' {
+  const stageMap: Record<Opportunity['stage'], 'success' | 'warning' | 'info' | 'danger'> = {
+    won: 'success',
+    lost: 'danger',
+    demand_disappeared: 'danger',
+    following: 'warning',
+    intent: 'info',
+  }
+  return stageMap[stage]
+}
+function stageLabel(stage: Opportunity['stage']): string {
+  return OPPORTUNITY_STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? stage
+}
+function amountText(amount?: string): string {
+  return amount ? `¥${Number(amount).toLocaleString()}` : '-'
+}
+function moneyText(amount?: string): string {
+  return amount ? `¥${Number(amount).toLocaleString()}` : '-'
+}
+function timeText(value: string): string {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 
 async function runAction(fn: () => Promise<unknown>, successMsg: string) {
@@ -302,5 +384,8 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 }
 .detail__dialog-alert {
   margin-bottom: var(--crm-spacing-md);
+}
+.timeline-item__title {
+  font-weight: 600;
 }
 </style>

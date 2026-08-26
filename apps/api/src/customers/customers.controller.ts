@@ -63,7 +63,9 @@ export class CustomersController {
   }
 
   @Get(':id')
-  @ApiOkResponse({ description: '客户详情（含联系人）' })
+  @ApiOkResponse({
+    description: '客户详情（含联系人、商机摘要、历史成交、活动时间线）',
+  })
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.customersService.findOne(id, user)
   }

@@ -35,7 +35,7 @@ export function listCustomers(query: CustomerListQuery = {}): Promise<CustomerPa
   return apiGet<CustomerPage>(`/customers${qs ? `?${qs}` : ''}`)
 }
 
-/** 客户详情（含联系人） */
+/** 客户详情（含联系人、商机摘要、成交摘要、活动时间线） */
 export function getCustomer(id: string): Promise<CustomerDetail> {
   return apiGet<CustomerDetail>(`/customers/${id}`)
 }

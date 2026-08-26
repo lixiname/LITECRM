@@ -5,9 +5,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, getTableColumns, inArray, sql, type SQL } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { contacts, customerGradeChanges, customers } from '../common/db/schema'
+import {
+  complaints,
+  contacts,
+  customerGradeChanges,
+  customers,
+  deals,
+  followUpActions,
+  opportunities,
+  opportunityQuotes,
+  visitRecords,
+} from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
 import { normalizeBusinessName, normalizePhone } from './customer-normalizer'
@@ -235,7 +245,164 @@ export class CustomersService {
       .from(contacts)
       .where(eq(contacts.customerId, customer.id))
       .orderBy(desc(contacts.isKeyContact), asc(contacts.createdAt))
-    return { ...customer, contacts: contactList }
+    const [opportunitiesRows, recentVisits, complaintsRows, dealsSummary, latestDeals] =
+      await Promise.all([
+        db
+          .select({
+            ...getTableColumns(opportunities),
+            customerName: customers.name,
+          })
+          .from(opportunities)
+          .innerJoin(customers, eq(opportunities.customerId, customers.id))
+          .where(eq(opportunities.customerId, customer.id))
+          .orderBy(desc(opportunities.updatedAt)),
+        db
+          .select()
+          .from(visitRecords)
+          .where(eq(visitRecords.customerId, customer.id))
+          .orderBy(desc(visitRecords.occurredAt))
+          .limit(12),
+        db
+          .select()
+          .from(complaints)
+          .where(eq(complaints.customerId, customer.id))
+          .orderBy(desc(complaints.occurredAt))
+          .limit(12),
+        db
+          .select({
+            totalCount: sql<number>`count(*)::int`,
+            totalAmount: sql<string>`coalesce(sum(${deals.amount}), 0)::text`,
+          })
+          .from(deals)
+          .where(eq(deals.customerId, customer.id)),
+        db
+          .select({
+            id: deals.id,
+            amount: deals.amount,
+            occurredAt: deals.occurredAt,
+            sourceOpportunityId: deals.sourceOpportunityId,
+          })
+          .from(deals)
+          .where(eq(deals.customerId, customer.id))
+          .orderBy(desc(deals.occurredAt))
+          .limit(6),
+      ])
+
+    const opportunityIds = opportunitiesRows.map((item) => item.id)
+    const complaintIds = complaintsRows.map((item) => item.id)
+
+    const [actionRows, quoteRows, complaintActionRows] = await Promise.all([
+      opportunityIds.length
+        ? db
+            .select()
+            .from(followUpActions)
+            .where(
+              and(
+                inArray(followUpActions.opportunityId, opportunityIds),
+                eq(followUpActions.status, 'pending'),
+              ),
+            )
+            .orderBy(asc(followUpActions.plannedAt))
+        : Promise.resolve([] as (typeof followUpActions.$inferSelect)[]),
+      opportunityIds.length
+        ? db
+            .select()
+            .from(opportunityQuotes)
+            .where(inArray(opportunityQuotes.opportunityId, opportunityIds))
+            .orderBy(desc(opportunityQuotes.quotedAt))
+        : Promise.resolve([] as (typeof opportunityQuotes.$inferSelect)[]),
+      complaintIds.length
+        ? db
+            .select()
+            .from(followUpActions)
+            .where(
+              and(
+                inArray(followUpActions.complaintId, complaintIds),
+                eq(followUpActions.status, 'pending'),
+              ),
+            )
+            .orderBy(asc(followUpActions.plannedAt))
+        : Promise.resolve([] as (typeof followUpActions.$inferSelect)[]),
+    ])
+
+    const opportunitiesWithContext = opportunitiesRows.map((row) => ({
+      ...row,
+      currentAction: actionRows.find((action) => action.opportunityId === row.id) ?? null,
+      latestQuote: quoteRows.find((quote) => quote.opportunityId === row.id) ?? null,
+      customerName: row.customerName,
+    }))
+
+    const complaintWithContext = complaintsRows.map((row) => ({
+      ...row,
+      currentAction: complaintActionRows.find((action) => action.complaintId === row.id) ?? null,
+    }))
+
+    const timeline = [
+      ...recentVisits.map((visit) => ({
+        type: 'visit' as const,
+        id: visit.id,
+        occurredAt: visit.occurredAt,
+        title: '拜访',
+        summary: `${visit.method}${visit.visitType ? `/${visit.visitType}` : ''}`,
+      })),
+      ...opportunitiesWithContext.flatMap((opp) => {
+        const entries: {
+          type: 'opportunity_follow_up' | 'deal'
+          id: string
+          occurredAt: string | Date
+          title: string
+          summary: string
+        }[] = [
+          {
+            type: 'opportunity_follow_up',
+            id: opp.id,
+            occurredAt: opp.updatedAt,
+            title: '商机',
+            summary: `${opp.name}（${opp.stage}）`,
+          },
+        ]
+        if (opp.latestQuote) {
+          entries.push({
+            type: 'opportunity_follow_up',
+            id: opp.latestQuote.id,
+            occurredAt: opp.latestQuote.quotedAt,
+            title: '报价',
+            summary: `¥${opp.latestQuote.amount}`,
+          })
+        }
+        return entries
+      }),
+      ...complaintWithContext.map((complaint) => ({
+        type: 'complaint' as const,
+        id: complaint.id,
+        occurredAt: complaint.occurredAt,
+        title: '客诉',
+        summary: complaint.status === 'resolved' ? '已解决' : '跟进中',
+      })),
+      ...latestDeals.map((deal) => ({
+        type: 'deal' as const,
+        id: deal.id,
+        occurredAt: deal.occurredAt,
+        title: '成交',
+        summary: `¥${deal.amount}`,
+      })),
+    ]
+      .map((item) => ({ ...item, occurredAt: new Date(item.occurredAt).toISOString() }))
+      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+      .slice(0, 30)
+
+    return {
+      ...customer,
+      contacts: contactList,
+      opportunities: opportunitiesWithContext,
+      complaints: complaintWithContext,
+      dealSummary: {
+        count: dealsSummary[0]?.totalCount ?? 0,
+        totalAmount: dealsSummary[0]?.totalAmount ?? '0',
+      },
+      timeline,
+      latestDeals,
+    }
   }
 
   // 维护（§8.3 assertCanContribute：owner / 管理链 / admin）
