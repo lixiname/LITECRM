@@ -484,6 +484,28 @@
         "tags": ["customers"]
       }
     },
+    "/customers/assignees": {
+      "get": {
+        "operationId": "CustomersController_listAssignees",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "客户移交可选负责人（仅 active 的销售与区域负责人）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssigneeOptionDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
     "/customers/{id}": {
       "get": {
         "operationId": "CustomersController_findOne",
@@ -2005,6 +2027,33 @@
       "CustomerStatus": {
         "type": "string",
         "enum": ["active", "invalid", "public"]
+      },
+      "AssigneeOptionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "可接收客户的用户 ID"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "显示名"
+          },
+          "role": {
+            "description": "角色",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          },
+          "region": {
+            "type": "string",
+            "nullable": true,
+            "description": "所属区域"
+          }
+        },
+        "required": ["id", "displayName", "role"]
       },
       "UpdateCustomerDto": {
         "type": "object",

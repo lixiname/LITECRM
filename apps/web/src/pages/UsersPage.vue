@@ -1,12 +1,9 @@
 <template>
   <div class="users">
-    <header class="users__header">
-      <h1 class="users__title">用户管理</h1>
-      <el-button @click="router.push('/')">返回首页</el-button>
-    </header>
+    <AppPageHeader title="用户管理" description="维护账号、角色和组织内使用状态" />
 
     <el-card class="users__card">
-      <el-table v-loading="loading" :data="users ?? []" border>
+      <el-table v-if="!error && users?.length" v-loading="loading" :data="users" border>
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="displayName" label="显示名" min-width="120" />
         <el-table-column label="角色" min-width="100">
@@ -22,37 +19,29 @@
           </template>
         </el-table-column>
       </el-table>
-      <p v-if="error" class="users__error">{{ error }}</p>
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !users?.length"
+        empty-text="暂无用户"
+        @retry="reload"
+      />
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { listUsers, ROLE_LABELS, useQuery, type Role } from '@crm/domain'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 
-const router = useRouter()
-const { data: users, loading, error } = useQuery('users:list', listUsers)
+const { data: users, loading, error, reload } = useQuery('users:list', listUsers)
 </script>
 
 <style scoped>
 .users {
   padding: var(--crm-spacing-xl);
 }
-.users__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.users__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
 .users__card {
   max-width: 720px;
-}
-.users__error {
-  color: var(--crm-color-danger);
 }
 </style>

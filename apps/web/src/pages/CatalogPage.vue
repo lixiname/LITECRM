@@ -1,17 +1,16 @@
 <template>
   <div class="catalog">
-    <header class="catalog__header">
-      <h1 class="catalog__title">字典配置</h1>
-      <div class="catalog__actions">
+    <AppPageHeader title="字典配置" description="按业务维度维护可选项及启用状态">
+      <template #actions>
         <el-select v-model="dimension" style="width: 160px">
           <el-option v-for="d in DIMENSIONS" :key="d.value" :label="d.label" :value="d.value" />
         </el-select>
         <el-button type="primary" @click="openAdd">新增选项</el-button>
-      </div>
-    </header>
+      </template>
+    </AppPageHeader>
 
     <el-card v-loading="loading" class="catalog__card">
-      <el-table :data="options ?? []" border>
+      <el-table v-if="!error && options?.length" :data="options" border>
         <el-table-column prop="name" label="名称" min-width="140" />
         <el-table-column prop="sortOrder" label="排序" width="80" />
         <el-table-column label="状态" width="80">
@@ -33,7 +32,12 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-empty v-if="!loading && !options?.length" description="该维度暂无选项" />
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !options?.length"
+        empty-text="该维度暂无选项"
+        @retry="reload"
+      />
     </el-card>
 
     <el-dialog
@@ -60,6 +64,8 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 import {
   useQuery,
   listDimensionOptions,
@@ -89,6 +95,7 @@ const acting = ref(false)
 const {
   data: options,
   loading,
+  error,
   reload,
 } = useQuery('catalog:list', () => listDimensionOptions(dimension.value))
 watch(dimension, () => void reload())
@@ -149,21 +156,6 @@ async function toggle(option: DimensionOption) {
 <style scoped>
 .catalog {
   padding: var(--crm-spacing-xl);
-}
-.catalog__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.catalog__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
-.catalog__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--crm-spacing-sm);
 }
 .catalog__card {
   max-width: 720px;

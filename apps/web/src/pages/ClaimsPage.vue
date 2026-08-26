@@ -1,12 +1,9 @@
 <template>
   <div class="claims">
-    <header class="claims__header">
-      <h1 class="claims__title">接管审批</h1>
-      <el-button @click="router.push('/')">返回首页</el-button>
-    </header>
+    <AppPageHeader title="接管审批" description="处理客户接管申请并保留归属变更记录" />
 
     <el-card class="claims__card">
-      <el-table v-loading="loading" :data="claims ?? []" border>
+      <el-table v-if="!error && claims?.length" v-loading="loading" :data="claims" border>
         <el-table-column prop="customerName" label="客户" min-width="160" />
         <el-table-column prop="applicantName" label="申请人" min-width="100" />
         <el-table-column prop="reason" label="理由" min-width="160" />
@@ -24,14 +21,20 @@
           </template>
         </el-table-column>
       </el-table>
-      <p v-if="claims && claims.length === 0" class="claims__empty">暂无待审批申请</p>
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !claims?.length"
+        empty-text="暂无待审批申请"
+        @retry="reload"
+      />
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 import {
   useQuery,
   listPendingClaims,
@@ -40,8 +43,7 @@ import {
   type ClaimListItem,
 } from '@crm/domain'
 
-const router = useRouter()
-const { data: claims, loading, reload } = useQuery('claims:pending', listPendingClaims)
+const { data: claims, loading, error, reload } = useQuery('claims:pending', listPendingClaims)
 
 function formatTime(v: string): string {
   return v ? new Date(v).toLocaleString('zh-CN', { hour12: false }) : '-'
@@ -89,22 +91,7 @@ async function act(fn: () => Promise<unknown>, msg: string) {
 .claims {
   padding: var(--crm-spacing-xl);
 }
-.claims__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.claims__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
 .claims__card {
   max-width: 860px;
-}
-.claims__empty {
-  text-align: center;
-  color: var(--crm-color-text-secondary);
-  padding: var(--crm-spacing-xl);
 }
 </style>

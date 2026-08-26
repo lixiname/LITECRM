@@ -18,6 +18,7 @@ import type { UpdateCustomerDto } from './dto/update-customer.dto'
 import type { CustomerQueryDto } from './dto/customer-query.dto'
 import type { CreateContactDto } from './dto/contact.dto'
 import type { DedupCheckDto } from './dto/dedup-check.dto'
+import { CustomerAssigneeService } from './customer-assignee.service'
 
 // 客户域（§8.2/8.3）：建档、检索、详情、维护、联系人
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
@@ -26,6 +27,7 @@ export class CustomersService {
   constructor(
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
+    private readonly assigneeService: CustomerAssigneeService,
   ) {}
 
   // 建档：默认 owner=建档人；名额校验与写入处于同一事务。
@@ -128,6 +130,7 @@ export class CustomersService {
   private async insertCustomer(dto: CreateCustomerDto, ownerId: string, actor: AuthUser) {
     return db.transaction(async (tx) => {
       const grade = dto.grade ?? 'C'
+      await this.assigneeService.assertAssignable(tx, ownerId)
       await this.gradeQuotaService.assertSlotAvailable(tx, ownerId, grade)
 
       const [customer] = await tx

@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_listAssignees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/{id}": {
         parameters: {
             query?: never;
@@ -1002,6 +1018,16 @@ export interface components {
         };
         /** @enum {string} */
         CustomerStatus: "active" | "invalid" | "public";
+        AssigneeOptionDto: {
+            /** @description 可接收客户的用户 ID */
+            id: string;
+            /** @description 显示名 */
+            displayName: string;
+            /** @description 角色 */
+            role: components["schemas"]["Role"];
+            /** @description 所属区域 */
+            region?: string | null;
+        };
         UpdateCustomerDto: {
             /** @description 读取客户时获得的版本号，用于防止覆盖他人更新 */
             version: number;
@@ -1726,6 +1752,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CustomersController_listAssignees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 客户移交可选负责人（仅 active 的销售与区域负责人） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssigneeOptionDto"][];
+                };
             };
         };
     };

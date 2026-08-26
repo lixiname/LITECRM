@@ -10,6 +10,10 @@
 
     <van-loading v-if="loading" class="week-view__loading" size="24" />
 
+    <van-empty v-else-if="error" :description="error">
+      <van-button size="small" type="primary" @click="reload">重新加载</van-button>
+    </van-empty>
+
     <template v-else>
       <section v-if="view?.overdue.length" class="overdue-panel">
         <div class="overdue-panel__title">更早未完成 · {{ view.overdue.length }}</div>
@@ -19,7 +23,9 @@
             <span>{{ action.content }}</span>
             <small>{{ formatTime(action.plannedAt) }}</small>
           </div>
-          <van-button size="mini" plain type="primary" @click="markDone(action)">完成</van-button>
+          <van-button size="mini" plain type="primary" @click="openActionSheet(action)">
+            处理
+          </van-button>
         </div>
       </section>
 
@@ -44,9 +50,9 @@
                 <span>{{ action.content }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
-              <van-button size="mini" plain type="primary" @click="markDone(action)"
-                >完成</van-button
-              >
+              <van-button size="mini" plain type="primary" @click="openActionSheet(action)">
+                处理
+              </van-button>
             </div>
             <div v-if="day.actions.length === 0" class="day-card__empty" @click="goQuickAdd(day)">
               + 记一笔
@@ -55,22 +61,76 @@
         </div>
       </div>
     </template>
+
+    <van-action-sheet
+      v-model:show="showActionSheet"
+      :actions="actionOptions"
+      cancel-text="返回"
+      close-on-click-action
+      @select="selectActionCommand"
+    />
+
+    <van-popup v-model:show="commandSheet.visible" position="bottom" round>
+      <div class="command-sheet">
+        <div class="command-sheet__title">
+          {{ commandSheet.mode === 'reschedule' ? '改期行动' : '取消行动' }}
+        </div>
+        <van-field
+          v-if="commandSheet.mode === 'reschedule'"
+          v-model="commandSheet.plannedAt"
+          label="新时间"
+          type="datetime-local"
+          required
+        />
+        <van-field
+          v-else
+          v-model="commandSheet.reason"
+          label="取消原因"
+          type="textarea"
+          rows="3"
+          autosize
+          required
+          placeholder="说明为什么不再执行"
+        />
+        <div class="command-sheet__actions">
+          <van-button block @click="commandSheet.visible = false">返回</van-button>
+          <van-button
+            block
+            :type="commandSheet.mode === 'cancel' ? 'danger' : 'primary'"
+            :loading="commandSheet.saving"
+            @click="submitActionCommand"
+          >
+            {{ commandSheet.mode === 'cancel' ? '确认取消' : '确认改期' }}
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
+  cancelFollowUpAction,
   completeFollowUpAction,
   getWeekView,
+  rescheduleFollowUpAction,
   useQuery,
   type FollowUpAction,
   type FollowUpActionSourceType,
 } from '@crm/domain'
 
 const router = useRouter()
+type ActionCommand = 'open' | 'complete' | 'reschedule' | 'cancel'
+
+const actionOptions: { name: string; value: ActionCommand; color?: string }[] = [
+  { name: '查看关联客户', value: 'open' },
+  { name: '标记完成', value: 'complete' },
+  { name: '改期', value: 'reschedule' },
+  { name: '取消行动', value: 'cancel', color: '#ee0a24' },
+]
 const today = new Date()
 const todayStr = fmt(today)
 const weekOffset = ref(0)
@@ -91,6 +151,7 @@ const weekLabel = computed(() => {
 const {
   data: view,
   loading,
+  error,
   reload,
 } = useQuery('week-view', () => getWeekView(range.value.monday, range.value.sunday))
 watch(weekOffset, () => void reload())
@@ -141,6 +202,80 @@ async function markDone(action: FollowUpAction) {
   } catch (error) {
     showToast(error instanceof Error ? error.message : '操作失败')
   }
+}
+
+const showActionSheet = ref(false)
+const selectedAction = ref<FollowUpAction>()
+const commandSheet = reactive({
+  visible: false,
+  mode: 'reschedule' as 'reschedule' | 'cancel',
+  plannedAt: '',
+  reason: '',
+  saving: false,
+})
+
+function openActionSheet(action: FollowUpAction) {
+  selectedAction.value = action
+  showActionSheet.value = true
+}
+
+function selectActionCommand(option: { value: ActionCommand }) {
+  const action = selectedAction.value
+  if (!action) return
+  if (option.value === 'open') {
+    const target = actionRoute(action)
+    if (target) void router.push(target)
+    else showToast('这是一项独立行动，没有关联业务详情')
+    return
+  }
+  if (option.value === 'complete') {
+    void markDone(action)
+    return
+  }
+  commandSheet.mode = option.value
+  commandSheet.plannedAt = localInput(action.plannedAt)
+  commandSheet.reason = ''
+  commandSheet.visible = true
+}
+
+async function submitActionCommand() {
+  const action = selectedAction.value
+  if (!action) return
+  if (commandSheet.mode === 'reschedule' && !commandSheet.plannedAt)
+    return showToast('请选择新的计划时间')
+  if (commandSheet.mode === 'cancel' && !commandSheet.reason.trim())
+    return showToast('请填写取消原因')
+  commandSheet.saving = true
+  try {
+    if (commandSheet.mode === 'reschedule') {
+      await rescheduleFollowUpAction(
+        action.id,
+        action.version,
+        new Date(commandSheet.plannedAt).toISOString(),
+      )
+      showToast('行动已改期')
+    } else {
+      await cancelFollowUpAction(action.id, action.version, commandSheet.reason.trim())
+      showToast('行动已取消')
+    }
+    commandSheet.visible = false
+    await reload()
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '操作失败')
+  } finally {
+    commandSheet.saving = false
+  }
+}
+
+function actionRoute(action: FollowUpAction): string | undefined {
+  if (action.customerId) return `/customers/${action.customerId}`
+  return undefined
+}
+
+function localInput(value: string): string {
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
 function sourceLabel(source: FollowUpActionSourceType): string {
@@ -269,5 +404,19 @@ function formatTime(value: string): string {
   color: var(--crm-color-text-secondary);
   font-size: var(--crm-font-size-sm);
   padding: var(--crm-spacing-xs) 0;
+}
+.command-sheet {
+  padding: var(--crm-spacing-lg);
+}
+.command-sheet__title {
+  margin-bottom: var(--crm-spacing-md);
+  text-align: center;
+  font-weight: 600;
+}
+.command-sheet__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--crm-spacing-sm);
+  margin-top: var(--crm-spacing-lg);
 }
 </style>

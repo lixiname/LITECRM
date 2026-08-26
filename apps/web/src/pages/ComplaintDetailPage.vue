@@ -1,9 +1,12 @@
 <template>
   <div v-loading="loading" class="c-detail">
-    <header class="c-detail__header">
-      <h1 class="c-detail__title">客诉详情</h1>
-      <div class="c-detail__actions">
-        <el-button @click="router.push('/complaints')">返回列表</el-button>
+    <AppPageHeader
+      title="客诉详情"
+      description="处理过程只追加，未解决事项必须有下一行动"
+      back-to="/complaints"
+      back-label="客诉列表"
+    >
+      <template #actions>
         <el-button
           v-if="complaint && complaint.status === 'registered'"
           type="primary"
@@ -11,8 +14,8 @@
         >
           跟进 / 确认解决
         </el-button>
-      </div>
-    </header>
+      </template>
+    </AppPageHeader>
 
     <el-card v-if="complaint" class="c-detail__card">
       <template #header>客诉信息</template>
@@ -80,12 +83,12 @@
 
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useQuery, getComplaint, followUpComplaint, COMPLAINT_TYPE_OPTIONS } from '@crm/domain'
+import AppPageHeader from '../components/AppPageHeader.vue'
 
 const route = useRoute()
-const router = useRouter()
 const complaintId = route.params.id as string
 
 const {
@@ -143,20 +146,6 @@ async function handleFollow() {
 <style scoped>
 .c-detail {
   padding: var(--crm-spacing-xl);
-}
-.c-detail__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.c-detail__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
-.c-detail__actions {
-  display: flex;
-  gap: var(--crm-spacing-sm);
 }
 .c-detail__card {
   max-width: 860px;

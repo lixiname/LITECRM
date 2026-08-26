@@ -89,6 +89,7 @@
   </el-dialog>
 
   <el-dialog v-model="showClose" title="未成交结案" width="440px">
+    <el-alert type="warning" :closable="false" title="结案后商机进入终态，剩余未完成行动将取消。" />
     <el-form label-width="90px">
       <el-form-item label="结果" required>
         <el-radio-group v-model="closeForm.result">

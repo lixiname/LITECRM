@@ -1,9 +1,11 @@
 <template>
   <div class="create-customer">
-    <header class="create-customer__header">
-      <h1 class="create-customer__title">新建客户</h1>
-      <el-button @click="router.back()">返回</el-button>
-    </header>
+    <AppPageHeader
+      title="新建客户"
+      description="先查重，再建立客户和首要联系人"
+      back-to="/customers"
+      back-label="客户列表"
+    />
 
     <el-card class="create-customer__card">
       <el-form :model="form" label-width="90px">
@@ -28,7 +30,20 @@
         </el-form-item>
 
         <el-form-item label="指定负责人">
-          <el-input v-model="form.ownerId" placeholder="留空=本人（代录场景填用户 ID）" />
+          <el-select
+            v-model="form.ownerId"
+            clearable
+            filterable
+            :placeholder="canOwnCustomer ? '留空则由本人负责' : '请选择客户负责人'"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in assignees"
+              :key="user.id"
+              :label="`${user.displayName}${user.region ? ` · ${user.region}` : ''}`"
+              :value="user.id"
+            />
+          </el-select>
         </el-form-item>
 
         <el-form-item label="联系人" required>
@@ -92,17 +107,20 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import AppPageHeader from '../components/AppPageHeader.vue'
 import {
   useAuthStore,
   checkDuplicate,
   createCustomer,
   createClaim,
   listDimensionOptions,
+  listCustomerAssignees,
   CUSTOMER_GRADE_OPTIONS,
   DEDUP_CONFIDENCE_LABELS,
   type DedupHit,
   type DimensionOption,
   type CustomerGrade,
+  type AssigneeOption,
 } from '@crm/domain'
 
 const router = useRouter()
@@ -118,13 +136,20 @@ const form = reactive({
   contacts: [{ name: '', phone: '' } as { name?: string; phone?: string }],
 })
 const industries = ref<DimensionOption[]>([])
+const assignees = ref<AssigneeOption[]>([])
 const dedupHits = ref<DedupHit[]>([])
 const saving = ref(false)
 
 const firstHit = computed(() => dedupHits.value[0])
+const canOwnCustomer = computed(() => ['sales', 'executive'].includes(auth.user?.role ?? ''))
 
 onMounted(async () => {
-  industries.value = await listDimensionOptions('industry').catch(() => [])
+  const [industryOptions, assigneeOptions] = await Promise.all([
+    listDimensionOptions('industry').catch(() => []),
+    auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
+  ])
+  industries.value = industryOptions
+  assignees.value = assigneeOptions
 })
 
 async function handleDedupCheck() {
@@ -139,6 +164,7 @@ async function handleDedupCheck() {
 
 async function handleSubmit() {
   if (!form.name.trim()) return ElMessage.warning('客户名称必填')
+  if (!form.ownerId && !canOwnCustomer.value) return ElMessage.warning('请选择客户负责人')
   const phone = form.contacts.find((c) => c.phone?.trim())?.phone
   if (!phone) return ElMessage.warning('至少需要一个联系人电话')
 
@@ -191,16 +217,6 @@ async function applyClaim(hit?: DedupHit) {
 <style scoped>
 .create-customer {
   padding: var(--crm-spacing-xl);
-}
-.create-customer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.create-customer__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
 }
 .create-customer__card {
   max-width: 640px;

@@ -1,14 +1,8 @@
 <template>
   <div class="expenses">
+    <AppPageHeader title="费用管理" description="按自然月查看费用记录；快速录入由移动端完成" />
     <el-card class="expenses__card">
-      <template #header>
-        <div class="expenses__header">
-          <span>费用记录（按自然月）</span>
-          <span class="expenses__hint">录入见移动端「快速记一笔」</span>
-        </div>
-      </template>
-
-      <el-table v-loading="loading" :data="items ?? []" border>
+      <el-table v-if="!error && items?.length" v-loading="loading" :data="items" border>
         <el-table-column prop="expenseDate" label="日期" width="110" />
         <el-table-column label="金额" width="140">
           <template #default="{ row }">¥{{ totalOf(row as Expense).toLocaleString() }}</template>
@@ -41,15 +35,23 @@
           </template>
         </el-table-column>
       </el-table>
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !items?.length"
+        empty-text="本月暂无费用记录"
+        @retry="reload"
+      />
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useQuery, listExpenses, submitExpense, voidExpense, type Expense } from '@crm/domain'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 
-const { data: items, loading, reload } = useQuery('expenses:list', () => listExpenses())
+const { data: items, loading, error, reload } = useQuery('expenses:list', () => listExpenses())
 
 function totalOf(e: Expense): number {
   return [e.dining, e.gifts, e.tobaccoAlcohol, e.entertainment, e.lodging].reduce(
@@ -76,8 +78,17 @@ async function act(fn: () => Promise<unknown>, msg: string) {
 function submit(id: string) {
   void act(() => submitExpense(id), '已提交')
 }
-function remove(id: string) {
-  void act(() => voidExpense(id), '已作废')
+async function remove(id: string) {
+  try {
+    await ElMessageBox.confirm('作废后该记录不再计入有效费用统计，是否继续？', '确认作废', {
+      confirmButtonText: '确认作废',
+      cancelButtonText: '返回',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  await act(() => voidExpense(id), '已作废')
 }
 </script>
 
@@ -87,9 +98,5 @@ function remove(id: string) {
 }
 .expenses__card {
   max-width: 900px;
-}
-.expenses__hint {
-  color: var(--crm-color-text-secondary);
-  font-size: var(--crm-font-size-xs);
 }
 </style>

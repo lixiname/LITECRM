@@ -1,9 +1,17 @@
 <template>
   <div v-loading="loading" class="detail">
-    <header class="detail__header">
-      <h1 class="detail__title">{{ detail?.name ?? '客户详情' }}</h1>
-      <div class="detail__actions">
-        <el-button @click="router.push('/customers')">返回列表</el-button>
+    <AppPageHeader
+      :title="detail?.name ?? '客户详情'"
+      description="客户资料、联系人和归属状态"
+      back-to="/customers"
+      back-label="客户列表"
+    >
+      <template #actions>
+        <template v-if="detail && detail.status === 'active' && auth.hasAbility('customer.write')">
+          <el-button type="primary" @click="businessDialogs?.openVisit()">记拜访</el-button>
+          <el-button @click="businessDialogs?.openOpportunity()">建商机</el-button>
+          <el-button @click="businessDialogs?.openComplaint()">登客诉</el-button>
+        </template>
         <el-button v-if="isPublic" type="success" @click="handleClaim">认领</el-button>
         <template v-if="detail && detail.status === 'active'">
           <el-button v-if="auth.hasAbility('customer.transfer')" @click="showTransfer = true">
@@ -17,8 +25,8 @@
             申请接管
           </el-button>
         </template>
-      </div>
-    </header>
+      </template>
+    </AppPageHeader>
 
     <el-card v-if="detail" class="detail__card">
       <template #header>基本信息</template>
@@ -71,7 +79,19 @@
     <el-dialog v-model="showTransfer" title="移交客户" width="420px">
       <el-form label-width="80px">
         <el-form-item label="新负责人" required>
-          <el-input v-model="transferForm.toOwnerId" placeholder="用户 ID" />
+          <el-select
+            v-model="transferForm.toOwnerId"
+            filterable
+            placeholder="按姓名或区域选择"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="user in availableAssignees"
+              :key="user.id"
+              :label="`${user.displayName}${user.region ? ` · ${user.region}` : ''}`"
+              :value="user.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="原因" required>
           <el-input v-model="transferForm.reason" placeholder="移交原因" />
@@ -85,6 +105,12 @@
 
     <!-- 释放 -->
     <el-dialog v-model="showRelease" title="释放客户" width="420px">
+      <el-alert
+        class="detail__dialog-alert"
+        type="warning"
+        :closable="false"
+        title="释放后未完成行动会被取消；存在未解决客诉时系统将阻止释放。"
+      />
       <el-form label-width="80px">
         <el-form-item label="去向" required>
           <el-radio-group v-model="releaseForm.target">
@@ -130,6 +156,13 @@
         <el-button type="primary" :loading="acting" @click="handleAddContact">确认</el-button>
       </template>
     </el-dialog>
+
+    <CustomerBusinessDialogs
+      v-if="detail"
+      ref="businessDialogs"
+      :customer-id="customerId"
+      @changed="handleBusinessChanged"
+    />
   </div>
 </template>
 
@@ -137,6 +170,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
 import {
   useAuthStore,
   useQuery,
@@ -146,6 +181,7 @@ import {
   claimCustomer,
   createClaim,
   addContact,
+  listCustomerAssignees,
   CUSTOMER_STATUS_OPTIONS,
   type CustomerStatus,
 } from '@crm/domain'
@@ -160,12 +196,16 @@ const {
   loading,
   reload,
 } = useQuery(`customer:detail:${customerId}`, () => getCustomer(customerId))
+const { data: assignees } = useQuery('customers:assignees', () =>
+  auth.hasAbility('customer.transfer') ? listCustomerAssignees() : Promise.resolve([]),
+)
 
 const showTransfer = ref(false)
 const showRelease = ref(false)
 const showClaimReq = ref(false)
 const showAddContact = ref(false)
 const acting = ref(false)
+const businessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
 
 const transferForm = reactive({ toOwnerId: '', reason: '' })
 const releaseForm = reactive({ target: 'pool' as 'pool' | 'invalid', reason: '' })
@@ -174,6 +214,9 @@ const contactForm = reactive({ name: '', title: '', phone: '', isKeyContact: fal
 
 const isOwner = computed(() => detail.value?.ownerId === auth.user?.id)
 const isPublic = computed(() => detail.value?.status === 'public')
+const availableAssignees = computed(
+  () => assignees.value?.filter((user) => user.id !== detail.value?.ownerId) ?? [],
+)
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
@@ -238,25 +281,16 @@ async function handleAddContact() {
   )
   showAddContact.value = false
 }
+
+function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', recordId: string) {
+  if (kind === 'opportunity') void router.push(`/opportunities/${recordId}`)
+  if (kind === 'complaint') void router.push(`/complaints/${recordId}`)
+}
 </script>
 
 <style scoped>
 .detail {
   padding: var(--crm-spacing-xl);
-}
-.detail__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.detail__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
-.detail__actions {
-  display: flex;
-  gap: var(--crm-spacing-sm);
 }
 .detail__card {
   margin-bottom: var(--crm-spacing-lg);
@@ -265,5 +299,8 @@ async function handleAddContact() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.detail__dialog-alert {
+  margin-bottom: var(--crm-spacing-md);
 }
 </style>

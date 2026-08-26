@@ -14,6 +14,8 @@ import { CreateContactDto } from './dto/contact.dto'
 import { DedupCheckDto } from './dto/dedup-check.dto'
 import { TransferCustomerDto } from './dto/transfer-customer.dto'
 import { ReleaseCustomerDto } from './dto/release-customer.dto'
+import { AssigneeOptionDto } from './dto/assignee-option.dto'
+import { CustomerAssigneeService } from './customer-assignee.service'
 
 // 客户域（§8.2/8.3）：建档（customer.write）/ 检索 / 详情 / 维护
 @ApiTags('customers')
@@ -23,6 +25,7 @@ export class CustomersController {
   constructor(
     private readonly customersService: CustomersService,
     private readonly ownershipService: OwnershipService,
+    private readonly assigneeService: CustomerAssigneeService,
   ) {}
 
   @Post()
@@ -45,6 +48,18 @@ export class CustomersController {
   @ApiOkResponse({ description: '客户列表（数据范围过滤 + 五级检索 + 分页）' })
   findAll(@Query() query: CustomerQueryDto, @CurrentUser() user: AuthUser) {
     return this.customersService.findAll(query, user)
+  }
+
+  @Get('assignees')
+  @ApiOkResponse({
+    type: AssigneeOptionDto,
+    isArray: true,
+    description: '客户移交可选负责人（仅 active 的销售与区域负责人）',
+  })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.transfer')
+  listAssignees() {
+    return this.assigneeService.list()
   }
 
   @Get(':id')

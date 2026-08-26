@@ -1,17 +1,20 @@
 <template>
   <div v-loading="loading" class="opp-detail">
-    <header class="opp-detail__header">
-      <h1>{{ opp?.name ?? '商机详情' }}</h1>
-      <div class="opp-detail__actions">
-        <el-button @click="router.push('/opportunities')">返回列表</el-button>
+    <AppPageHeader
+      :title="opp?.name ?? '商机详情'"
+      description="跟进、报价、行动和成交事实"
+      back-to="/opportunities"
+      back-label="商机列表"
+    >
+      <template #actions>
         <template v-if="isOpen">
           <el-button @click="commands?.openFollow()">记跟进</el-button>
           <el-button @click="commands?.openQuote()">记报价</el-button>
           <el-button type="success" @click="commands?.openWin()">确认成交</el-button>
           <el-button type="danger" plain @click="commands?.openClose()">结案</el-button>
         </template>
-      </div>
-    </header>
+      </template>
+    </AppPageHeader>
 
     <el-card v-if="opp" class="opp-detail__card">
       <template #header>商机当前状态</template>
@@ -97,7 +100,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import {
   getOpportunity,
   OPPORTUNITY_SOURCE_OPTIONS,
@@ -107,9 +110,9 @@ import {
   type OpportunityStage,
 } from '@crm/domain'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
+import AppPageHeader from '../components/AppPageHeader.vue'
 
 const route = useRoute()
-const router = useRouter()
 const oppId = route.params.id as string
 const {
   data: opp,
@@ -163,19 +166,6 @@ function eventText(event: { type: string; payload: unknown }): string {
 <style scoped>
 .opp-detail {
   padding: var(--crm-spacing-xl);
-}
-.opp-detail__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.opp-detail__header h1 {
-  margin: 0;
-}
-.opp-detail__actions {
-  display: flex;
-  gap: var(--crm-spacing-sm);
 }
 .opp-detail__card {
   max-width: 920px;

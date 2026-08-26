@@ -1,8 +1,7 @@
 <template>
   <div class="customers">
-    <header class="customers__header">
-      <h1 class="customers__title">客户列表</h1>
-      <div class="customers__filters">
+    <AppPageHeader title="客户管理" description="按名称、地区、等级和状态查找客户">
+      <template #actions>
         <el-input
           v-model="keyword"
           placeholder="搜索名称/城市"
@@ -40,11 +39,12 @@
         >
           新建客户
         </el-button>
-      </div>
-    </header>
+      </template>
+    </AppPageHeader>
 
     <el-card class="customers__card">
       <el-table
+        v-if="!error && page?.items.length"
         v-loading="loading"
         :data="page?.items ?? []"
         border
@@ -68,7 +68,14 @@
           </template>
         </el-table-column>
       </el-table>
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !page?.items.length"
+        empty-text="还没有客户；可以先新建一位客户"
+        @retry="reload"
+      />
       <el-pagination
+        v-if="page?.total"
         v-model:current-page="pageNum"
         :page-size="PAGE_SIZE"
         :total="page?.total ?? 0"
@@ -83,6 +90,8 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 import {
   useAuthStore,
   useQuery,
@@ -108,7 +117,12 @@ const query = ref({
   status: undefined as string | undefined,
 })
 
-const { data: page, loading } = useQuery('customers:list', () => listCustomers(query.value))
+const {
+  data: page,
+  loading,
+  error,
+  reload,
+} = useQuery('customers:list', () => listCustomers(query.value))
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 function onSearch() {
@@ -116,16 +130,19 @@ function onSearch() {
   searchTimer = setTimeout(() => {
     query.value = { ...query.value, keyword: keyword.value.trim(), page: 1 }
     pageNum.value = 1
+    void reload()
   }, 300)
 }
 
 watch(filters, () => {
   query.value = { ...query.value, grade: filters.grade, status: filters.status, page: 1 }
   pageNum.value = 1
+  void reload()
 })
 
 function load() {
   query.value = { ...query.value, page: pageNum.value }
+  void reload()
 }
 
 function statusTag(status: CustomerStatus): 'success' | 'warning' | 'info' {
@@ -139,23 +156,6 @@ function statusLabel(status: CustomerStatus): string {
 <style scoped>
 .customers {
   padding: var(--crm-spacing-xl);
-}
-.customers__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--crm-spacing-md);
-  margin-bottom: var(--crm-spacing-lg);
-}
-.customers__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
-.customers__filters {
-  display: flex;
-  align-items: center;
-  gap: var(--crm-spacing-sm);
 }
 .customers__pagination {
   margin-top: var(--crm-spacing-md);

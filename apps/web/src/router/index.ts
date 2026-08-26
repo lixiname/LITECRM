@@ -79,7 +79,7 @@ const router = createRouter({
           path: 'week-view',
           name: 'week-view',
           component: () => import('@/pages/WeekViewPage.vue'),
-          meta: { title: '周计划' },
+          meta: { title: '行动周视图' },
         },
         {
           path: 'claims',

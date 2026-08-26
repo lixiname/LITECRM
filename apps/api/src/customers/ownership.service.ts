@@ -13,6 +13,7 @@ import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.s
 import type { AuthUser } from '../auth/auth.service'
 import type { TransferCustomerDto } from './dto/transfer-customer.dto'
 import type { ReleaseCustomerDto } from './dto/release-customer.dto'
+import { CustomerAssigneeService } from './customer-assignee.service'
 
 /**
  * 归属治理（§8.3）：所有权转移 / 主动释放 / 公海认领，均走客户分级名额校验。
@@ -24,6 +25,7 @@ export class OwnershipService {
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
     private readonly actionsService: FollowUpActionsService,
+    private readonly assigneeService: CustomerAssigneeService,
   ) {}
 
   // 所有权转移（§8.3）：owner/管理链/admin 发起，同事务改归属 + 写 customer_transfers
@@ -34,6 +36,7 @@ export class OwnershipService {
     if (customer.status !== 'active') throw new ConflictException('仅 active 客户可移交')
 
     return db.transaction(async (tx) => {
+      await this.assigneeService.assertAssignable(tx, dto.toOwnerId)
       await this.gradeQuotaService.assertSlotAvailable(tx, dto.toOwnerId, customer.grade)
       const [updated] = await tx
         .update(customers)
@@ -109,6 +112,7 @@ export class OwnershipService {
     if (!customer) throw new NotFoundException('公海客户不存在')
 
     return db.transaction(async (tx) => {
+      await this.assigneeService.assertAssignable(tx, actor.id)
       await this.gradeQuotaService.assertSlotAvailable(tx, actor.id, customer.grade)
       const [updated] = await tx
         .update(customers)

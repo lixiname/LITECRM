@@ -12,6 +12,7 @@ export type CreateCustomerInput = components['schemas']['CreateCustomerDto']
 export type UpdateCustomerInput = components['schemas']['UpdateCustomerDto']
 export type CreateContactInput = components['schemas']['CreateContactDto']
 export type DedupCheckInput = components['schemas']['DedupCheckDto']
+export type AssigneeOption = components['schemas']['AssigneeOptionDto']
 
 export interface CustomerListQuery {
   keyword?: string
@@ -37,6 +38,11 @@ export function listCustomers(query: CustomerListQuery = {}): Promise<CustomerPa
 /** 客户详情（含联系人） */
 export function getCustomer(id: string): Promise<CustomerDetail> {
   return apiGet<CustomerDetail>(`/customers/${id}`)
+}
+
+/** 客户移交选择器：只返回可承担客户归属的 active 用户。 */
+export function listCustomerAssignees(): Promise<AssigneeOption[]> {
+  return apiGet<AssigneeOption[]>('/customers/assignees')
 }
 
 /** 建档：名称疑似重复只提示，ERP 编码/信用代码冲突才硬拦截。 */

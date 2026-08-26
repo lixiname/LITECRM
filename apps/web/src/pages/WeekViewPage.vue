@@ -1,16 +1,19 @@
 <template>
   <div class="week-view">
-    <header class="week-view__header">
-      <el-button-group>
-        <el-button @click="shiftWeek(-1)">上一周</el-button>
-        <el-button @click="goToday">本周</el-button>
-        <el-button @click="shiftWeek(1)">下一周</el-button>
-      </el-button-group>
-      <span class="week-view__label">{{ weekLabel }}</span>
-    </header>
+    <AppPageHeader title="行动周视图" :description="weekLabel">
+      <template #actions>
+        <el-button-group>
+          <el-button @click="shiftWeek(-1)">上一周</el-button>
+          <el-button @click="goToday">本周</el-button>
+          <el-button @click="shiftWeek(1)">下一周</el-button>
+        </el-button-group>
+      </template>
+    </AppPageHeader>
+
+    <AppQueryState :error="error" @retry="reload" />
 
     <el-alert
-      v-if="view?.overdue.length"
+      v-if="!error && view?.overdue.length"
       class="week-view__overdue"
       type="warning"
       :closable="false"
@@ -21,11 +24,11 @@
           >{{ formatDateTime(action.plannedAt) }} · {{ sourceLabel(action.sourceType) }} ·
           {{ action.content }}</span
         >
-        <el-button link type="primary" @click="markDone(action)">完成</el-button>
+        <FollowUpActionMenu :action="action" @command="handleActionCommand" />
       </div>
     </el-alert>
 
-    <el-card v-loading="loading" class="week-view__card">
+    <el-card v-if="!error" v-loading="loading" class="week-view__card">
       <div class="week-view__grid">
         <div
           v-for="day in days"
@@ -45,7 +48,7 @@
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
               <div :title="action.content">{{ action.content }}</div>
-              <el-button link type="primary" @click="markDone(action)">完成</el-button>
+              <FollowUpActionMenu :action="action" @command="handleActionCommand" />
             </div>
             <div class="week-view__add" @click="onBlankClick(day)">＋ 加行动</div>
           </div>
@@ -64,20 +67,60 @@
         <el-button type="primary" :loading="saving" @click="submitAction">添加</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="actionDialog.visible"
+      :title="actionDialog.mode === 'reschedule' ? '改期行动' : '取消行动'"
+      width="420px"
+    >
+      <el-form label-width="80px">
+        <el-form-item v-if="actionDialog.mode === 'reschedule'" label="新时间" required>
+          <el-input v-model="actionDialog.plannedAt" type="datetime-local" />
+        </el-form-item>
+        <el-form-item v-else label="取消原因" required>
+          <el-input
+            v-model="actionDialog.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="说明为什么不再执行这项行动"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="actionDialog.visible = false">返回</el-button>
+        <el-button
+          :type="actionDialog.mode === 'cancel' ? 'danger' : 'primary'"
+          :loading="actionDialog.saving"
+          @click="submitActionCommand"
+        >
+          {{ actionDialog.mode === 'cancel' ? '确认取消' : '确认改期' }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
+import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import {
+  cancelFollowUpAction,
   completeFollowUpAction,
   createPlanItemByDate,
   getWeekView,
+  rescheduleFollowUpAction,
   useQuery,
   type FollowUpAction,
   type FollowUpActionSourceType,
 } from '@crm/domain'
+
+type ActionCommand = 'open' | 'complete' | 'reschedule' | 'cancel'
+
+const router = useRouter()
 
 const today = new Date()
 const todayStr = fmt(today)
@@ -99,6 +142,7 @@ const weekLabel = computed(() => {
 const {
   data: view,
   loading,
+  error,
   reload,
 } = useQuery('web-week-view', () => getWeekView(range.value.monday, range.value.sunday))
 watch(weekOffset, () => void reload())
@@ -148,6 +192,75 @@ async function markDone(action: FollowUpAction) {
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '操作失败')
   }
+}
+
+const selectedAction = ref<FollowUpAction>()
+const actionDialog = reactive({
+  visible: false,
+  mode: 'reschedule' as 'reschedule' | 'cancel',
+  plannedAt: '',
+  reason: '',
+  saving: false,
+})
+
+function handleActionCommand(command: ActionCommand, action: FollowUpAction) {
+  if (command === 'open') {
+    const target = actionRoute(action)
+    if (target) void router.push(target)
+    else ElMessage.info('这是一项独立行动，没有关联业务详情')
+    return
+  }
+  if (command === 'complete') {
+    void markDone(action)
+    return
+  }
+  selectedAction.value = action
+  actionDialog.mode = command
+  actionDialog.plannedAt = localInput(action.plannedAt)
+  actionDialog.reason = ''
+  actionDialog.visible = true
+}
+
+async function submitActionCommand() {
+  const action = selectedAction.value
+  if (!action) return
+  if (actionDialog.mode === 'reschedule' && !actionDialog.plannedAt)
+    return ElMessage.warning('请选择新的计划时间')
+  if (actionDialog.mode === 'cancel' && !actionDialog.reason.trim())
+    return ElMessage.warning('请填写取消原因')
+  actionDialog.saving = true
+  try {
+    if (actionDialog.mode === 'reschedule') {
+      await rescheduleFollowUpAction(
+        action.id,
+        action.version,
+        new Date(actionDialog.plannedAt).toISOString(),
+      )
+      ElMessage.success('行动已改期')
+    } else {
+      await cancelFollowUpAction(action.id, action.version, actionDialog.reason.trim())
+      ElMessage.success('行动已取消')
+    }
+    actionDialog.visible = false
+    await reload()
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '操作失败')
+  } finally {
+    actionDialog.saving = false
+  }
+}
+
+function actionRoute(action: FollowUpAction): string | undefined {
+  if (action.opportunityId) return `/opportunities/${action.opportunityId}`
+  if (action.complaintId) return `/complaints/${action.complaintId}`
+  if (action.customerId) return `/customers/${action.customerId}`
+  return undefined
+}
+
+function localInput(value: string): string {
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
 const showDialog = ref(false)
@@ -202,16 +315,6 @@ function formatDateTime(value: string): string {
 </script>
 
 <style scoped>
-.week-view__header {
-  display: flex;
-  align-items: center;
-  gap: var(--crm-spacing-lg);
-  margin-bottom: var(--crm-spacing-lg);
-}
-.week-view__label {
-  font-size: var(--crm-font-size-lg);
-  font-weight: 600;
-}
 .week-view__overdue {
   margin-bottom: var(--crm-spacing-md);
 }

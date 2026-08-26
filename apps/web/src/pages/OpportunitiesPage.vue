@@ -1,12 +1,10 @@
 <template>
   <div class="opps">
-    <header class="opps__header">
-      <h1 class="opps__title">商机管理</h1>
-      <el-button @click="router.push('/')">返回首页</el-button>
-    </header>
+    <AppPageHeader title="商机管理" description="跟进、报价和成交分别留痕，下一行动保持可见" />
 
     <el-card class="opps__card">
       <el-table
+        v-if="!error && opps?.length"
         v-loading="loading"
         :data="opps ?? []"
         border
@@ -36,13 +34,20 @@
           }}</template>
         </el-table-column>
       </el-table>
-      <p v-if="opps && opps.length === 0" class="opps__empty">暂无商机</p>
+      <AppQueryState
+        :error="error"
+        :empty="!loading && !opps?.length"
+        empty-text="暂无商机；请从客户详情建立商机"
+        @retry="reload"
+      />
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import AppPageHeader from '../components/AppPageHeader.vue'
+import AppQueryState from '../components/AppQueryState.vue'
 import {
   useQuery,
   listOpportunities,
@@ -52,7 +57,12 @@ import {
 } from '@crm/domain'
 
 const router = useRouter()
-const { data: opps, loading } = useQuery('opportunities:list', () => listOpportunities())
+const {
+  data: opps,
+  loading,
+  error,
+  reload,
+} = useQuery('opportunities:list', () => listOpportunities())
 
 function stageTag(stage: OpportunityStage): 'success' | 'warning' | 'info' | 'danger' {
   return stage === 'won'
@@ -78,22 +88,7 @@ function timeText(value: string | undefined): string {
 .opps {
   padding: var(--crm-spacing-xl);
 }
-.opps__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-lg);
-}
-.opps__title {
-  margin: 0;
-  color: var(--crm-color-text-primary);
-}
 .opps__card {
   max-width: 960px;
-}
-.opps__empty {
-  text-align: center;
-  color: var(--crm-color-text-secondary);
-  padding: var(--crm-spacing-xl);
 }
 </style>

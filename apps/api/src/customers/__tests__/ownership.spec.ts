@@ -30,6 +30,9 @@ describe('归属治理与客户分级名额（§8.3）', () => {
     await cleanupCustomers()
     await db
       .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales1')))
+    await db
+      .delete(userCustomerGradeQuotaOverrides)
       .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales2')))
     await db
       .delete(userCustomerGradeQuotaOverrides)
@@ -38,6 +41,9 @@ describe('归属治理与客户分级名额（§8.3）', () => {
 
   afterAll(async () => {
     await cleanupCustomers()
+    await db
+      .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales1')))
     await db
       .delete(userCustomerGradeQuotaOverrides)
       .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales2')))
@@ -83,6 +89,51 @@ describe('归属治理与客户分级名额（§8.3）', () => {
   }
 
   describe('所有权转移', () => {
+    it('移交候选人只返回可承担客户归属的在职销售与经理', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const res = await request(app.getHttpServer())
+        .get('/api/customers/assignees')
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: await getUserId('sales1'), role: 'sales' }),
+          expect.objectContaining({ id: await getUserId('sales2'), role: 'sales' }),
+          expect.objectContaining({ id: await getUserId('manager'), role: 'executive' }),
+        ]),
+      )
+      expect(res.body).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: await getUserId('admin') }),
+          expect.objectContaining({ id: await getUserId('assistant') }),
+        ]),
+      )
+    })
+
+    it('不具备归属资格的代录人必须指定在职销售或经理', async () => {
+      const admin = await login('admin', 'Admin@123456')
+      const withoutOwner = await request(app.getHttpServer())
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${admin.accessToken}`)
+        .send({
+          name: 'SMOKE_代录未指定',
+          contacts: [{ name: '测试联系人', phone: '13800000009' }],
+        })
+      expect(withoutOwner.status).toBe(400)
+
+      const withOwner = await request(app.getHttpServer())
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${admin.accessToken}`)
+        .send({
+          name: 'SMOKE_代录已指定',
+          ownerId: await getUserId('sales1'),
+          contacts: [{ name: '测试联系人', phone: '13800000009' }],
+        })
+      expect(withOwner.status).toBe(201)
+      expect(withOwner.body.ownerId).toBe(await getUserId('sales1'))
+    })
+
     it('owner 移交成功：归属变更 + 移交历史落库', async () => {
       const sales1 = await login('sales1', 'Crm@123456')
       const customer = await createCustomer(sales1.accessToken, 'SMOKE_移交客户')
@@ -108,6 +159,18 @@ describe('归属治理与客户分级名额（§8.3）', () => {
       expect(transfers).toHaveLength(1)
       expect(transfers[0].fromOwnerId).toBe(sales1Id)
       expect(transfers[0].toOwnerId).toBe(sales2Id)
+    })
+
+    it('不能绕过选择器把客户移交给非销售岗位', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const customer = await createCustomer(sales1.accessToken, 'SMOKE_非法负责人')
+      const res = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/transfer`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ toOwnerId: await getUserId('assistant'), reason: '非法目标' })
+
+      expect(res.status).toBe(400)
+      expect(res.body.message).toContain('在职销售或经理')
     })
 
     it('非 owner/非管理链越权移交 → 404（资源不可见）', async () => {
@@ -248,17 +311,17 @@ describe('归属治理与客户分级名额（§8.3）', () => {
     })
 
     it('并发占用最后一个名额时仅一条成功', async () => {
-      const admin = await login('admin', 'Admin@123456')
-      const adminId = await getUserId('admin')
-      const currentCount = await activeGradeCount(adminId, 'C')
+      const sales1 = await login('sales1', 'Crm@123456')
+      const sales1Id = await getUserId('sales1')
+      const currentCount = await activeGradeCount(sales1Id, 'C')
       await db
         .insert(userCustomerGradeQuotaOverrides)
-        .values({ userId: adminId, grade: 'C', limit: currentCount + 1 })
+        .values({ userId: sales1Id, grade: 'C', limit: currentCount + 1 })
 
       const create = (name: string) =>
         request(app.getHttpServer())
           .post('/api/customers')
-          .set('Authorization', `Bearer ${admin.accessToken}`)
+          .set('Authorization', `Bearer ${sales1.accessToken}`)
           .send({ name, grade: 'C', contacts: [{ phone: '13800000004' }] })
       const results = await Promise.all([create('SMOKE_并发名额1'), create('SMOKE_并发名额2')])
 
