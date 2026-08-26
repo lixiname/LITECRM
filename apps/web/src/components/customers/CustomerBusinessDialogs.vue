@@ -45,38 +45,12 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="visible.opportunity" title="新建商机" width="520px">
-    <el-form label-width="100px">
-      <el-form-item label="需求简述" required>
-        <el-input v-model="opportunityForm.name" placeholder="客户要解决什么问题" />
-      </el-form-item>
-      <el-form-item label="发现渠道" required>
-        <el-select v-model="opportunityForm.source" style="width: 100%">
-          <el-option
-            v-for="option in opportunitySourceOptions"
-            :key="option.value"
-            :label="option.label"
-            :value="option.value"
-          />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="意向规模" required>
-        <el-input v-model.number="opportunityForm.estimatedAmount" type="number">
-          <template #append>元</template>
-        </el-input>
-      </el-form-item>
-      <el-form-item label="第一步行动" required>
-        <el-input v-model="opportunityForm.firstActionContent" placeholder="如：确认选型参数" />
-      </el-form-item>
-      <el-form-item label="行动时间" required>
-        <el-input v-model="opportunityForm.firstActionAt" type="datetime-local" />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="visible.opportunity = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="submitOpportunity">创建商机</el-button>
-    </template>
-  </el-dialog>
+  <OpportunityCreateDialog
+    ref="opportunityDialog"
+    :customer-id="customerId"
+    :customer-name="customerName"
+    @created="handleOpportunityCreated"
+  />
 
   <el-dialog v-model="visible.complaint" title="登记客诉" width="520px">
     <el-form label-width="100px">
@@ -113,25 +87,25 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import OpportunityCreateDialog from '../opportunities/OpportunityCreateDialog.vue'
 import {
   VISIT_METHOD_OPTIONS,
   createComplaint,
-  createOpportunity,
   createVisit,
   listDimensionOptions,
   type DimensionOption,
   type VisitMethod,
 } from '@crm/domain'
 
-const props = defineProps<{ customerId: string }>()
+const props = defineProps<{ customerId: string; customerName?: string }>()
 const emit = defineEmits<{
   changed: [kind: 'visit' | 'opportunity' | 'complaint', recordId: string]
 }>()
 
-const visible = reactive({ visit: false, opportunity: false, complaint: false })
+const visible = reactive({ visit: false, complaint: false })
 const saving = ref(false)
+const opportunityDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
 const visitTypeOptions = ref<SelectOption[]>([])
-const opportunitySourceOptions = ref<SelectOption[]>([])
 const complaintTypeOptions = ref<SelectOption[]>([])
 
 type SelectOption = { value: string; label: string }
@@ -144,13 +118,11 @@ function asSelectOptions(options: DimensionOption[]): SelectOption[] {
 
 onMounted(async () => {
   try {
-    const [visitTypes, opportunitySources, complaintTypes] = await Promise.all([
+    const [visitTypes, complaintTypes] = await Promise.all([
       listDimensionOptions('visit_type'),
-      listDimensionOptions('opportunity_source'),
       listDimensionOptions('complaint_type'),
     ])
     visitTypeOptions.value = asSelectOptions(visitTypes)
-    opportunitySourceOptions.value = asSelectOptions(opportunitySources)
     complaintTypeOptions.value = asSelectOptions(complaintTypes)
   } catch {
     ElMessage.error('业务分类加载失败，请稍后重试')
@@ -163,13 +135,6 @@ const visitForm = reactive({
   businessSituation: '',
   nextActionContent: '',
   nextActionAt: '',
-})
-const opportunityForm = reactive({
-  name: '',
-  source: '',
-  estimatedAmount: undefined as number | undefined,
-  firstActionContent: '',
-  firstActionAt: '',
 })
 const complaintForm = reactive({
   occurredAt: '',
@@ -192,14 +157,7 @@ function openVisit() {
 }
 
 function openOpportunity() {
-  Object.assign(opportunityForm, {
-    name: '',
-    source: '',
-    estimatedAmount: undefined,
-    firstActionContent: '',
-    firstActionAt: localInput(tomorrowAtNine()),
-  })
-  visible.opportunity = true
+  opportunityDialog.value?.open()
 }
 
 function openComplaint() {
@@ -235,28 +193,8 @@ async function submitVisit() {
   )
 }
 
-async function submitOpportunity() {
-  if (
-    !opportunityForm.name.trim() ||
-    !opportunityForm.source ||
-    opportunityForm.estimatedAmount == null ||
-    !opportunityForm.firstActionContent.trim() ||
-    !opportunityForm.firstActionAt
-  )
-    return ElMessage.warning('请填写需求、渠道、意向规模和第一步行动')
-  await run(
-    () =>
-      createOpportunity({
-        customerId: props.customerId,
-        name: opportunityForm.name.trim(),
-        source: opportunityForm.source,
-        estimatedAmount: opportunityForm.estimatedAmount!,
-        firstActionContent: opportunityForm.firstActionContent.trim(),
-        firstActionAt: new Date(opportunityForm.firstActionAt).toISOString(),
-      }),
-    'opportunity',
-    '商机已创建',
-  )
+function handleOpportunityCreated(id: string) {
+  emit('changed', 'opportunity', id)
 }
 
 async function submitComplaint() {
@@ -285,7 +223,7 @@ async function submitComplaint() {
 
 async function run(
   operation: () => Promise<{ id: string }>,
-  kind: 'visit' | 'opportunity' | 'complaint',
+  kind: 'visit' | 'complaint',
   message: string,
 ) {
   saving.value = true

@@ -12,6 +12,7 @@ import { CloseOpportunityDto } from './dto/close-opportunity.dto'
 import { CreateOpportunityFollowUpDto } from './dto/create-opportunity-follow-up.dto'
 import { CreateOpportunityQuoteDto } from './dto/create-opportunity-quote.dto'
 import { WinOpportunityDto } from './dto/win-opportunity.dto'
+import { OpportunityQueryDto } from './dto/opportunity-query.dto'
 
 // 商机闭环：创建、结构化跟进、多次报价、明确下单、失败结案。
 @ApiTags('opportunities')
@@ -33,8 +34,8 @@ export class OpportunitiesController {
 
   @Get()
   @ApiOkResponse({ description: '商机列表（客户当前归属可见）' })
-  list(@Query('customerId') customerId: string | undefined, @CurrentUser() user: AuthUser) {
-    return this.opportunitiesService.list(user, customerId)
+  list(@Query() query: OpportunityQueryDto, @CurrentUser() user: AuthUser) {
+    return this.opportunitiesService.list(query, user)
   }
 
   @Get(':id')

@@ -160,6 +160,7 @@
       v-if="detail"
       ref="businessDialogs"
       :customer-id="customerId"
+      :customer-name="detail.name"
       @changed="handleBusinessChanged"
     />
     <CustomerEditDialog v-if="detail" ref="editDialog" :customer="detail" @saved="reload" />

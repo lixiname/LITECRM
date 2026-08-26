@@ -1066,7 +1066,99 @@
       },
       "get": {
         "operationId": "OpportunitiesController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "description": "检索商机名称或客户名称",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "customerId",
+            "required": false,
+            "in": "query",
+            "description": "限定客户 ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stage",
+            "required": false,
+            "in": "query",
+            "description": "商机阶段",
+            "schema": {
+              "type": "string",
+              "enum": ["intent", "following", "won", "lost", "demand_disappeared"]
+            }
+          },
+          {
+            "name": "minAmount",
+            "required": false,
+            "in": "query",
+            "description": "最低意向金额",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxAmount",
+            "required": false,
+            "in": "query",
+            "description": "最高意向金额",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "hasQuote",
+            "required": false,
+            "in": "query",
+            "description": "是否已有报价",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "noNextAction",
+            "required": false,
+            "in": "query",
+            "description": "是否缺少下一步行动",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "stagnant",
+            "required": false,
+            "in": "query",
+            "description": "是否存在停滞风险",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码（从 1 开始）",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "每页条数（默认 20，最大 50）",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "商机列表（客户当前归属可见）"

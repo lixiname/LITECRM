@@ -2227,7 +2227,28 @@ export interface operations {
     };
     OpportunitiesController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 检索商机名称或客户名称 */
+                keyword?: string;
+                /** @description 限定客户 ID */
+                customerId?: string;
+                /** @description 商机阶段 */
+                stage?: "intent" | "following" | "won" | "lost" | "demand_disappeared";
+                /** @description 最低意向金额 */
+                minAmount?: number;
+                /** @description 最高意向金额 */
+                maxAmount?: number;
+                /** @description 是否已有报价 */
+                hasQuote?: boolean;
+                /** @description 是否缺少下一步行动 */
+                noNextAction?: boolean;
+                /** @description 是否存在停滞风险 */
+                stagnant?: boolean;
+                /** @description 页码（从 1 开始） */
+                page?: number;
+                /** @description 每页条数（默认 20，最大 50） */
+                pageSize?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

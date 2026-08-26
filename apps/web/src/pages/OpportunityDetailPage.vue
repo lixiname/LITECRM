@@ -7,7 +7,7 @@
       back-label="商机列表"
     >
       <template #actions>
-        <template v-if="isOpen">
+        <template v-if="canOperate">
           <el-button @click="commands?.openFollow()">记跟进</el-button>
           <el-button @click="commands?.openQuote()">记报价</el-button>
           <el-button type="success" @click="commands?.openWin()">确认成交</el-button>
@@ -18,15 +18,47 @@
 
     <el-card v-if="opp" class="opp-detail__card">
       <template #header>商机当前状态</template>
+      <el-alert
+        v-if="opp.riskFlags?.length"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="opp-detail__risk"
+      >
+        <template #title>
+          当前需关注：{{ opp.riskFlags.map((risk) => OPPORTUNITY_RISK_LABELS[risk]).join('、') }}
+        </template>
+      </el-alert>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="名称">{{ opp.name }}</el-descriptions-item>
         <el-descriptions-item label="阶段">
-          <el-tag :type="stageTag(opp.stage)">{{ stageLabel(opp.stage) }}</el-tag>
+          <el-tag :type="opportunityStageTag(opp.stage)">{{
+            opportunityStageLabel(opp.stage)
+          }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="意向规模">{{
-          amountText(opp.estimatedAmount)
+        <el-descriptions-item label="所属客户">
+          <el-button link type="primary" @click="router.push(`/customers/${opp.customerId}`)">
+            {{ opp.customerName ?? '-' }}
+          </el-button>
+        </el-descriptions-item>
+        <el-descriptions-item label="当前负责人">{{
+          opp.currentOwnerName ?? '-'
         }}</el-descriptions-item>
+        <el-descriptions-item label="意向规模"
+          >{{ opportunityAmountText(opp.estimatedAmount)
+          }}{{ opp.approximate ? '（约估）' : '' }}</el-descriptions-item
+        >
         <el-descriptions-item label="来源">{{ sourceLabel(opp.source) }}</el-descriptions-item>
+        <el-descriptions-item label="产品线">{{
+          productLineLabel(opp.productLine)
+        }}</el-descriptions-item>
+        <el-descriptions-item label="金额说明">{{ opp.estimateNote || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="需求发现日">{{
+          dateText(opp.discoveredDate)
+        }}</el-descriptions-item>
+        <el-descriptions-item label="预计成交日">{{
+          dateText(opp.expectedCloseDate)
+        }}</el-descriptions-item>
         <el-descriptions-item label="下一行动">{{
           opp.actions[0]?.content ?? '-'
         }}</el-descriptions-item>
@@ -34,15 +66,15 @@
           formatTime(opp.actions[0]?.plannedAt)
         }}</el-descriptions-item>
         <el-descriptions-item label="最近报价">{{
-          amountText(opp.quotes[0]?.amount)
+          opportunityAmountText(opp.quotes[0]?.amount)
         }}</el-descriptions-item>
         <el-descriptions-item label="报价类型">{{
-          quoteKindLabel(opp.quotes[0]?.kind)
+          opportunityQuoteKindLabel(opp.quotes[0]?.kind)
         }}</el-descriptions-item>
       </el-descriptions>
       <el-descriptions v-if="opp.deal" class="opp-detail__deal" :column="2" border title="成交确认">
         <el-descriptions-item label="成交金额">{{
-          amountText(opp.deal.amount)
+          opportunityAmountText(opp.deal.amount)
         }}</el-descriptions-item>
         <el-descriptions-item label="成交时间">{{
           formatTime(opp.deal.occurredAt)
@@ -57,13 +89,19 @@
           ><template #default="{ row }">{{ formatTime(row.quotedAt) }}</template></el-table-column
         >
         <el-table-column label="类型" width="80"
-          ><template #default="{ row }">{{ quoteKindLabel(row.kind) }}</template></el-table-column
+          ><template #default="{ row }">{{
+            opportunityQuoteKindLabel(row.kind)
+          }}</template></el-table-column
         >
         <el-table-column label="金额" width="130"
-          ><template #default="{ row }">{{ amountText(row.amount) }}</template></el-table-column
+          ><template #default="{ row }">{{
+            opportunityAmountText(row.amount)
+          }}</template></el-table-column
         >
         <el-table-column prop="quoteNo" label="报价单号" />
-        <el-table-column prop="status" label="状态" width="100" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">{{ opportunityQuoteStatusLabel(row.status) }}</template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -100,19 +138,27 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   getOpportunity,
   listDimensionOptions,
-  OPPORTUNITY_STAGE_OPTIONS,
+  OPPORTUNITY_RISK_LABELS,
+  useAuthStore,
   useQuery,
-  type OpportunityQuote,
-  type OpportunityStage,
 } from '@crm/domain'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
+import {
+  opportunityAmountText,
+  opportunityQuoteKindLabel,
+  opportunityQuoteStatusLabel,
+  opportunityStageLabel,
+  opportunityStageTag,
+} from '../components/opportunities/opportunity-presentation'
 import AppPageHeader from '../components/AppPageHeader.vue'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const oppId = route.params.id as string
 const {
   data: opp,
@@ -122,32 +168,27 @@ const {
 const { data: sourceOptions } = useQuery('catalog:opportunity_source', () =>
   listDimensionOptions('opportunity_source'),
 )
+const { data: productLineOptions } = useQuery('catalog:product_line', () =>
+  listDimensionOptions('product_line'),
+)
 const commands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
 const isOpen = computed(() => opp.value?.stage === 'intent' || opp.value?.stage === 'following')
+const canOperate = computed(() => isOpen.value && auth.hasAbility('customer.write'))
 
-function stageTag(stage: OpportunityStage): 'success' | 'warning' | 'info' | 'danger' {
-  return stage === 'won'
-    ? 'success'
-    : stage === 'lost' || stage === 'demand_disappeared'
-      ? 'danger'
-      : stage === 'following'
-        ? 'warning'
-        : 'info'
-}
-function stageLabel(stage: OpportunityStage): string {
-  return OPPORTUNITY_STAGE_OPTIONS.find((item) => item.value === stage)?.label ?? stage
-}
 function sourceLabel(source: string): string {
   return sourceOptions.value?.find((option) => option.name === source)?.label ?? source
 }
-function quoteKindLabel(kind: OpportunityQuote['kind'] | undefined): string {
-  return kind ? (kind === 'formal' ? '正式报价' : '口头报价') : '-'
-}
-function amountText(amount: string | undefined | null): string {
-  return amount == null ? '-' : `¥${Number(amount).toLocaleString()}`
+function productLineLabel(productLine: string | null): string {
+  if (!productLine) return '-'
+  return (
+    productLineOptions.value?.find((option) => option.name === productLine)?.label ?? productLine
+  )
 }
 function formatTime(value: string | undefined | null): string {
   return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+}
+function dateText(value: string | undefined | null): string {
+  return value ? new Date(value).toLocaleDateString('zh-CN') : '-'
 }
 function eventText(event: { type: string; payload: unknown }): string {
   const payload = (event.payload ?? {}) as {
@@ -159,10 +200,13 @@ function eventText(event: { type: string; payload: unknown }): string {
     quoteId?: string
   }
   if (event.type === 'created')
-    return `创建商机：${payload.name ?? ''}，意向规模 ${amountText(payload.estimatedAmount?.toString())}`
+    return `创建商机：${payload.name ?? ''}，意向规模 ${opportunityAmountText(payload.estimatedAmount?.toString())}`
   if (event.type === 'stage_changed')
-    return `阶段：${payload.from ?? '-'} → ${payload.to ?? '-'}${payload.reason ? `（${payload.reason}）` : ''}`
+    return `阶段：${eventStageLabel(payload.from)} → ${eventStageLabel(payload.to)}${payload.reason ? `（${payload.reason}）` : ''}`
   return payload.quoteId ? '新增报价记录' : '更新商机'
+}
+function eventStageLabel(stage: string | undefined): string {
+  return opportunityStageLabel(stage)
 }
 </script>
 
@@ -177,5 +221,8 @@ function eventText(event: { type: string; payload: unknown }): string {
 }
 .opp-detail__deal {
   margin-top: var(--crm-spacing-md);
+}
+.opp-detail__risk {
+  margin-bottom: var(--crm-spacing-md);
 }
 </style>

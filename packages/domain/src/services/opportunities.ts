@@ -5,6 +5,7 @@ import type {
   FollowUpAction,
   Opportunity,
   OpportunityFollowUp,
+  OpportunityPage,
   OpportunityQuote,
 } from '../types/actions'
 
@@ -22,14 +23,32 @@ export interface OpportunityDetail extends Opportunity {
   deal: Deal | null
 }
 
+export interface OpportunityListQuery {
+  keyword?: string
+  customerId?: string
+  stage?: string
+  minAmount?: number
+  maxAmount?: number
+  hasQuote?: boolean
+  noNextAction?: boolean
+  stagnant?: boolean
+  page?: number
+  pageSize?: number
+}
+
 /** 新建商机（意向阶段） */
 export function createOpportunity(dto: CreateOpportunityInput): Promise<Opportunity> {
   return apiPost<Opportunity>('/opportunities', dto)
 }
 
-/** 商机列表（客户当前归属可见） */
-export function listOpportunities(customerId?: string): Promise<Opportunity[]> {
-  return apiGet<Opportunity[]>(`/opportunities${customerId ? `?customerId=${customerId}` : ''}`)
+/** 商机工作台（客户当前归属可见，支持检索、风险筛选和分页） */
+export function listOpportunities(query: OpportunityListQuery = {}): Promise<OpportunityPage> {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== '') params.set(key, String(value))
+  }
+  const search = params.toString()
+  return apiGet<OpportunityPage>(`/opportunities${search ? `?${search}` : ''}`)
 }
 
 /** 商机详情（含跟进、报价、行动、事件与成交） */

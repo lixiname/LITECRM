@@ -253,6 +253,97 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
     expect(dealsCount).toHaveLength(1)
   })
 
+  it('商机工作台可检索分页，并派生报价、跟进、当前负责人和停滞风险', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M3_工作台客户')
+
+    const active = await request(app.getHttpServer())
+      .post('/api/opportunities')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        customerId: customer.id,
+        name: '泵浦更新项目',
+        source: 'self_visit',
+        productLine: 'pump',
+        estimatedAmount: 180000,
+        approximate: true,
+        estimateNote: '按初步选型估算',
+        discoveredDate: '2026-08-01',
+        expectedCloseDate: '2026-12-31',
+        firstActionContent: '确认工况参数',
+        firstActionAt: '2026-12-01T09:00:00+08:00',
+      })
+    expect(active.status).toBe(201)
+
+    const stagnant = await request(app.getHttpServer())
+      .post('/api/opportunities')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        customerId: customer.id,
+        name: '过滤系统长期报价项目',
+        source: 'exhibition',
+        estimatedAmount: 420000,
+        firstActionContent: '等待客户反馈',
+        firstActionAt: '2026-06-01T09:00:00+08:00',
+      })
+    expect(stagnant.status).toBe(201)
+
+    const oldDate = new Date('2026-06-01T02:00:00.000Z')
+    await db.update(opportunities).set({ stage: 'won' }).where(eq(opportunities.id, active.body.id))
+    await db.delete(followUpActions).where(eq(followUpActions.opportunityId, active.body.id))
+    await db
+      .update(opportunities)
+      .set({ createdAt: oldDate })
+      .where(eq(opportunities.id, stagnant.body.id))
+    await db.delete(followUpActions).where(eq(followUpActions.opportunityId, stagnant.body.id))
+    await db.insert(opportunityQuotes).values({
+      opportunityId: stagnant.body.id,
+      actorId: stagnant.body.ownerId,
+      kind: 'formal',
+      quotedAt: oldDate,
+      amount: '430000',
+      quoteNo: 'Q-WORKBENCH-001',
+    })
+
+    const list = await request(app.getHttpServer())
+      .get('/api/opportunities?keyword=工作台客户&page=1&pageSize=1')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(list.status).toBe(200)
+    expect(list.body.total).toBe(2)
+    expect(list.body.page).toBe(1)
+    expect(list.body.pageSize).toBe(1)
+    expect(list.body.items).toHaveLength(1)
+    expect(list.body.items[0].customerName).toBe('M3_工作台客户')
+    expect(list.body.items[0].currentOwnerName).toBe('销售甲')
+
+    const riskList = await request(app.getHttpServer())
+      .get('/api/opportunities?hasQuote=true&noNextAction=true&stagnant=true')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(riskList.status).toBe(200)
+    const riskOpportunity = riskList.body.items.find(
+      (item: { id: string }) => item.id === stagnant.body.id,
+    )
+    expect(riskOpportunity.latestQuote.quoteNo).toBe('Q-WORKBENCH-001')
+    expect(riskOpportunity.latestFollowUp).toBeNull()
+    expect(riskOpportunity.riskFlags).toContain('no_pending_action')
+    expect(riskOpportunity.riskFlags).toContain('inactive_30d')
+
+    const noActionList = await request(app.getHttpServer())
+      .get(`/api/opportunities?noNextAction=true&customerId=${customer.id}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(noActionList.body.items.map((item: { id: string }) => item.id)).toEqual([
+      stagnant.body.id,
+    ])
+
+    // 只读角色按数据范围可看详情，但没有任何商机命令权限。
+    const assistant = await login('assistant', 'Crm@123456')
+    const detail = await request(app.getHttpServer())
+      .get(`/api/opportunities/${active.body.id}`)
+      .set('Authorization', `Bearer ${assistant.accessToken}`)
+    expect(detail.status).toBe(200)
+    expect(detail.body.customerName).toBe('M3_工作台客户')
+  })
+
   it('客诉登记→确认解决（§8.6 两态闭环）', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M3_客诉客户')

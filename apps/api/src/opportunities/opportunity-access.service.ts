@@ -21,15 +21,24 @@ export class OpportunityAccessService {
     return customer
   }
 
-  async getEditable(id: string, actor: AuthUser) {
+  async getVisible(id: string, actor: AuthUser) {
     const visibleIds = await this.accessService.getVisibleUserIds(actor)
     const [opportunity] = await db
-      .select({ ...getTableColumns(opportunities), currentOwnerId: customers.ownerId })
+      .select({
+        ...getTableColumns(opportunities),
+        customerName: customers.name,
+        currentOwnerId: customers.ownerId,
+      })
       .from(opportunities)
       .innerJoin(customers, eq(opportunities.customerId, customers.id))
       .where(and(eq(opportunities.id, id), inArray(customers.ownerId, visibleIds)))
       .limit(1)
     if (!opportunity) throw new NotFoundException('商机不存在')
+    return opportunity
+  }
+
+  async getEditable(id: string, actor: AuthUser) {
+    const opportunity = await this.getVisible(id, actor)
     await this.accessService.assertCanContributeCustomer(opportunity.currentOwnerId, actor)
     return opportunity
   }

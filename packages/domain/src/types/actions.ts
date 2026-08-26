@@ -5,6 +5,7 @@ import type { components } from '@crm/contracts'
 export type VisitMethod = components['schemas']['VisitMethod']
 export type OpportunityStage = 'intent' | 'following' | 'won' | 'lost' | 'demand_disappeared'
 export type OpportunityQuoteKind = components['schemas']['OpportunityQuoteKind']
+export type OpportunityQuoteStatus = 'active' | 'superseded' | 'withdrawn'
 export type ComplaintStatus = components['schemas']['ComplaintStatus']
 export type FollowUpOutcome = components['schemas']['FollowUpOutcome']
 
@@ -68,7 +69,7 @@ export interface OpportunityQuote {
   quotedAt: string
   amount: string
   quoteNo: string | null
-  status: 'active' | 'superseded' | 'withdrawn'
+  status: OpportunityQuoteStatus
   supersedesQuoteId: string | null
   note: string | null
   documentRef: string | null
@@ -81,6 +82,8 @@ export interface Opportunity {
   id: string
   customerId: string
   customerName?: string
+  currentOwnerId?: string | null
+  currentOwnerName?: string | null
   ownerId: string
   name: string
   stage: OpportunityStage
@@ -98,7 +101,21 @@ export interface Opportunity {
   version: number
   currentAction?: FollowUpAction | null
   latestQuote?: OpportunityQuote | null
+  latestFollowUp?: OpportunityFollowUp | null
+  lastBusinessActivityAt?: string
+  inactiveDays?: number
+  riskFlags?: OpportunityRiskFlag[]
   createdAt: string
+}
+
+export type OpportunityRiskFlag =
+  'no_pending_action' | 'action_overdue' | 'inactive_30d' | 'expected_close_overdue'
+
+export interface OpportunityPage {
+  items: Opportunity[]
+  total: number
+  page: number
+  pageSize: number
 }
 
 export interface Deal {
@@ -141,6 +158,30 @@ export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string
   { value: 'lost', label: '已丢失' },
   { value: 'demand_disappeared', label: '需求消失' },
 ]
+
+export const OPPORTUNITY_QUOTE_KIND_OPTIONS: {
+  value: OpportunityQuoteKind
+  label: string
+}[] = [
+  { value: 'oral', label: '口头报价' },
+  { value: 'formal', label: '正式报价' },
+]
+
+export const OPPORTUNITY_QUOTE_STATUS_OPTIONS: {
+  value: OpportunityQuoteStatus
+  label: string
+}[] = [
+  { value: 'active', label: '有效' },
+  { value: 'superseded', label: '已被替代' },
+  { value: 'withdrawn', label: '已撤回' },
+]
+
+export const OPPORTUNITY_RISK_LABELS: Record<OpportunityRiskFlag, string> = {
+  no_pending_action: '无下一行动',
+  action_overdue: '行动已逾期',
+  inactive_30d: '超过30天未推进',
+  expected_close_overdue: '预计成交日已过',
+}
 
 export const COMPLAINT_STATUS_OPTIONS: { value: ComplaintStatus; label: string }[] = [
   { value: 'registered', label: '登记中' },
