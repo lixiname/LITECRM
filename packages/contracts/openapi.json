@@ -2072,44 +2072,61 @@
             "description": "客户名称"
           },
           "customerCode": {
-            "type": "object",
-            "description": "客户编码"
+            "type": "string",
+            "description": "客户编码",
+            "nullable": true
           },
           "unifiedSocialCreditCode": {
-            "type": "object",
-            "description": "统一社会信用代码"
+            "type": "string",
+            "description": "统一社会信用代码",
+            "nullable": true
           },
           "industry": {
-            "type": "object",
-            "description": "产业"
+            "type": "string",
+            "description": "产业",
+            "nullable": true
           },
           "subIndustry": {
-            "type": "object",
-            "description": "二级行业"
+            "type": "string",
+            "description": "二级行业",
+            "nullable": true
           },
           "customerType": {
-            "type": "object",
-            "description": "客户类型"
+            "type": "string",
+            "description": "客户类型",
+            "nullable": true
+          },
+          "productLines": {
+            "description": "关注产品线",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "city": {
-            "type": "object",
-            "description": "城市"
+            "type": "string",
+            "description": "城市",
+            "nullable": true
           },
           "province": {
-            "type": "object",
-            "description": "省份"
+            "type": "string",
+            "description": "省份",
+            "nullable": true
           },
           "address": {
-            "type": "object",
-            "description": "地址"
+            "type": "string",
+            "description": "地址",
+            "nullable": true
           },
           "website": {
-            "type": "object",
-            "description": "网址"
+            "type": "string",
+            "description": "网址",
+            "nullable": true
           },
           "source": {
-            "type": "object",
-            "description": "客户来源"
+            "type": "string",
+            "description": "客户来源",
+            "nullable": true
           },
           "grade": {
             "description": "客户等级",
@@ -2124,8 +2141,9 @@
             "description": "客户等级变更原因；仅等级变化时记录"
           },
           "notes": {
-            "type": "object",
-            "description": "备注"
+            "type": "string",
+            "description": "备注",
+            "nullable": true
           }
         },
         "required": ["version"]

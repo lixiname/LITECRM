@@ -7,6 +7,7 @@ import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.s
 import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
+import { touchCustomerActivity } from '../customers/customer-activity-projection'
 
 // 拜访保存已发生事实；可选下一行动写入 follow_up_actions，不复制进拜访或周计划项。
 @Injectable()
@@ -26,12 +27,13 @@ export class VisitsService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
+      const occurredAt = new Date(dto.occurredAt)
       const [visit] = await tx
         .insert(visitRecords)
         .values({
           customerId: dto.customerId,
           ownerId: actor.id, // 创建时归属快照（填报人）
-          occurredAt: dto.occurredAt,
+          occurredAt,
           method: dto.method,
           visitType: dto.visitType ?? null,
           businessSituation: dto.businessSituation ?? null,
@@ -50,6 +52,7 @@ export class VisitsService {
           content: dto.nextActionContent,
         })
       }
+      await touchCustomerActivity(tx, dto.customerId, occurredAt, 'visit')
       return visit
     })
   }

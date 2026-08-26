@@ -13,6 +13,7 @@ import { complaintFollowUps, complaints, customers, followUpActions } from '../c
 import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateComplaintDto } from './dto/create-complaint.dto'
 import type { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
+import { touchCustomerActivity } from '../customers/customer-activity-projection'
 
 @Injectable()
 export class ComplaintsService {
@@ -28,12 +29,13 @@ export class ComplaintsService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
+      const occurredAt = new Date(dto.occurredAt)
       const [complaint] = await tx
         .insert(complaints)
         .values({
           customerId: dto.customerId,
           ownerId: actor.id,
-          occurredAt: dto.occurredAt,
+          occurredAt,
           type: dto.type,
           description: dto.description,
         })
@@ -47,6 +49,7 @@ export class ComplaintsService {
         plannedAt: new Date(dto.firstActionAt),
         content: dto.firstActionContent,
       })
+      await touchCustomerActivity(tx, dto.customerId, occurredAt)
       return complaint
     })
   }
@@ -109,6 +112,7 @@ export class ComplaintsService {
           content: dto.nextActionContent!,
         })
       }
+      await touchCustomerActivity(tx, complaint.customerId, occurredAt)
       return updated
     })
   }

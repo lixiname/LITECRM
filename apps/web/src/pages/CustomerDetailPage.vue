@@ -2,7 +2,7 @@
   <div v-loading="loading" class="detail">
     <AppPageHeader
       :title="detail?.name ?? '客户详情'"
-      description="客户资料、联系人和归属状态"
+      description="客户资料、联系人、业务进展和归属状态"
       back-to="/customers"
       back-label="客户列表"
     >
@@ -28,52 +28,21 @@
       </template>
     </AppPageHeader>
 
-    <el-card v-if="detail" class="detail__card">
-      <template #header>基本信息</template>
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="名称">{{ detail.name }}</el-descriptions-item>
-        <el-descriptions-item label="城市">{{ detail.city ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="产业">{{ detail.industry ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="等级">{{ detail.grade }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="detail.status === 'active' ? 'success' : 'warning'">
-            {{ statusLabel(detail.status) }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="负责人">{{ isOwner ? '我' : '他人' }}</el-descriptions-item>
-        <el-descriptions-item label="地址" :span="2">{{
-          detail.address ?? '-'
-        }}</el-descriptions-item>
-        <el-descriptions-item label="备注" :span="2">{{
-          detail.notes ?? '-'
-        }}</el-descriptions-item>
-      </el-descriptions>
-    </el-card>
+    <CustomerProfileCard
+      v-if="detail"
+      :customer="detail"
+      :owner-label="isOwner ? '我' : '他人'"
+      :editable="canEdit"
+      @edit="editDialog?.open()"
+    />
 
-    <el-card v-if="detail" class="detail__card">
-      <template #header>
-        <div class="detail__contacts-header">
-          <span>联系人</span>
-          <el-button
-            v-if="auth.hasAbility('customer.write') && detail.status === 'active'"
-            size="small"
-            @click="showAddContact = true"
-          >
-            + 添加
-          </el-button>
-        </div>
-      </template>
-      <el-table :data="detail.contacts" border>
-        <el-table-column prop="name" label="姓名" min-width="100" />
-        <el-table-column prop="title" label="职位" min-width="100" />
-        <el-table-column prop="phone" label="电话" min-width="130" />
-        <el-table-column label="首要" width="70">
-          <template #default="{ row }">
-            <el-tag v-if="row.isKeyContact" size="small" type="success">首要</el-tag>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+    <CustomerContactsCard
+      v-if="detail"
+      :customer-id="customerId"
+      :contacts="detail.contacts"
+      :editable="canEdit"
+      @changed="reload"
+    />
 
     <el-card v-if="detail" class="detail__card">
       <template #header>成交与商机</template>
@@ -119,19 +88,7 @@
       </el-table>
     </el-card>
 
-    <el-card v-if="detail?.timeline?.length" class="detail__card">
-      <template #header>活动时间线（最近）</template>
-      <el-timeline>
-        <el-timeline-item
-          v-for="item in detail?.timeline ?? []"
-          :key="`${item.type}-${item.id}`"
-          :timestamp="timeText(item.occurredAt)"
-        >
-          <div class="timeline-item__title">{{ item.title }}</div>
-          <div>{{ item.summary }}</div>
-        </el-timeline-item>
-      </el-timeline>
-    </el-card>
+    <CustomerActivityTimeline v-if="detail" :items="detail.timeline ?? []" />
 
     <!-- 移交 -->
     <el-dialog v-model="showTransfer" title="移交客户" width="420px">
@@ -199,28 +156,13 @@
       </template>
     </el-dialog>
 
-    <!-- 添加联系人 -->
-    <el-dialog v-model="showAddContact" title="添加联系人" width="420px">
-      <el-form label-width="70px">
-        <el-form-item label="姓名"><el-input v-model="contactForm.name" /></el-form-item>
-        <el-form-item label="职位"><el-input v-model="contactForm.title" /></el-form-item>
-        <el-form-item label="电话"><el-input v-model="contactForm.phone" /></el-form-item>
-        <el-form-item label="首要">
-          <el-switch v-model="contactForm.isKeyContact" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddContact = false">取消</el-button>
-        <el-button type="primary" :loading="acting" @click="handleAddContact">确认</el-button>
-      </template>
-    </el-dialog>
-
     <CustomerBusinessDialogs
       v-if="detail"
       ref="businessDialogs"
       :customer-id="customerId"
       @changed="handleBusinessChanged"
     />
+    <CustomerEditDialog v-if="detail" ref="editDialog" :customer="detail" @saved="reload" />
   </div>
 </template>
 
@@ -230,6 +172,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
+import CustomerProfileCard from '../components/customers/CustomerProfileCard.vue'
+import CustomerContactsCard from '../components/customers/CustomerContactsCard.vue'
+import CustomerActivityTimeline from '../components/customers/CustomerActivityTimeline.vue'
+import CustomerEditDialog from '../components/customers/CustomerEditDialog.vue'
 import {
   useAuthStore,
   useQuery,
@@ -238,12 +184,9 @@ import {
   releaseCustomer,
   claimCustomer,
   createClaim,
-  addContact,
   listCustomerAssignees,
   OPPORTUNITY_STAGE_OPTIONS,
   type Opportunity,
-  CUSTOMER_STATUS_OPTIONS,
-  type CustomerStatus,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -263,24 +206,23 @@ const { data: assignees } = useQuery('customers:assignees', () =>
 const showTransfer = ref(false)
 const showRelease = ref(false)
 const showClaimReq = ref(false)
-const showAddContact = ref(false)
 const acting = ref(false)
 const businessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
+const editDialog = ref<InstanceType<typeof CustomerEditDialog>>()
 
 const transferForm = reactive({ toOwnerId: '', reason: '' })
 const releaseForm = reactive({ target: 'pool' as 'pool' | 'invalid', reason: '' })
 const claimReason = ref('')
-const contactForm = reactive({ name: '', title: '', phone: '', isKeyContact: false })
 
 const isOwner = computed(() => detail.value?.ownerId === auth.user?.id)
 const isPublic = computed(() => detail.value?.status === 'public')
+const canEdit = computed(() =>
+  Boolean(detail.value?.status === 'active' && auth.hasAbility('customer.write')),
+)
 const availableAssignees = computed(
   () => assignees.value?.filter((user) => user.id !== detail.value?.ownerId) ?? [],
 )
 
-function statusLabel(status: CustomerStatus): string {
-  return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
-}
 function stageTag(stage: Opportunity['stage']): 'success' | 'warning' | 'info' | 'danger' {
   const stageMap: Record<Opportunity['stage'], 'success' | 'warning' | 'info' | 'danger'> = {
     won: 'success',
@@ -299,9 +241,6 @@ function amountText(amount?: string | null): string {
 }
 function moneyText(amount?: string): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
-}
-function timeText(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 
 async function runAction(fn: () => Promise<unknown>, successMsg: string) {
@@ -349,21 +288,6 @@ async function handleClaimReq() {
   showClaimReq.value = false
 }
 
-async function handleAddContact() {
-  if (!contactForm.phone) return ElMessage.warning('电话必填')
-  await runAction(
-    () =>
-      addContact(customerId, {
-        name: contactForm.name || undefined,
-        title: contactForm.title || undefined,
-        phone: contactForm.phone,
-        isKeyContact: contactForm.isKeyContact,
-      }),
-    '联系人已添加',
-  )
-  showAddContact.value = false
-}
-
 function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', recordId: string) {
   if (kind === 'opportunity') void router.push(`/opportunities/${recordId}`)
   if (kind === 'complaint') void router.push(`/complaints/${recordId}`)
@@ -377,15 +301,7 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 .detail__card {
   margin-bottom: var(--crm-spacing-lg);
 }
-.detail__contacts-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .detail__dialog-alert {
   margin-bottom: var(--crm-spacing-md);
-}
-.timeline-item__title {
-  font-weight: 600;
 }
 </style>

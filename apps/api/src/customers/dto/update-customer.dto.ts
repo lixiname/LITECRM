@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import { IsArray, IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
 import { CUSTOMER_GRADES, type CustomerGrade } from '../../common/constants'
 
 // 更新客户（§8.3：可维护 owner/管理链/admin；联系人走单独接口）
@@ -15,52 +15,58 @@ export class UpdateCustomerDto {
   @MinLength(1, { message: '客户名称不能为空' })
   name?: string
 
-  @ApiPropertyOptional({ description: '客户编码' })
+  @ApiPropertyOptional({ description: '客户编码', type: String, nullable: true })
   @IsOptional()
   @IsString()
   customerCode?: string | null
 
-  @ApiPropertyOptional({ description: '统一社会信用代码' })
+  @ApiPropertyOptional({ description: '统一社会信用代码', type: String, nullable: true })
   @IsOptional()
   @IsString()
   unifiedSocialCreditCode?: string | null
 
-  @ApiPropertyOptional({ description: '产业' })
+  @ApiPropertyOptional({ description: '产业', type: String, nullable: true })
   @IsOptional()
   @IsString()
   industry?: string | null
 
-  @ApiPropertyOptional({ description: '二级行业' })
+  @ApiPropertyOptional({ description: '二级行业', type: String, nullable: true })
   @IsOptional()
   @IsString()
   subIndustry?: string | null
 
-  @ApiPropertyOptional({ description: '客户类型' })
+  @ApiPropertyOptional({ description: '客户类型', type: String, nullable: true })
   @IsOptional()
   @IsString()
   customerType?: string | null
 
-  @ApiPropertyOptional({ description: '城市' })
+  @ApiPropertyOptional({ description: '关注产品线', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productLines?: string[]
+
+  @ApiPropertyOptional({ description: '城市', type: String, nullable: true })
   @IsOptional()
   @IsString()
   city?: string | null
 
-  @ApiPropertyOptional({ description: '省份' })
+  @ApiPropertyOptional({ description: '省份', type: String, nullable: true })
   @IsOptional()
   @IsString()
   province?: string | null
 
-  @ApiPropertyOptional({ description: '地址' })
+  @ApiPropertyOptional({ description: '地址', type: String, nullable: true })
   @IsOptional()
   @IsString()
   address?: string | null
 
-  @ApiPropertyOptional({ description: '网址' })
+  @ApiPropertyOptional({ description: '网址', type: String, nullable: true })
   @IsOptional()
   @IsString()
   website?: string | null
 
-  @ApiPropertyOptional({ description: '客户来源' })
+  @ApiPropertyOptional({ description: '客户来源', type: String, nullable: true })
   @IsOptional()
   @IsString()
   source?: string | null
@@ -79,7 +85,7 @@ export class UpdateCustomerDto {
   @IsString()
   gradeChangeReason?: string
 
-  @ApiPropertyOptional({ description: '备注' })
+  @ApiPropertyOptional({ description: '备注', type: String, nullable: true })
   @IsOptional()
   @IsString()
   notes?: string | null

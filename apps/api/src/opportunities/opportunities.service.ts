@@ -16,6 +16,7 @@ import {
 import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto'
 import { OpportunityAccessService } from './opportunity-access.service'
+import { touchCustomerActivity } from '../customers/customer-activity-projection'
 
 /** 商机创建与查询；过程命令由 OpportunityCommandsService 承担。 */
 @Injectable()
@@ -33,6 +34,7 @@ export class OpportunitiesService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
+      const occurredAt = new Date()
       const [opportunity] = await tx
         .insert(opportunities)
         .values({
@@ -52,7 +54,7 @@ export class OpportunitiesService {
         opportunityId: opportunity.id,
         customerId: dto.customerId,
         actorId: actor.id,
-        occurredAt: new Date(),
+        occurredAt,
         type: 'created',
         payload: { name: dto.name, estimatedAmount: dto.estimatedAmount },
       })
@@ -65,6 +67,7 @@ export class OpportunitiesService {
         plannedAt: new Date(dto.firstActionAt),
         content: dto.firstActionContent,
       })
+      await touchCustomerActivity(tx, dto.customerId, occurredAt)
       return opportunity
     })
   }

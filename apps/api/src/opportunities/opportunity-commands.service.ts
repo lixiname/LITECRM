@@ -17,6 +17,7 @@ import type { CreateOpportunityFollowUpDto } from './dto/create-opportunity-foll
 import type { CreateOpportunityQuoteDto } from './dto/create-opportunity-quote.dto'
 import type { WinOpportunityDto } from './dto/win-opportunity.dto'
 import { OpportunityAccessService } from './opportunity-access.service'
+import { touchCustomerActivity } from '../customers/customer-activity-projection'
 
 /** 商机过程命令：跟进、报价、成交与未成交结案。 */
 @Injectable()
@@ -91,6 +92,7 @@ export class OpportunityCommandsService {
         type: nextStage === opportunity.stage ? 'updated' : 'stage_changed',
         payload: { from: opportunity.stage, to: nextStage, followUpId: followUp.id },
       })
+      await touchCustomerActivity(tx, opportunity.customerId, occurredAt)
       return updated
     })
   }
@@ -119,13 +121,14 @@ export class OpportunityCommandsService {
         if (!superseded) throw new ConflictException('被替代报价不存在、已失效或不属于该商机')
       }
 
+      const occurredAt = new Date(dto.quotedAt)
       const [quote] = await tx
         .insert(opportunityQuotes)
         .values({
           opportunityId: id,
           actorId: actor.id,
           kind: dto.kind,
-          quotedAt: new Date(dto.quotedAt),
+          quotedAt: occurredAt,
           amount: String(dto.amount),
           quoteNo: dto.quoteNo?.trim() || null,
           supersedesQuoteId: dto.supersedesQuoteId ?? null,
@@ -156,10 +159,11 @@ export class OpportunityCommandsService {
         opportunityId: id,
         customerId: opportunity.customerId,
         actorId: actor.id,
-        occurredAt: new Date(dto.quotedAt),
+        occurredAt,
         type: 'updated',
         payload: { quoteId: quote.id, kind: quote.kind, amount: dto.amount },
       })
+      await touchCustomerActivity(tx, opportunity.customerId, occurredAt)
       return quote
     })
   }
@@ -229,6 +233,7 @@ export class OpportunityCommandsService {
           type: 'stage_changed',
           payload: { from: opportunity.stage, to: 'won', dealId: deal.id },
         })
+        await touchCustomerActivity(tx, opportunity.customerId, occurredAt, 'deal')
         return { opportunity: updated, deal }
       })
     } catch (error) {
@@ -263,6 +268,7 @@ export class OpportunityCommandsService {
         type: 'stage_changed',
         payload: { from: opportunity.stage, to: dto.result, reason: dto.reason },
       })
+      await touchCustomerActivity(tx, opportunity.customerId, closedAt)
       return updated
     })
   }

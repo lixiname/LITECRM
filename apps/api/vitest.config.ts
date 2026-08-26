@@ -6,5 +6,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     include: ['src/**/*.spec.ts'],
+    // API e2e 共用同一 PostgreSQL 测试库；文件并行会互相占用客户名额并破坏清理边界。
+    fileParallelism: false,
   },
 })

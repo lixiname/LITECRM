@@ -67,6 +67,11 @@
             {{ (row as CustomerItem).ownerId === auth.user?.id ? '我' : '他人' }}
           </template>
         </el-table-column>
+        <el-table-column label="最近活动" width="170">
+          <template #default="{ row }">
+            {{ activityTime((row as CustomerItem).lastActivityAt) }}
+          </template>
+        </el-table-column>
       </el-table>
       <AppQueryState
         :error="error"
@@ -150,6 +155,10 @@ function statusTag(status: CustomerStatus): 'success' | 'warning' | 'info' {
 }
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
+}
+function activityTime(value?: string | null): string {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 

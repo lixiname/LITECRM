@@ -103,7 +103,16 @@ export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }
   // 客户来源（source）
   { dimension: 'source', name: 'self_visit', label: '主动拜访' },
   { dimension: 'source', name: 'referral', label: '转介绍' },
+  { dimension: 'source', name: 'exhibition', label: '展会' },
   { dimension: 'source', name: 'other', label: '其他' },
+  // 客户类型（customer_type）
+  { dimension: 'customer_type', name: 'end_user', label: '终端用户' },
+  { dimension: 'customer_type', name: 'integrator', label: '系统集成商' },
+  { dimension: 'customer_type', name: 'dealer', label: '经销商' },
+  // 产品线（product_line）
+  { dimension: 'product_line', name: 'pump', label: '泵浦' },
+  { dimension: 'product_line', name: 'filtration_system', label: '成套过滤设备' },
+  { dimension: 'product_line', name: 'consumables', label: '滤材与耗材' },
 ]
 
 // 幂等：维度 + 稳定值已存在时刷新默认展示名，便于测试库升级后直接使用

@@ -6,8 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { and, asc, desc, eq, getTableColumns, inArray, sql, type SQL } from 'drizzle-orm'
-import { db } from '../common/db/db'
+import { db, type DbClient } from '../common/db/db'
 import {
+  complaintFollowUps,
   complaints,
   contacts,
   customerGradeChanges,
@@ -15,6 +16,7 @@ import {
   deals,
   followUpActions,
   opportunities,
+  opportunityFollowUps,
   opportunityQuotes,
   visitRecords,
 } from '../common/db/schema'
@@ -291,7 +293,13 @@ export class CustomersService {
     const opportunityIds = opportunitiesRows.map((item) => item.id)
     const complaintIds = complaintsRows.map((item) => item.id)
 
-    const [actionRows, quoteRows, complaintActionRows] = await Promise.all([
+    const [
+      actionRows,
+      quoteRows,
+      opportunityFollowUpRows,
+      complaintActionRows,
+      complaintFollowUpRows,
+    ] = await Promise.all([
       opportunityIds.length
         ? db
             .select()
@@ -311,6 +319,13 @@ export class CustomersService {
             .where(inArray(opportunityQuotes.opportunityId, opportunityIds))
             .orderBy(desc(opportunityQuotes.quotedAt))
         : Promise.resolve([] as (typeof opportunityQuotes.$inferSelect)[]),
+      opportunityIds.length
+        ? db
+            .select()
+            .from(opportunityFollowUps)
+            .where(inArray(opportunityFollowUps.opportunityId, opportunityIds))
+            .orderBy(desc(opportunityFollowUps.occurredAt))
+        : Promise.resolve([] as (typeof opportunityFollowUps.$inferSelect)[]),
       complaintIds.length
         ? db
             .select()
@@ -323,6 +338,13 @@ export class CustomersService {
             )
             .orderBy(asc(followUpActions.plannedAt))
         : Promise.resolve([] as (typeof followUpActions.$inferSelect)[]),
+      complaintIds.length
+        ? db
+            .select()
+            .from(complaintFollowUps)
+            .where(inArray(complaintFollowUps.complaintId, complaintIds))
+            .orderBy(desc(complaintFollowUps.occurredAt))
+        : Promise.resolve([] as (typeof complaintFollowUps.$inferSelect)[]),
     ])
 
     const opportunitiesWithContext = opportunitiesRows.map((row) => ({
@@ -343,41 +365,65 @@ export class CustomersService {
         id: visit.id,
         occurredAt: visit.occurredAt,
         title: '拜访',
-        summary: `${visit.method}${visit.visitType ? `/${visit.visitType}` : ''}`,
+        summary: visit.businessSituation || visit.equipmentSituation || '已完成客户拜访',
+        targetType: 'customer' as const,
+        targetId: customer.id,
+        metadata: { method: visit.method, visitType: visit.visitType },
       })),
-      ...opportunitiesWithContext.flatMap((opp) => {
-        const entries: {
-          type: 'opportunity_follow_up' | 'deal'
-          id: string
-          occurredAt: string | Date
-          title: string
-          summary: string
-        }[] = [
-          {
-            type: 'opportunity_follow_up',
-            id: opp.id,
-            occurredAt: opp.updatedAt,
-            title: '商机',
-            summary: `${opp.name}（${opp.stage}）`,
-          },
-        ]
-        if (opp.latestQuote) {
-          entries.push({
-            type: 'opportunity_follow_up',
-            id: opp.latestQuote.id,
-            occurredAt: opp.latestQuote.quotedAt,
-            title: '报价',
-            summary: `¥${opp.latestQuote.amount}`,
-          })
+      ...opportunitiesWithContext.map((opp) => ({
+        type: 'opportunity' as const,
+        id: opp.id,
+        occurredAt: opp.createdAt,
+        title: '新建商机',
+        summary: opp.name,
+        targetType: 'opportunity' as const,
+        targetId: opp.id,
+        metadata: { stage: opp.stage },
+      })),
+      ...opportunityFollowUpRows.map((followUp) => {
+        const opportunity = opportunitiesWithContext.find(
+          (item) => item.id === followUp.opportunityId,
+        )
+        return {
+          type: 'opportunity_follow_up' as const,
+          id: followUp.id,
+          occurredAt: followUp.occurredAt,
+          title: '商机跟进',
+          summary: followUp.conclusion,
+          targetType: 'opportunity' as const,
+          targetId: followUp.opportunityId,
+          metadata: { opportunityName: opportunity?.name ?? null, method: followUp.method },
         }
-        return entries
       }),
+      ...quoteRows.map((quote) => ({
+        type: 'quote' as const,
+        id: quote.id,
+        occurredAt: quote.quotedAt,
+        title: quote.kind === 'formal' ? '正式报价' : '口头报价',
+        summary: `¥${quote.amount}`,
+        targetType: 'opportunity' as const,
+        targetId: quote.opportunityId,
+        metadata: { kind: quote.kind, status: quote.status, quoteNo: quote.quoteNo },
+      })),
       ...complaintWithContext.map((complaint) => ({
         type: 'complaint' as const,
         id: complaint.id,
         occurredAt: complaint.occurredAt,
-        title: '客诉',
-        summary: complaint.status === 'resolved' ? '已解决' : '跟进中',
+        title: '登记客诉',
+        summary: complaint.description,
+        targetType: 'complaint' as const,
+        targetId: complaint.id,
+        metadata: { status: complaint.status, complaintType: complaint.type },
+      })),
+      ...complaintFollowUpRows.map((followUp) => ({
+        type: 'complaint_follow_up' as const,
+        id: followUp.id,
+        occurredAt: followUp.occurredAt,
+        title: followUp.outcome === 'resolved' ? '客诉解决' : '客诉跟进',
+        summary: followUp.content,
+        targetType: 'complaint' as const,
+        targetId: followUp.complaintId,
+        metadata: { outcome: followUp.outcome },
       })),
       ...latestDeals.map((deal) => ({
         type: 'deal' as const,
@@ -385,6 +431,9 @@ export class CustomersService {
         occurredAt: deal.occurredAt,
         title: '成交',
         summary: `¥${deal.amount}`,
+        targetType: 'opportunity' as const,
+        targetId: deal.sourceOpportunityId,
+        metadata: { amount: deal.amount },
       })),
     ]
       .map((item) => ({ ...item, occurredAt: new Date(item.occurredAt).toISOString() }))
@@ -436,6 +485,7 @@ export class CustomersService {
             industry: dto.industry === undefined ? customer.industry : dto.industry,
             subIndustry: dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry,
             customerType: dto.customerType === undefined ? customer.customerType : dto.customerType,
+            productLines: dto.productLines === undefined ? customer.productLines : dto.productLines,
             city: dto.city === undefined ? customer.city : dto.city,
             province: dto.province === undefined ? customer.province : dto.province,
             address: dto.address === undefined ? customer.address : dto.address,
@@ -472,17 +522,25 @@ export class CustomersService {
   async addContact(customerId: string, dto: CreateContactDto, actor: AuthUser) {
     const customer = await this.findVisible(customerId, actor)
     await this.assertCanContribute(customer, actor)
-    const [created] = await db
-      .insert(contacts)
-      .values({
-        customerId: customer.id,
-        name: dto.name ?? null,
-        title: dto.title ?? null,
-        phone: dto.phone ?? null,
-        isKeyContact: dto.isKeyContact ?? false,
-      })
-      .returning()
-    return created
+    return db.transaction(async (tx) => {
+      if (dto.isKeyContact) {
+        await tx
+          .update(contacts)
+          .set({ isKeyContact: false, updatedAt: new Date() })
+          .where(and(eq(contacts.customerId, customer.id), eq(contacts.isKeyContact, true)))
+      }
+      const [created] = await tx
+        .insert(contacts)
+        .values({
+          customerId: customer.id,
+          name: dto.name ?? null,
+          title: dto.title ?? null,
+          phone: dto.phone ?? null,
+          isKeyContact: dto.isKeyContact ?? false,
+        })
+        .returning()
+      return created
+    })
   }
 
   async updateContact(contactId: string, dto: CreateContactDto, actor: AuthUser) {
@@ -491,20 +549,39 @@ export class CustomersService {
     const customer = await this.findVisible(contact.customerId, actor)
     await this.assertCanContribute(customer, actor)
 
-    const [updated] = await db
-      .update(contacts)
-      .set({
-        name: dto.name === undefined ? contact.name : dto.name,
-        title: dto.title === undefined ? contact.title : dto.title,
-        phone: dto.phone === undefined ? contact.phone : dto.phone,
-        isKeyContact: dto.isKeyContact ?? contact.isKeyContact,
-        updatedAt: new Date(),
-        version: sql`${contacts.version} + 1`,
-      })
-      .where(and(eq(contacts.id, contactId), eq(contacts.version, contact.version)))
-      .returning()
-    if (!updated) throw new ConflictException('联系人已被他人更新，请刷新后重试')
-    return updated
+    return db.transaction(async (tx) => {
+      await this.lockCustomerContacts(tx, contact.customerId)
+      const nextPhone = dto.phone === undefined ? contact.phone : dto.phone
+      if (!nextPhone?.trim() && contact.phone?.trim()) {
+        await this.assertAnotherPhoneExists(tx, contact.customerId, contact.id)
+      }
+      if (dto.isKeyContact) {
+        await tx
+          .update(contacts)
+          .set({ isKeyContact: false, updatedAt: new Date() })
+          .where(
+            and(
+              eq(contacts.customerId, contact.customerId),
+              eq(contacts.isKeyContact, true),
+              sql`${contacts.id} <> ${contact.id}`,
+            ),
+          )
+      }
+      const [updated] = await tx
+        .update(contacts)
+        .set({
+          name: dto.name === undefined ? contact.name : dto.name,
+          title: dto.title === undefined ? contact.title : dto.title,
+          phone: nextPhone,
+          isKeyContact: dto.isKeyContact ?? contact.isKeyContact,
+          updatedAt: new Date(),
+          version: sql`${contacts.version} + 1`,
+        })
+        .where(and(eq(contacts.id, contactId), eq(contacts.version, contact.version)))
+        .returning()
+      if (!updated) throw new ConflictException('联系人已被他人更新，请刷新后重试')
+      return updated
+    })
   }
 
   async removeContact(contactId: string, actor: AuthUser): Promise<void> {
@@ -512,7 +589,13 @@ export class CustomersService {
     if (!contact) throw new NotFoundException('联系人不存在')
     const customer = await this.findVisible(contact.customerId, actor)
     await this.assertCanContribute(customer, actor)
-    await db.delete(contacts).where(eq(contacts.id, contactId))
+    await db.transaction(async (tx) => {
+      await this.lockCustomerContacts(tx, contact.customerId)
+      if (contact.phone?.trim()) {
+        await this.assertAnotherPhoneExists(tx, contact.customerId, contact.id)
+      }
+      await tx.delete(contacts).where(eq(contacts.id, contactId))
+    })
   }
 
   // ===== 内部工具 =====
@@ -536,6 +619,32 @@ export class CustomersService {
     const isManager = await this.accessService.isManagerOf(actor.id, customer.ownerId)
     if (isManager) return
     throw new ForbiddenException('无权维护该客户')
+  }
+
+  private async lockCustomerContacts(tx: DbClient, customerId: string) {
+    await tx.execute(
+      sql`select id from ${customers} where ${customers.id} = ${customerId} for update`,
+    )
+  }
+
+  private async assertAnotherPhoneExists(
+    tx: DbClient,
+    customerId: string,
+    excludingContactId: string,
+  ) {
+    const [row] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(contacts)
+      .where(
+        and(
+          eq(contacts.customerId, customerId),
+          sql`${contacts.id} <> ${excludingContactId}`,
+          sql`${contacts.phone} is not null and btrim(${contacts.phone}) <> ''`,
+        ),
+      )
+    if ((row?.count ?? 0) === 0) {
+      throw new BadRequestException('每个客户至少需要保留一个联系人电话')
+    }
   }
 }
 

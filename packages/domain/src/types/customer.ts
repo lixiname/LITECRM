@@ -9,6 +9,7 @@ export type CustomerDimension = components['schemas']['CustomerDimension']
 
 export interface CustomerItem {
   id: string
+  version: number
   name: string
   normalizedKey: string
   customerCode: string | null
@@ -21,11 +22,15 @@ export interface CustomerItem {
   city: string | null
   province: string | null
   address: string | null
+  website: string | null
   source: string | null
   grade: CustomerGrade
   status: CustomerStatus
   ownerId: string | null
   createdById: string
+  firstVisitedAt: string | null
+  firstDealAt: string | null
+  lastActivityAt: string | null
   notes: string | null
   createdAt: string
   updatedAt: string
@@ -71,11 +76,21 @@ export interface CustomerComplaintSummary extends Omit<Complaint, 'currentAction
 }
 
 export interface CustomerTimelineItem {
-  type: 'visit' | 'opportunity_follow_up' | 'complaint' | 'deal'
+  type:
+    | 'visit'
+    | 'opportunity'
+    | 'opportunity_follow_up'
+    | 'quote'
+    | 'complaint'
+    | 'complaint_follow_up'
+    | 'deal'
   id: string
   occurredAt: string
   title: string
   summary: string
+  targetType: 'customer' | 'opportunity' | 'complaint'
+  targetId: string
+  metadata?: Record<string, string | null>
 }
 
 export interface CustomerPage {

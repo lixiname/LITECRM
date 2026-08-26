@@ -1036,31 +1036,33 @@ export interface components {
             /** @description 客户名称 */
             name?: string;
             /** @description 客户编码 */
-            customerCode?: Record<string, never>;
+            customerCode?: string | null;
             /** @description 统一社会信用代码 */
-            unifiedSocialCreditCode?: Record<string, never>;
+            unifiedSocialCreditCode?: string | null;
             /** @description 产业 */
-            industry?: Record<string, never>;
+            industry?: string | null;
             /** @description 二级行业 */
-            subIndustry?: Record<string, never>;
+            subIndustry?: string | null;
             /** @description 客户类型 */
-            customerType?: Record<string, never>;
+            customerType?: string | null;
+            /** @description 关注产品线 */
+            productLines?: string[];
             /** @description 城市 */
-            city?: Record<string, never>;
+            city?: string | null;
             /** @description 省份 */
-            province?: Record<string, never>;
+            province?: string | null;
             /** @description 地址 */
-            address?: Record<string, never>;
+            address?: string | null;
             /** @description 网址 */
-            website?: Record<string, never>;
+            website?: string | null;
             /** @description 客户来源 */
-            source?: Record<string, never>;
+            source?: string | null;
             /** @description 客户等级 */
             grade?: components["schemas"]["CustomerGrade"];
             /** @description 客户等级变更原因；仅等级变化时记录 */
             gradeChangeReason?: string;
             /** @description 备注 */
-            notes?: Record<string, never>;
+            notes?: string | null;
         };
         TransferCustomerDto: {
             /** @description 新负责人 ID（需校验对应客户等级名额） */

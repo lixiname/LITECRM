@@ -56,31 +56,27 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
 
   async function cleanup() {
     const inM3 = `customer_id IN (SELECT id FROM customers WHERE name LIKE 'M3_%')`
-    await db.execute(sql`DELETE FROM follow_up_actions WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db
-      .execute(
+    const opportunityInM3 = `opportunity_id IN (SELECT id FROM opportunities WHERE ${inM3})`
+
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`DELETE FROM follow_up_actions WHERE ${sql.raw(inM3)}`)
+      await tx.execute(
         sql`DELETE FROM complaint_follow_ups WHERE complaint_id IN (SELECT id FROM complaints WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M3_%'))`,
       )
-      .catch(() => {})
-    await db.execute(sql`DELETE FROM complaints WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM opportunity_events WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM deals WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM opportunity_quotes WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db
-      .execute(
-        sql`DELETE FROM opportunity_follow_ups WHERE opportunity_id IN (SELECT id FROM opportunities WHERE ${sql.raw(inM3)})`,
-      )
-      .catch(() => {})
-    await db.execute(sql`DELETE FROM opportunities WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM visit_records WHERE ${sql.raw(inM3)}`).catch(() => {})
-    // 归属治理子表 + 联系人（客户有 contacts 时直接删客户会撞外键，须先删）
-    await db
-      .execute(sql`DELETE FROM customer_claim_requests WHERE ${sql.raw(inM3)}`)
-      .catch(() => {})
-    await db.execute(sql`DELETE FROM customer_transfers WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM customer_grade_changes WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM contacts WHERE ${sql.raw(inM3)}`).catch(() => {})
-    await db.execute(sql`DELETE FROM customers WHERE name LIKE 'M3_%'`).catch(() => {})
+      await tx.execute(sql`DELETE FROM complaints WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM opportunity_events WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM deals WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM opportunity_quotes WHERE ${sql.raw(opportunityInM3)}`)
+      await tx.execute(sql`DELETE FROM opportunity_follow_ups WHERE ${sql.raw(opportunityInM3)}`)
+      await tx.execute(sql`DELETE FROM opportunities WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM visit_records WHERE ${sql.raw(inM3)}`)
+      // 归属治理子表 + 联系人（客户有 contacts 时直接删客户会撞外键，须先删）
+      await tx.execute(sql`DELETE FROM customer_claim_requests WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM customer_transfers WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM customer_grade_changes WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM contacts WHERE ${sql.raw(inM3)}`)
+      await tx.execute(sql`DELETE FROM customers WHERE name LIKE 'M3_%'`)
+    })
   }
 
   it('主链路：拜访事实 → 商机跟进 → 口头/正式报价 → 明确成交，估算与成交金额解耦', async () => {
