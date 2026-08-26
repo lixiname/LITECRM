@@ -52,10 +52,12 @@ function handleLogout() {
 <style scoped>
 .app-layout {
   min-height: 100vh;
+  background: var(--crm-color-bg-page);
 }
 .app-layout__aside {
   background: var(--crm-color-bg-card);
   border-right: 1px solid var(--crm-color-border);
+  box-shadow: 2px 0 8px rgb(0 0 0 / 3%);
 }
 .app-layout__logo {
   padding: var(--crm-spacing-lg);
@@ -65,6 +67,19 @@ function handleLogout() {
 }
 .app-layout__menu {
   border-right: none;
+  --el-menu-bg-color: transparent;
+}
+.app-layout__menu :deep(.el-menu-item) {
+  margin: 0 8px;
+  border-radius: var(--crm-radius-sm);
+  width: auto;
+}
+.app-layout__menu :deep(.el-menu-item.is-active) {
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary);
+}
+.app-layout__menu :deep(.el-menu-item:hover) {
+  background: #f5f7fa;
 }
 .app-layout__header {
   display: flex;
@@ -72,6 +87,8 @@ function handleLogout() {
   justify-content: space-between;
   background: var(--crm-color-bg-card);
   border-bottom: 1px solid var(--crm-color-border);
+  padding: 0 var(--crm-spacing-lg);
+  min-height: 64px;
 }
 .app-layout__title {
   font-size: var(--crm-font-size-md);
@@ -88,5 +105,6 @@ function handleLogout() {
 }
 .app-layout__main {
   background: var(--crm-color-bg-page);
+  padding: 0;
 }
 </style>

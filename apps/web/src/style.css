@@ -4,6 +4,7 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   font-family:
@@ -18,4 +19,40 @@ body {
     sans-serif;
   background: var(--crm-color-bg-page);
   color: var(--crm-color-text-primary);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+:where(.el-card) {
+  border-radius: var(--crm-radius-md);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+}
+
+:where(.el-card__header) {
+  font-weight: 600;
+  background: linear-gradient(180deg, #fcfcfd 0%, #ffffff 100%);
+}
+
+:where(.el-table__header th) {
+  font-size: var(--crm-font-size-sm);
+  color: var(--crm-color-text-primary);
+}
+
+:where(.el-table td, .el-table th) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+:where(.el-button),
+:where(.el-tag) {
+  border-radius: var(--crm-radius-sm);
+}
+
+.crm-empty {
+  margin: var(--crm-spacing-xxl) 0;
 }

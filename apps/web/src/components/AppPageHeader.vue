@@ -43,6 +43,7 @@ function goBack() {
   justify-content: space-between;
   gap: var(--crm-spacing-lg);
   margin-bottom: var(--crm-spacing-lg);
+  padding: 2px 0;
 }
 .app-page-header__heading {
   display: flex;
@@ -61,6 +62,7 @@ function goBack() {
   color: var(--crm-color-text-primary);
   font-size: 24px;
   line-height: 32px;
+  letter-spacing: 0.2px;
 }
 .app-page-header__description {
   margin: var(--crm-spacing-xs) 0 0;
