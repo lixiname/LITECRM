@@ -294,7 +294,7 @@ function stageTag(stage: Opportunity['stage']): 'success' | 'warning' | 'info' |
 function stageLabel(stage: Opportunity['stage']): string {
   return OPPORTUNITY_STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? stage
 }
-function amountText(amount?: string): string {
+function amountText(amount?: string | null): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
 }
 function moneyText(amount?: string): string {

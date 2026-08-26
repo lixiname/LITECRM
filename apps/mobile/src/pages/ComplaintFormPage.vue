@@ -49,20 +49,16 @@
     </van-form>
 
     <van-popup v-model:show="showType" position="bottom" round>
-      <van-picker
-        :columns="COMPLAINT_TYPE_OPTIONS"
-        @confirm="onPickType"
-        @cancel="showType = false"
-      />
+      <van-picker :columns="typeColumns" @confirm="onPickType" @cancel="showType = false" />
     </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { createComplaint, COMPLAINT_TYPE_OPTIONS } from '@crm/domain'
+import { createComplaint, listDimensionOptions } from '@crm/domain'
 
 const route = useRoute()
 const router = useRouter()
@@ -86,6 +82,18 @@ if (qDate) {
 const typeLabel = ref('')
 const showType = ref(false)
 const saving = ref(false)
+const typeColumns = ref<{ value: string; text: string }[]>([])
+
+onMounted(async () => {
+  try {
+    const options = await listDimensionOptions('complaint_type')
+    typeColumns.value = options
+      .filter((option) => option.isActive)
+      .map((option) => ({ value: option.name, text: option.label }))
+  } catch {
+    showToast('客诉类型加载失败')
+  }
+})
 
 function onPickType({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
   form.type = selectedOptions[0].value

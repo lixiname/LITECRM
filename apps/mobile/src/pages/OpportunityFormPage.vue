@@ -47,20 +47,16 @@
     </van-form>
 
     <van-popup v-model:show="showSource" position="bottom" round>
-      <van-picker
-        :columns="OPPORTUNITY_SOURCE_OPTIONS"
-        @confirm="onPickSource"
-        @cancel="showSource = false"
-      />
+      <van-picker :columns="sourceColumns" @confirm="onPickSource" @cancel="showSource = false" />
     </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { createOpportunity, OPPORTUNITY_SOURCE_OPTIONS } from '@crm/domain'
+import { createOpportunity, listDimensionOptions } from '@crm/domain'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,6 +75,18 @@ if (qDate) form.firstActionAt = `${qDate}T09:00`
 const sourceLabel = ref('')
 const showSource = ref(false)
 const saving = ref(false)
+const sourceColumns = ref<{ value: string; text: string }[]>([])
+
+onMounted(async () => {
+  try {
+    const options = await listDimensionOptions('opportunity_source')
+    sourceColumns.value = options
+      .filter((option) => option.isActive)
+      .map((option) => ({ value: option.name, text: option.label }))
+  } catch {
+    showToast('商机渠道加载失败')
+  }
+})
 
 function onPickSource({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
   form.source = selectedOptions[0].value

@@ -19,7 +19,7 @@
 
         <el-form-item label="产业">
           <el-select v-model="form.industry" clearable placeholder="选择产业" style="width: 100%">
-            <el-option v-for="o in industries" :key="o.id" :label="o.name" :value="o.name" />
+            <el-option v-for="o in industries" :key="o.id" :label="o.label" :value="o.name" />
           </el-select>
         </el-form-item>
 
@@ -148,7 +148,7 @@ onMounted(async () => {
     listDimensionOptions('industry').catch(() => []),
     auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
   ])
-  industries.value = industryOptions
+  industries.value = industryOptions.filter((option) => option.isActive)
   assignees.value = assigneeOptions
 })
 

@@ -164,13 +164,14 @@ export const customerClaimRequests = pgTable(
   ],
 )
 
-// 客户维度配置（§7.2：5 类字典，维度内唯一）
+// 业务选项字典（§7.2：稳定字典值与展示名称分离，维度内 value 唯一）
 export const customerDimensionOptions = pgTable(
   'customer_dimension_options',
   {
     ...baseColumns,
-    dimension: text('dimension').notNull(), // industry/sub_industry/customer_type/product_line/source
-    name: text('name').notNull(),
+    dimension: text('dimension').notNull(),
+    name: text('name').notNull(), // 稳定字典值（历史业务数据保存此值）
+    label: text('label').notNull().default(''), // 面向用户的展示名称
     sortOrder: integer('sort_order').default(0).notNull(),
     isActive: boolean('is_active').default(true).notNull(),
   },

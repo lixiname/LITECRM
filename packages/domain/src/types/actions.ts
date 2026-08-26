@@ -126,18 +126,12 @@ export interface Complaint {
   createdAt: string
 }
 
-// ===== UI 选项常量（字典 key → 显示文案映射；选项集合本身在 customer_dimension_options 可配置）=====
+// ===== 固定业务枚举的 UI 选项（可配置分类统一从 catalog API 读取）=====
 
 export const VISIT_METHOD_OPTIONS: { value: VisitMethod; label: string }[] = [
   { value: 'offline_visit', label: '线下拜访' },
   { value: 'remote', label: '远程' },
   { value: 'other', label: '其他' },
-]
-
-export const VISIT_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'new_customer', label: '新客户开发' },
-  { value: 'existing_maintenance', label: '存量维护' },
-  { value: 'industry_relation', label: '行业关系' },
 ]
 
 export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string }[] = [
@@ -146,23 +140,6 @@ export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string
   { value: 'won', label: '已成交' },
   { value: 'lost', label: '已丢失' },
   { value: 'demand_disappeared', label: '需求消失' },
-]
-
-export const OPPORTUNITY_SOURCE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'referral', label: '转介绍' },
-  { value: 'cold_call', label: '陌拜' },
-  { value: 'exhibition', label: '展会' },
-  { value: 'online', label: '线上' },
-  { value: 'other', label: '其他' },
-]
-
-export const COMPLAINT_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'product_quality', label: '产品质量' },
-  { value: 'delivery', label: '交期' },
-  { value: 'service', label: '服务' },
-  { value: 'logistics', label: '物流' },
-  { value: 'price', label: '价格' },
-  { value: 'other', label: '其他' },
 ]
 
 export const COMPLAINT_STATUS_OPTIONS: { value: ComplaintStatus; label: string }[] = [

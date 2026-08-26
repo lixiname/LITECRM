@@ -19,7 +19,7 @@ import { UpdateDimensionOptionDto } from './dto/update-dimension-option.dto'
 import { CUSTOMER_DIMENSIONS, type CustomerDimension } from '../common/constants'
 
 // 客户维度配置（§5.1：人员/客户分类配置 web 专属，admin 维护）
-// 读：所有登录用户（建档表单下拉需要）；写：admin（user.manage）
+// 读：所有登录用户（表单选项与历史值展示需要）；写：admin（user.manage）
 @ApiTags('catalog')
 @Controller('catalog')
 @UseGuards(JwtAuthGuard)
@@ -27,7 +27,7 @@ export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
 
   @Get(':dimension')
-  @ApiOkResponse({ description: '某维度启用选项（建档下拉用）' })
+  @ApiOkResponse({ description: '某维度全部选项（表单过滤停用项，历史值仍可展示）' })
   listByDimension(
     @Param('dimension', new ParseEnumPipe(CUSTOMER_DIMENSIONS)) dimension: CustomerDimension,
   ) {

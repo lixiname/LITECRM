@@ -154,7 +154,7 @@ const userNameById = computed(() => {
   return map
 })
 
-function getUserName(id: string | null): string {
+function getUserName(id: string | null | undefined): string {
   if (!id) return '-'
   return userNameById.value.get(id) ?? '—'
 }

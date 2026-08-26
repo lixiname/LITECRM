@@ -78,39 +78,39 @@ export async function seedAccounts(): Promise<string[]> {
 }
 
 // ===== 基础字典种子（§7.2 字典驱动：M5 重构后字典可配置，seed 提供默认项）=====
-export const SEED_DIMENSIONS: { dimension: string; name: string }[] = [
+export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }[] = [
   // 拜访类型（visit_type）
-  { dimension: 'visit_type', name: 'new_customer' },
-  { dimension: 'visit_type', name: 'existing_maintenance' },
-  { dimension: 'visit_type', name: 'industry_relation' },
+  { dimension: 'visit_type', name: 'new_customer', label: '新客户开发' },
+  { dimension: 'visit_type', name: 'existing_maintenance', label: '存量维护' },
+  { dimension: 'visit_type', name: 'industry_relation', label: '行业关系' },
   // 商机发现渠道（opportunity_source）
-  { dimension: 'opportunity_source', name: 'referral' },
-  { dimension: 'opportunity_source', name: 'meeting' },
-  { dimension: 'opportunity_source', name: 'self_visit' },
-  { dimension: 'opportunity_source', name: 'exhibition' },
-  { dimension: 'opportunity_source', name: 'other' },
+  { dimension: 'opportunity_source', name: 'referral', label: '转介绍' },
+  { dimension: 'opportunity_source', name: 'meeting', label: '会面' },
+  { dimension: 'opportunity_source', name: 'self_visit', label: '主动拜访' },
+  { dimension: 'opportunity_source', name: 'exhibition', label: '展会' },
+  { dimension: 'opportunity_source', name: 'other', label: '其他' },
   // 客诉类型（complaint_type）
-  { dimension: 'complaint_type', name: 'product_quality' },
-  { dimension: 'complaint_type', name: 'service' },
-  { dimension: 'complaint_type', name: 'delivery' },
-  { dimension: 'complaint_type', name: 'after_sales' },
-  { dimension: 'complaint_type', name: 'billing' },
-  { dimension: 'complaint_type', name: 'other' },
+  { dimension: 'complaint_type', name: 'product_quality', label: '产品质量' },
+  { dimension: 'complaint_type', name: 'service', label: '服务' },
+  { dimension: 'complaint_type', name: 'delivery', label: '交付' },
+  { dimension: 'complaint_type', name: 'after_sales', label: '售后' },
+  { dimension: 'complaint_type', name: 'billing', label: '开票' },
+  { dimension: 'complaint_type', name: 'other', label: '其他' },
   // 客户产业（industry）
-  { dimension: 'industry', name: 'manufacturing' },
-  { dimension: 'industry', name: 'electronics' },
-  { dimension: 'industry', name: 'other' },
+  { dimension: 'industry', name: 'manufacturing', label: '制造业' },
+  { dimension: 'industry', name: 'electronics', label: '电子行业' },
+  { dimension: 'industry', name: 'other', label: '其他' },
   // 客户来源（source）
-  { dimension: 'source', name: 'self_visit' },
-  { dimension: 'source', name: 'referral' },
-  { dimension: 'source', name: 'other' },
+  { dimension: 'source', name: 'self_visit', label: '主动拜访' },
+  { dimension: 'source', name: 'referral', label: '转介绍' },
+  { dimension: 'source', name: 'other', label: '其他' },
 ]
 
-// 幂等：维度 + 名称已存在则跳过（catalog.service 同规则）
+// 幂等：维度 + 稳定值已存在时刷新默认展示名，便于测试库升级后直接使用
 export async function seedDimensions(): Promise<void> {
   for (const d of SEED_DIMENSIONS) {
     const [exists] = await db
-      .select({ id: customerDimensionOptions.id })
+      .select({ id: customerDimensionOptions.id, label: customerDimensionOptions.label })
       .from(customerDimensionOptions)
       .where(
         and(
@@ -119,8 +119,15 @@ export async function seedDimensions(): Promise<void> {
         ),
       )
       .limit(1)
-    if (!exists) {
-      await db.insert(customerDimensionOptions).values({ dimension: d.dimension, name: d.name })
+    if (exists) {
+      if (exists.label !== d.label) {
+        await db
+          .update(customerDimensionOptions)
+          .set({ label: d.label })
+          .where(eq(customerDimensionOptions.id, exists.id))
+      }
+    } else {
+      await db.insert(customerDimensionOptions).values(d)
     }
   }
 }

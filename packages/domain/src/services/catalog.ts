@@ -7,7 +7,7 @@ export type UpdateDimensionOptionInput = components['schemas']['UpdateDimensionO
 
 // 客户维度配置（§7.2：建档表单下拉；写操作 admin）
 
-/** 某维度启用选项（建档下拉） */
+/** 某维度全部选项；录入表单须过滤 isActive，详情可解析已停用的历史值 */
 export function listDimensionOptions(dimension: string): Promise<DimensionOption[]> {
   return apiGet<DimensionOption[]>(`/catalog/${dimension}`)
 }

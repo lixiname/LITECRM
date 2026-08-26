@@ -66,22 +66,22 @@
 
     <van-popup v-model:show="showMethod" position="bottom" round>
       <van-picker
-        :columns="VISIT_METHOD_OPTIONS"
+        :columns="visitMethodColumns"
         @confirm="onPickMethod"
         @cancel="showMethod = false"
       />
     </van-popup>
     <van-popup v-model:show="showType" position="bottom" round>
-      <van-picker :columns="VISIT_TYPE_OPTIONS" @confirm="onPickType" @cancel="showType = false" />
+      <van-picker :columns="visitTypeColumns" @confirm="onPickType" @cancel="showType = false" />
     </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { createVisit, VISIT_METHOD_OPTIONS, VISIT_TYPE_OPTIONS } from '@crm/domain'
+import { createVisit, listDimensionOptions, VISIT_METHOD_OPTIONS } from '@crm/domain'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,6 +110,22 @@ const visitTypeLabel = ref('')
 const showMethod = ref(false)
 const showType = ref(false)
 const saving = ref(false)
+const visitMethodColumns = VISIT_METHOD_OPTIONS.map((option) => ({
+  value: option.value,
+  text: option.label,
+}))
+const visitTypeColumns = ref<{ value: string; text: string }[]>([])
+
+onMounted(async () => {
+  try {
+    const options = await listDimensionOptions('visit_type')
+    visitTypeColumns.value = options
+      .filter((option) => option.isActive)
+      .map((option) => ({ value: option.name, text: option.label }))
+  } catch {
+    showToast('拜访类型加载失败')
+  }
+})
 
 function onPickMethod({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
   form.method = selectedOptions[0].value

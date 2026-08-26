@@ -17,7 +17,7 @@
       <el-form-item label="拜访类型">
         <el-select v-model="visitForm.visitType" clearable style="width: 100%">
           <el-option
-            v-for="option in VISIT_TYPE_OPTIONS"
+            v-for="option in visitTypeOptions"
             :key="option.value"
             :label="option.label"
             :value="option.value"
@@ -53,7 +53,7 @@
       <el-form-item label="发现渠道" required>
         <el-select v-model="opportunityForm.source" style="width: 100%">
           <el-option
-            v-for="option in OPPORTUNITY_SOURCE_OPTIONS"
+            v-for="option in opportunitySourceOptions"
             :key="option.value"
             :label="option.label"
             :value="option.value"
@@ -86,7 +86,7 @@
       <el-form-item label="客诉类型" required>
         <el-select v-model="complaintForm.type" style="width: 100%">
           <el-option
-            v-for="option in COMPLAINT_TYPE_OPTIONS"
+            v-for="option in complaintTypeOptions"
             :key="option.value"
             :label="option.label"
             :value="option.value"
@@ -111,16 +111,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  COMPLAINT_TYPE_OPTIONS,
-  OPPORTUNITY_SOURCE_OPTIONS,
   VISIT_METHOD_OPTIONS,
-  VISIT_TYPE_OPTIONS,
   createComplaint,
   createOpportunity,
   createVisit,
+  listDimensionOptions,
+  type DimensionOption,
   type VisitMethod,
 } from '@crm/domain'
 
@@ -131,6 +130,32 @@ const emit = defineEmits<{
 
 const visible = reactive({ visit: false, opportunity: false, complaint: false })
 const saving = ref(false)
+const visitTypeOptions = ref<SelectOption[]>([])
+const opportunitySourceOptions = ref<SelectOption[]>([])
+const complaintTypeOptions = ref<SelectOption[]>([])
+
+type SelectOption = { value: string; label: string }
+
+function asSelectOptions(options: DimensionOption[]): SelectOption[] {
+  return options
+    .filter((option) => option.isActive)
+    .map((option) => ({ value: option.name, label: option.label }))
+}
+
+onMounted(async () => {
+  try {
+    const [visitTypes, opportunitySources, complaintTypes] = await Promise.all([
+      listDimensionOptions('visit_type'),
+      listDimensionOptions('opportunity_source'),
+      listDimensionOptions('complaint_type'),
+    ])
+    visitTypeOptions.value = asSelectOptions(visitTypes)
+    opportunitySourceOptions.value = asSelectOptions(opportunitySources)
+    complaintTypeOptions.value = asSelectOptions(complaintTypes)
+  } catch {
+    ElMessage.error('业务分类加载失败，请稍后重试')
+  }
+})
 const visitForm = reactive({
   occurredAt: '',
   method: 'offline_visit' as VisitMethod,

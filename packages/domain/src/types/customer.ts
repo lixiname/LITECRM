@@ -111,6 +111,7 @@ export interface DimensionOption {
   id: string
   dimension: CustomerDimension
   name: string
+  label: string
   sortOrder: number
   isActive: boolean
 }

@@ -44,15 +44,18 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useQuery, listComplaints, COMPLAINT_TYPE_OPTIONS, type Complaint } from '@crm/domain'
+import { useQuery, listComplaints, listDimensionOptions, type Complaint } from '@crm/domain'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
 
 const router = useRouter()
 const { data: items, loading, error, reload } = useQuery('complaints:list', () => listComplaints())
+const { data: typeOptions } = useQuery('catalog:complaint_type', () =>
+  listDimensionOptions('complaint_type'),
+)
 
 function typeLabel(type: string): string {
-  return COMPLAINT_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
+  return typeOptions.value?.find((option) => option.name === type)?.label ?? type
 }
 function timeText(value: string | undefined): string {
   return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'

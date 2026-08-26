@@ -37,38 +37,35 @@ export class CatalogService {
       .orderBy(asc(customerDimensionOptions.dimension), asc(customerDimensionOptions.sortOrder))
   }
 
-  // 表单下拉用：仅返回指定维度启用的选项（所有登录用户可读）
+  // 返回指定维度全部选项：表单过滤停用项，历史记录仍可解析停用值的展示名
   async listByDimension(
     dimension: CustomerDimension,
   ): Promise<(typeof customerDimensionOptions.$inferSelect)[]> {
     return db
       .select()
       .from(customerDimensionOptions)
-      .where(
-        and(
-          eq(customerDimensionOptions.dimension, dimension),
-          eq(customerDimensionOptions.isActive, true),
-        ),
-      )
+      .where(eq(customerDimensionOptions.dimension, dimension))
       .orderBy(asc(customerDimensionOptions.sortOrder))
   }
 
   async create(dto: CreateDimensionOptionDto) {
+    const name = dto.name.trim()
+    const label = dto.label.trim()
     const [exists] = await db
       .select({ id: customerDimensionOptions.id })
       .from(customerDimensionOptions)
       .where(
         and(
           eq(customerDimensionOptions.dimension, dto.dimension),
-          eq(customerDimensionOptions.name, dto.name),
+          eq(customerDimensionOptions.name, name),
         ),
       )
       .limit(1)
-    if (exists) throw new ConflictException('该维度下已存在同名选项')
+    if (exists) throw new ConflictException('该维度下已存在相同字典值')
 
     const [created] = await db
       .insert(customerDimensionOptions)
-      .values({ dimension: dto.dimension, name: dto.name, sortOrder: dto.sortOrder ?? 0 })
+      .values({ dimension: dto.dimension, name, label, sortOrder: dto.sortOrder ?? 0 })
       .returning()
     return created
   }
@@ -84,7 +81,7 @@ export class CatalogService {
     const [updated] = await db
       .update(customerDimensionOptions)
       .set({
-        name: dto.name ?? existing.name,
+        label: dto.label?.trim() ?? existing.label,
         sortOrder: dto.sortOrder ?? existing.sortOrder,
         isActive: dto.isActive ?? existing.isActive,
       })

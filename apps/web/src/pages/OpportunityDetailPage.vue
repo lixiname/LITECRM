@@ -103,7 +103,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   getOpportunity,
-  OPPORTUNITY_SOURCE_OPTIONS,
+  listDimensionOptions,
   OPPORTUNITY_STAGE_OPTIONS,
   useQuery,
   type OpportunityQuote,
@@ -119,6 +119,9 @@ const {
   loading,
   reload,
 } = useQuery(`opportunity:detail:${oppId}`, () => getOpportunity(oppId))
+const { data: sourceOptions } = useQuery('catalog:opportunity_source', () =>
+  listDimensionOptions('opportunity_source'),
+)
 const commands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
 const isOpen = computed(() => opp.value?.stage === 'intent' || opp.value?.stage === 'following')
 
@@ -135,7 +138,7 @@ function stageLabel(stage: OpportunityStage): string {
   return OPPORTUNITY_STAGE_OPTIONS.find((item) => item.value === stage)?.label ?? stage
 }
 function sourceLabel(source: string): string {
-  return OPPORTUNITY_SOURCE_OPTIONS.find((item) => item.value === source)?.label ?? source
+  return sourceOptions.value?.find((option) => option.name === source)?.label ?? source
 }
 function quoteKindLabel(kind: OpportunityQuote['kind'] | undefined): string {
   return kind ? (kind === 'formal' ? '正式报价' : '口头报价') : '-'

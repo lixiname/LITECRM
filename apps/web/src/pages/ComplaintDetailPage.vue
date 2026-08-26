@@ -85,7 +85,7 @@
 import { reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { useQuery, getComplaint, followUpComplaint, COMPLAINT_TYPE_OPTIONS } from '@crm/domain'
+import { useQuery, getComplaint, followUpComplaint, listDimensionOptions } from '@crm/domain'
 import AppPageHeader from '../components/AppPageHeader.vue'
 
 const route = useRoute()
@@ -96,6 +96,9 @@ const {
   loading,
   reload,
 } = useQuery(`complaint:detail:${complaintId}`, () => getComplaint(complaintId))
+const { data: typeOptions } = useQuery('catalog:complaint_type', () =>
+  listDimensionOptions('complaint_type'),
+)
 const showFollow = ref(false)
 const acting = ref(false)
 const form = reactive({
@@ -107,7 +110,7 @@ const form = reactive({
 })
 
 function typeLabel(type: string): string {
-  return COMPLAINT_TYPE_OPTIONS.find((t) => t.value === type)?.label ?? type
+  return typeOptions.value?.find((option) => option.name === type)?.label ?? type
 }
 function formatTime(v: string): string {
   return v ? new Date(v).toLocaleString('zh-CN', { hour12: false }) : '-'

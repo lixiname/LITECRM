@@ -944,14 +944,16 @@ export interface components {
         CreateDimensionOptionDto: {
             /** @description 维度 */
             dimension: components["schemas"]["CustomerDimension"];
-            /** @description 选项名称（维度内唯一） */
+            /** @description 稳定字典值（维度内唯一，如 new_customer） */
             name: string;
+            /** @description 展示名称（如新客户开发） */
+            label: string;
             /** @description 排序权重 */
             sortOrder?: number;
         };
         UpdateDimensionOptionDto: {
-            /** @description 选项名称（维度内唯一） */
-            name?: string;
+            /** @description 展示名称 */
+            label?: string;
             /** @description 排序权重 */
             sortOrder?: number;
             /** @description 是否启用 */
@@ -1583,7 +1585,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 某维度启用选项（建档下拉用） */
+            /** @description 某维度全部选项（表单过滤停用项，历史值仍可展示） */
             200: {
                 headers: {
                     [name: string]: unknown;
