@@ -36,18 +36,54 @@
       <van-cell title="地址" :value="detail.address ?? '-'" />
     </van-cell-group>
 
-    <van-cell-group v-if="detail" inset title="联系人">
+    <van-cell-group v-if="detail" inset title="成交与商机">
+      <van-cell title="历史成交次数" :value="detail.dealSummary?.count ?? 0" />
+      <van-cell title="历史成交总额" :value="moneyText(detail.dealSummary?.totalAmount)" />
       <van-cell
-        v-for="c in detail.contacts"
-        :key="c.id"
-        :title="c.name ?? '（无名）'"
-        :label="c.phone ?? ''"
+        title="最近成交"
+        :value="detail.latestDeals?.[0] ? moneyText(detail.latestDeals[0].amount) : '-'"
+      />
+    </van-cell-group>
+
+    <van-cell-group v-if="detail?.opportunities?.length" inset title="相关商机（最近）">
+      <van-cell
+        v-for="opportunity in detail?.opportunities ?? []"
+        :key="opportunity.id"
+        :title="opportunity.name"
       >
-        <template #value>
-          <van-tag v-if="c.isKeyContact" type="success">首要</van-tag>
+        <template #label>
+          <div class="customer-detail__line">
+            <div class="customer-detail__meta">
+              <van-tag size="small" :type="stageTag(opportunity.stage)">
+                {{ stageLabel(opportunity.stage) }}
+              </van-tag>
+              <span>意向：{{ moneyText(opportunity.estimatedAmount) }}</span>
+            </div>
+            <span>最新报价：{{ moneyText(opportunity.latestQuote?.amount) }}</span>
+            <span>下一步：{{ opportunity.currentAction?.content ?? '—' }}</span>
+          </div>
         </template>
       </van-cell>
-      <van-cell v-if="detail.contacts.length === 0" title="暂无联系人" />
+    </van-cell-group>
+
+    <van-cell-group v-if="detail?.timeline?.length" inset title="活动时间线（最近）">
+      <div class="timeline">
+        <div
+          v-for="item in detail?.timeline ?? []"
+          :key="`${item.type}-${item.id}`"
+          class="timeline__row"
+        >
+          <div class="timeline__time">{{ timeText(item.occurredAt) }}</div>
+          <div class="timeline__line">
+            <div class="timeline__dot" :class="`timeline__dot--${item.type}`" />
+            <div class="timeline__bar" />
+          </div>
+          <div class="timeline__content">
+            <div class="timeline__title">{{ item.title }}</div>
+            <div class="timeline__summary">{{ item.summary }}</div>
+          </div>
+        </div>
+      </div>
     </van-cell-group>
   </div>
 </template>
@@ -59,6 +95,8 @@ import {
   getCustomer,
   useAuthStore,
   CUSTOMER_STATUS_OPTIONS,
+  OPPORTUNITY_STAGE_OPTIONS,
+  type Opportunity,
   type CustomerStatus,
 } from '@crm/domain'
 
@@ -72,4 +110,110 @@ const { data: detail } = useQuery(`customer:detail:${customerId}`, () => getCust
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
 }
+
+function stageTag(stage: Opportunity['stage']): 'primary' | 'warning' | 'success' | 'danger' {
+  const map: Record<Opportunity['stage'], 'primary' | 'warning' | 'success' | 'danger'> = {
+    won: 'success',
+    lost: 'danger',
+    demand_disappeared: 'danger',
+    following: 'warning',
+    intent: 'primary',
+  }
+  return map[stage]
+}
+
+function stageLabel(stage: Opportunity['stage']): string {
+  return OPPORTUNITY_STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? stage
+}
+
+function moneyText(amount?: string): string {
+  return amount ? `¥${Number(amount).toLocaleString()}` : '-'
+}
+
+function timeText(v: string): string {
+  return new Date(v).toLocaleString('zh-CN', { hour12: false })
+}
 </script>
+
+<style scoped>
+.customer-detail__line {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.customer-detail__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  padding: var(--crm-spacing-sm) 0;
+}
+
+.timeline__row {
+  display: grid;
+  grid-template-columns: 82px 18px 1fr;
+  gap: var(--crm-spacing-xs);
+  align-items: flex-start;
+  margin-bottom: var(--crm-spacing-sm);
+}
+
+.timeline__time {
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.timeline__line {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 44px;
+}
+
+.timeline__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--crm-color-primary);
+}
+
+.timeline__dot--visit,
+.timeline__dot--opportunity_follow_up,
+.timeline__dot--deal {
+  background: #67c23a;
+}
+
+.timeline__dot--complaint {
+  background: #e6a23c;
+}
+
+.timeline__bar {
+  width: 1px;
+  flex: 1;
+  background: var(--crm-color-border);
+  margin-top: 4px;
+}
+
+.timeline__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timeline__summary {
+  color: var(--crm-color-text-secondary);
+  font-size: 13px;
+}
+</style>
