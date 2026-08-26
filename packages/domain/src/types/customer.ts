@@ -1,5 +1,5 @@
 import type { components } from '@crm/contracts'
-import type { Complaint, Deal, FollowUpAction, Opportunity, OpportunityQuote } from './actions'
+import type { Complaint, FollowUpAction, Opportunity, OpportunityQuote } from './actions'
 
 // 客户域类型（§7.2 非 API 类型留 domain 层；枚举/请求体从 contracts import）
 export type CustomerGrade = components['schemas']['CustomerGrade']

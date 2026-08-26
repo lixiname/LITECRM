@@ -54,7 +54,7 @@
         <template #label>
           <div class="customer-detail__line">
             <div class="customer-detail__meta">
-              <van-tag size="small" :type="stageTag(opportunity.stage)">
+              <van-tag :type="stageTag(opportunity.stage)">
                 {{ stageLabel(opportunity.stage) }}
               </van-tag>
               <span>意向：{{ moneyText(opportunity.estimatedAmount) }}</span>
@@ -126,7 +126,7 @@ function stageLabel(stage: Opportunity['stage']): string {
   return OPPORTUNITY_STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? stage
 }
 
-function moneyText(amount?: string): string {
+function moneyText(amount?: string | null): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
 }
 
