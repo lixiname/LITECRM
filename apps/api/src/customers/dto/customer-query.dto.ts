@@ -2,9 +2,9 @@ import { ApiPropertyOptional } from '@nestjs/swagger'
 import { Transform } from 'class-transformer'
 import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator'
 import {
-  CUSTOMER_LEVELS,
+  CUSTOMER_GRADES,
   CUSTOMER_STATUSES,
-  type CustomerLevel,
+  type CustomerGrade,
   type CustomerStatus,
 } from '../../common/constants'
 
@@ -30,10 +30,10 @@ export class CustomerQueryDto {
   @IsString()
   customerType?: string
 
-  @ApiPropertyOptional({ description: '分级筛选', enum: CUSTOMER_LEVELS })
+  @ApiPropertyOptional({ description: '客户等级筛选', enum: CUSTOMER_GRADES })
   @IsOptional()
-  @IsIn(CUSTOMER_LEVELS)
-  level?: CustomerLevel
+  @IsIn(CUSTOMER_GRADES)
+  grade?: CustomerGrade
 
   @ApiPropertyOptional({
     description: '状态筛选',

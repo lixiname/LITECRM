@@ -10,7 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { Type } from 'class-transformer'
-import { CUSTOMER_LEVELS, type CustomerLevel } from '../../common/constants'
+import { CUSTOMER_GRADES, type CustomerGrade } from '../../common/constants'
 import { CreateContactDto } from './contact.dto'
 
 // 创建客户（§8.2/8.3）：name 必填 + 至少一个联系人电话（应用层校验）；ownerId 缺省=建档人
@@ -83,13 +83,13 @@ export class CreateCustomerDto {
   source?: string
 
   @ApiPropertyOptional({
-    description: '分级容量 S/A/B/C',
-    enum: CUSTOMER_LEVELS,
-    enumName: 'CustomerLevel',
+    description: '客户等级 S/A/B/C',
+    enum: CUSTOMER_GRADES,
+    enumName: 'CustomerGrade',
   })
   @IsOptional()
-  @IsIn(CUSTOMER_LEVELS)
-  level?: CustomerLevel
+  @IsIn(CUSTOMER_GRADES)
+  grade?: CustomerGrade
 
   @ApiPropertyOptional({ description: '指定负责人（缺省=建档人，§8.3）' })
   @IsOptional()

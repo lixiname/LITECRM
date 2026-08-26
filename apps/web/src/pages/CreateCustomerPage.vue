@@ -22,8 +22,8 @@
         </el-form-item>
 
         <el-form-item label="等级">
-          <el-select v-model="form.level" style="width: 120px">
-            <el-option v-for="l in CUSTOMER_LEVEL_OPTIONS" :key="l" :label="l" :value="l" />
+          <el-select v-model="form.grade" style="width: 120px">
+            <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
           </el-select>
         </el-form-item>
 
@@ -98,11 +98,11 @@ import {
   createCustomer,
   createClaim,
   listDimensionOptions,
-  CUSTOMER_LEVEL_OPTIONS,
+  CUSTOMER_GRADE_OPTIONS,
   DEDUP_CONFIDENCE_LABELS,
   type DedupHit,
   type DimensionOption,
-  type CustomerLevel,
+  type CustomerGrade,
 } from '@crm/domain'
 
 const router = useRouter()
@@ -112,7 +112,7 @@ const form = reactive({
   name: '',
   city: '',
   industry: undefined as string | undefined,
-  level: 'C',
+  grade: 'C',
   ownerId: '',
   notes: '',
   contacts: [{ name: '', phone: '' } as { name?: string; phone?: string }],
@@ -161,7 +161,7 @@ async function handleSubmit() {
       name: form.name.trim(),
       city: form.city || undefined,
       industry: form.industry,
-      level: form.level as CustomerLevel,
+      grade: form.grade as CustomerGrade,
       ownerId: form.ownerId || undefined,
       notes: form.notes || undefined,
       contacts: form.contacts

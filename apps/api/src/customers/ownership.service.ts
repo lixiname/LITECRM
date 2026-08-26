@@ -4,24 +4,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, gte, inArray } from 'drizzle-orm'
+import { and, eq, gte, inArray, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { complaints, customerTransfers, customers, weeklyPlanItems } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { CapacityService } from './capacity.service'
+import { GradeQuotaService } from './grade-quota.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { TransferCustomerDto } from './dto/transfer-customer.dto'
 import type { ReleaseCustomerDto } from './dto/release-customer.dto'
 
 /**
- * 归属治理（§8.3）：所有权转移 / 主动释放 / 公海认领，均走分级容量校验。
+ * 归属治理（§8.3）：所有权转移 / 主动释放 / 公海认领，均走客户分级名额校验。
  * 归属单一事实源在 customers.owner_id；商机/客诉子实体当前归属 JOIN 客户自动跟随（M3 建表后无需同步）。
  */
 @Injectable()
 export class OwnershipService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly capacityService: CapacityService,
+    private readonly gradeQuotaService: GradeQuotaService,
   ) {}
 
   // 所有权转移（§8.3）：owner/管理链/admin 发起，同事务改归属 + 写 customer_transfers
@@ -30,13 +30,19 @@ export class OwnershipService {
     await this.assertCanContribute(customer, actor)
     if (customer.ownerId === dto.toOwnerId) throw new ConflictException('不能移交给当前负责人')
     if (customer.status !== 'active') throw new ConflictException('仅 active 客户可移交')
-    await this.capacityService.assertWithinCapacity(dto.toOwnerId)
 
     return db.transaction(async (tx) => {
-      await tx
+      await this.gradeQuotaService.assertSlotAvailable(tx, dto.toOwnerId, customer.grade)
+      const [updated] = await tx
         .update(customers)
-        .set({ ownerId: dto.toOwnerId })
-        .where(eq(customers.id, customer.id))
+        .set({
+          ownerId: dto.toOwnerId,
+          updatedAt: new Date(),
+          version: sql`${customers.version} + 1`,
+        })
+        .where(and(eq(customers.id, customer.id), eq(customers.version, customer.version)))
+        .returning({ id: customers.id, ownerId: customers.ownerId })
+      if (!updated) throw new ConflictException('客户归属已变化，请刷新后重试')
       await tx.insert(customerTransfers).values({
         customerId: customer.id,
         fromOwnerId: customer.ownerId,
@@ -45,7 +51,7 @@ export class OwnershipService {
         reason: dto.reason,
       })
       // TODO(M3)：商机/客诉当前归属 JOIN 客户自动跟随，无需同步（§7.2 归属语义）
-      return { id: customer.id, ownerId: dto.toOwnerId }
+      return updated
     })
   }
 
@@ -63,10 +69,17 @@ export class OwnershipService {
 
     const nextStatus = dto.target === 'pool' ? 'public' : 'invalid'
     return db.transaction(async (tx) => {
-      await tx
+      const [updated] = await tx
         .update(customers)
-        .set({ ownerId: null, status: nextStatus })
-        .where(eq(customers.id, customer.id))
+        .set({
+          ownerId: null,
+          status: nextStatus,
+          updatedAt: new Date(),
+          version: sql`${customers.version} + 1`,
+        })
+        .where(and(eq(customers.id, customer.id), eq(customers.version, customer.version)))
+        .returning({ id: customers.id, status: customers.status, ownerId: customers.ownerId })
+      if (!updated) throw new ConflictException('客户归属已变化，请刷新后重试')
       await tx.insert(customerTransfers).values({
         customerId: customer.id,
         fromOwnerId: customer.ownerId,
@@ -83,11 +96,11 @@ export class OwnershipService {
             gte(weeklyPlanItems.plannedDate, new Date().toISOString().slice(0, 10)),
           ),
         )
-      return { id: customer.id, status: nextStatus, ownerId: null }
+      return updated
     })
   }
 
-  // 公海认领（§8.3）：status=public 客户，容量校验，owner→本人 status→active
+  // 公海认领（§8.3）：status=public 客户，分级名额校验，owner→本人 status→active
   async claim(customerId: string, actor: AuthUser) {
     const [customer] = await db
       .select()
@@ -95,13 +108,26 @@ export class OwnershipService {
       .where(and(eq(customers.id, customerId), eq(customers.status, 'public')))
       .limit(1)
     if (!customer) throw new NotFoundException('公海客户不存在')
-    await this.capacityService.assertWithinCapacity(actor.id)
 
     return db.transaction(async (tx) => {
-      await tx
+      await this.gradeQuotaService.assertSlotAvailable(tx, actor.id, customer.grade)
+      const [updated] = await tx
         .update(customers)
-        .set({ ownerId: actor.id, status: 'active' })
-        .where(eq(customers.id, customer.id))
+        .set({
+          ownerId: actor.id,
+          status: 'active',
+          updatedAt: new Date(),
+          version: sql`${customers.version} + 1`,
+        })
+        .where(
+          and(
+            eq(customers.id, customer.id),
+            eq(customers.version, customer.version),
+            eq(customers.status, 'public'),
+          ),
+        )
+        .returning({ id: customers.id, status: customers.status, ownerId: customers.ownerId })
+      if (!updated) throw new ConflictException('客户已被他人认领或状态已变化')
       await tx.insert(customerTransfers).values({
         customerId: customer.id,
         fromOwnerId: null,
@@ -109,7 +135,7 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: '公海认领',
       })
-      return { id: customer.id, status: 'active', ownerId: actor.id }
+      return updated
     })
   }
 

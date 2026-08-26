@@ -1,9 +1,14 @@
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator'
-import { CUSTOMER_LEVELS, type CustomerLevel } from '../../common/constants'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import { CUSTOMER_GRADES, type CustomerGrade } from '../../common/constants'
 
 // 更新客户（§8.3：可维护 owner/管理链/admin；联系人走单独接口）
 export class UpdateCustomerDto {
+  @ApiProperty({ description: '读取客户时获得的版本号，用于防止覆盖他人更新', minimum: 1 })
+  @IsInt()
+  @Min(1)
+  version!: number
+
   @ApiPropertyOptional({ description: '客户名称' })
   @IsOptional()
   @IsString()
@@ -61,21 +66,21 @@ export class UpdateCustomerDto {
   source?: string | null
 
   @ApiPropertyOptional({
-    description: '分级容量',
-    enum: CUSTOMER_LEVELS,
-    enumName: 'CustomerLevel',
+    description: '客户等级',
+    enum: CUSTOMER_GRADES,
+    enumName: 'CustomerGrade',
   })
   @IsOptional()
-  @IsIn(CUSTOMER_LEVELS)
-  level?: CustomerLevel
+  @IsIn(CUSTOMER_GRADES)
+  grade?: CustomerGrade
+
+  @ApiPropertyOptional({ description: '客户等级变更原因；仅等级变化时记录' })
+  @IsOptional()
+  @IsString()
+  gradeChangeReason?: string
 
   @ApiPropertyOptional({ description: '备注' })
   @IsOptional()
   @IsString()
   notes?: string | null
-
-  @ApiPropertyOptional({ description: '指定负责人（需容量校验）' })
-  @IsOptional()
-  @IsUUID()
-  ownerId?: string | null
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -6,9 +7,9 @@ import {
 } from '@nestjs/common'
 import { and, asc, desc, eq, inArray, sql, type SQL } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { contacts, customers } from '../common/db/schema'
+import { contacts, customerGradeChanges, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { CapacityService } from './capacity.service'
+import { GradeQuotaService } from './grade-quota.service'
 import { normalizeBusinessName, normalizePhone } from './customer-normalizer'
 import { scoreDuplicate, type DedupInput, type DedupScored } from './dedup'
 import type { AuthUser } from '../auth/auth.service'
@@ -24,17 +25,14 @@ import type { DedupCheckDto } from './dto/dedup-check.dto'
 export class CustomersService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly capacityService: CapacityService,
+    private readonly gradeQuotaService: GradeQuotaService,
   ) {}
 
-  // 建档（§8.3）：默认 owner=建档人；指定负责人需容量校验
-  // 查重硬拦截（§8.2 步②）：唯一键冲突（normalized_key/code/信用代码）→ 409
+  // 建档：默认 owner=建档人；名额校验与写入处于同一事务。
+  // 仅 ERP 编码/信用代码唯一冲突硬拦截；名称归一化只做疑似重复提示。
   async create(dto: CreateCustomerDto, actor: AuthUser) {
     assertContactHasPhone(dto.contacts)
     const ownerId = dto.ownerId ?? actor.id
-    if (dto.ownerId && dto.ownerId !== actor.id) {
-      await this.capacityService.assertWithinCapacity(dto.ownerId)
-    }
 
     try {
       return await this.insertCustomer(dto, ownerId, actor)
@@ -129,13 +127,16 @@ export class CustomersService {
 
   private async insertCustomer(dto: CreateCustomerDto, ownerId: string, actor: AuthUser) {
     return db.transaction(async (tx) => {
+      const grade = dto.grade ?? 'C'
+      await this.gradeQuotaService.assertSlotAvailable(tx, ownerId, grade)
+
       const [customer] = await tx
         .insert(customers)
         .values({
           name: dto.name,
           normalizedKey: normalizeBusinessName(dto.name),
-          customerCode: dto.customerCode ?? null,
-          unifiedSocialCreditCode: dto.unifiedSocialCreditCode ?? null,
+          customerCode: normalizeOptionalIdentifier(dto.customerCode),
+          unifiedSocialCreditCode: normalizeOptionalIdentifier(dto.unifiedSocialCreditCode),
           aliasNames: dto.aliasNames ?? [],
           industry: dto.industry ?? null,
           subIndustry: dto.subIndustry ?? null,
@@ -146,7 +147,7 @@ export class CustomersService {
           address: dto.address ?? null,
           website: dto.website ?? null,
           source: dto.source ?? null,
-          level: dto.level ?? 'C',
+          grade,
           ownerId,
           createdById: actor.id,
           notes: dto.notes ?? null,
@@ -174,7 +175,7 @@ export class CustomersService {
     const conditions: SQL[] = [inArray(customers.ownerId, visibleIds)]
 
     if (query.status) conditions.push(eq(customers.status, query.status))
-    if (query.level) conditions.push(eq(customers.level, query.level))
+    if (query.grade) conditions.push(eq(customers.grade, query.grade))
     if (query.city) conditions.push(eq(customers.city, query.city))
     if (query.industry) conditions.push(eq(customers.industry, query.industry))
     if (query.customerType) conditions.push(eq(customers.customerType, query.customerType))
@@ -239,31 +240,61 @@ export class CustomersService {
     const customer = await this.findVisible(id, actor)
     await this.assertCanContribute(customer, actor)
 
-    const [updated] = await db
-      .update(customers)
-      .set({
-        name: dto.name ?? customer.name,
-        normalizedKey: dto.name ? normalizeBusinessName(dto.name) : customer.normalizedKey,
-        customerCode: dto.customerCode === undefined ? customer.customerCode : dto.customerCode,
-        unifiedSocialCreditCode:
-          dto.unifiedSocialCreditCode === undefined
-            ? customer.unifiedSocialCreditCode
-            : dto.unifiedSocialCreditCode,
-        industry: dto.industry === undefined ? customer.industry : dto.industry,
-        subIndustry: dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry,
-        customerType: dto.customerType === undefined ? customer.customerType : dto.customerType,
-        city: dto.city === undefined ? customer.city : dto.city,
-        province: dto.province === undefined ? customer.province : dto.province,
-        address: dto.address === undefined ? customer.address : dto.address,
-        website: dto.website === undefined ? customer.website : dto.website,
-        source: dto.source === undefined ? customer.source : dto.source,
-        level: dto.level ?? customer.level,
-        notes: dto.notes === undefined ? customer.notes : dto.notes,
-        // ownerId 变更走 transfer 专用接口（D 阶段），此处不直接改归属
+    try {
+      return await db.transaction(async (tx) => {
+        const nextGrade = dto.grade ?? customer.grade
+        if (nextGrade !== customer.grade && !dto.gradeChangeReason?.trim()) {
+          throw new BadRequestException('调整客户等级必须填写原因')
+        }
+        if (nextGrade !== customer.grade && customer.ownerId && customer.status === 'active') {
+          await this.gradeQuotaService.assertSlotAvailable(tx, customer.ownerId, nextGrade)
+        }
+
+        const [updated] = await tx
+          .update(customers)
+          .set({
+            name: dto.name ?? customer.name,
+            normalizedKey: dto.name ? normalizeBusinessName(dto.name) : customer.normalizedKey,
+            customerCode:
+              dto.customerCode === undefined
+                ? customer.customerCode
+                : normalizeOptionalIdentifier(dto.customerCode),
+            unifiedSocialCreditCode:
+              dto.unifiedSocialCreditCode === undefined
+                ? customer.unifiedSocialCreditCode
+                : normalizeOptionalIdentifier(dto.unifiedSocialCreditCode),
+            industry: dto.industry === undefined ? customer.industry : dto.industry,
+            subIndustry: dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry,
+            customerType: dto.customerType === undefined ? customer.customerType : dto.customerType,
+            city: dto.city === undefined ? customer.city : dto.city,
+            province: dto.province === undefined ? customer.province : dto.province,
+            address: dto.address === undefined ? customer.address : dto.address,
+            website: dto.website === undefined ? customer.website : dto.website,
+            source: dto.source === undefined ? customer.source : dto.source,
+            grade: nextGrade,
+            notes: dto.notes === undefined ? customer.notes : dto.notes,
+            updatedAt: new Date(),
+            version: sql`${customers.version} + 1`,
+          })
+          .where(and(eq(customers.id, customer.id), eq(customers.version, dto.version)))
+          .returning()
+        if (!updated) throw new ConflictException('客户资料已被他人更新，请刷新后重试')
+
+        if (nextGrade !== customer.grade) {
+          await tx.insert(customerGradeChanges).values({
+            customerId: customer.id,
+            fromGrade: customer.grade,
+            toGrade: nextGrade,
+            changedById: actor.id,
+            reason: dto.gradeChangeReason?.trim() || null,
+          })
+        }
+        return updated
       })
-      .where(eq(customers.id, customer.id))
-      .returning()
-    return updated
+    } catch (e) {
+      if (isUniqueViolation(e)) throw new ConflictException('ERP 客户编码或信用代码已被使用')
+      throw e
+    }
   }
 
   // ===== 联系人（§7.2）=====
@@ -297,9 +328,12 @@ export class CustomersService {
         title: dto.title === undefined ? contact.title : dto.title,
         phone: dto.phone === undefined ? contact.phone : dto.phone,
         isKeyContact: dto.isKeyContact ?? contact.isKeyContact,
+        updatedAt: new Date(),
+        version: sql`${contacts.version} + 1`,
       })
-      .where(eq(contacts.id, contactId))
+      .where(and(eq(contacts.id, contactId), eq(contacts.version, contact.version)))
       .returning()
+    if (!updated) throw new ConflictException('联系人已被他人更新，请刷新后重试')
     return updated
   }
 
@@ -341,7 +375,12 @@ function assertContactHasPhone(contactList: CreateContactDto[]): void {
   if (!hasPhone) throw new ForbiddenException('至少需要一个联系人电话')
 }
 
-// PostgreSQL 唯一约束冲突（SQLSTATE 23505）：查重硬拦截判定
+function normalizeOptionalIdentifier(value: string | null | undefined): string | null {
+  const normalized = value?.trim()
+  return normalized ? normalized : null
+}
+
+// PostgreSQL 唯一约束冲突（SQLSTATE 23505）：外部权威标识/首要联系人等硬约束。
 // Drizzle 0.45+ 包装为 DrizzleQueryError，底层 pg 错误在 cause 上
 function isUniqueViolation(e: unknown): boolean {
   if (typeof e !== 'object' || e === null) return false

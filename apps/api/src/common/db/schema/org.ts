@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { baseColumns } from './common'
+import type { CustomerGrade } from '../../constants'
 
 /**
  * 组织与身份域（规格 §7.2 org）
@@ -46,31 +47,45 @@ export const users = pgTable(
   ],
 )
 
-// 分级容量：全局默认上限（S/A/B/C）。level 即主键（文档 §7.2 明确），故不用 baseColumns 的 id
-export const capacityConfig = pgTable(
-  'capacity_config',
+// 客户分级名额：公司默认值。grade 即主键，故不用 baseColumns 的 id。
+export const customerGradeQuotaDefaults = pgTable(
+  'customer_grade_quota_defaults',
   {
-    level: text('level').primaryKey(), // 枚举 S/A/B/C
+    grade: text('customer_grade').$type<CustomerGrade>().primaryKey(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
     version: integer('version').default(1).notNull(),
     defaultLimit: integer('default_limit'), // null=不限
   },
-  (table) => [check('capacity_config_level_check', sql`${table.level} in ('S','A','B','C')`)],
+  (table) => [
+    check('customer_grade_quota_defaults_grade_check', sql`${table.grade} in ('S','A','B','C')`),
+    check(
+      'customer_grade_quota_defaults_limit_check',
+      sql`${table.defaultLimit} is null or ${table.defaultLimit} >= 0`,
+    ),
+  ],
 )
 
-// 分级容量：个人覆盖
-export const userCapacityOverrides = pgTable(
-  'user_capacity_overrides',
+// 客户分级名额：负责人个人覆盖；没有记录时继承公司默认值，limit=null 表示明确不限。
+export const userCustomerGradeQuotaOverrides = pgTable(
+  'user_customer_grade_quota_overrides',
   {
     ...baseColumns,
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
-    level: text('level').notNull(),
-    limit: integer('limit'), // null=用全局
+    grade: text('customer_grade').$type<CustomerGrade>().notNull(),
+    limit: integer('limit'),
   },
   (table) => [
-    check('user_capacity_overrides_level_check', sql`${table.level} in ('S','A','B','C')`),
+    check(
+      'user_customer_grade_quota_overrides_grade_check',
+      sql`${table.grade} in ('S','A','B','C')`,
+    ),
+    check(
+      'user_customer_grade_quota_overrides_limit_check',
+      sql`${table.limit} is null or ${table.limit} >= 0`,
+    ),
+    uniqueIndex('user_customer_grade_quota_overrides_user_grade_uq').on(table.userId, table.grade),
   ],
 )

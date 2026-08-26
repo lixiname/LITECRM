@@ -18,7 +18,7 @@ export interface CustomerListQuery {
   city?: string
   industry?: string
   customerType?: string
-  level?: string
+  grade?: string
   status?: string
   page?: number
   pageSize?: number
@@ -39,7 +39,7 @@ export function getCustomer(id: string): Promise<CustomerDetail> {
   return apiGet<CustomerDetail>(`/customers/${id}`)
 }
 
-/** 建档（§8.2 查重硬拦截 409） */
+/** 建档：名称疑似重复只提示，ERP 编码/信用代码冲突才硬拦截。 */
 export function createCustomer(dto: CreateCustomerInput): Promise<CustomerItem> {
   return apiPost<CustomerItem>('/customers', dto)
 }

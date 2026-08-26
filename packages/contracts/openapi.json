@@ -417,10 +417,10 @@
             }
           },
           {
-            "name": "level",
+            "name": "grade",
             "required": false,
             "in": "query",
-            "description": "分级筛选",
+            "description": "客户等级筛选",
             "schema": {
               "type": "string",
               "enum": ["S", "A", "B", "C"]
@@ -559,7 +559,7 @@
         },
         "responses": {
           "200": {
-            "description": "所有权转移（容量校验，写移交历史）"
+            "description": "所有权转移（分级名额校验，写移交历史）"
           }
         },
         "tags": ["customers"]
@@ -611,7 +611,7 @@
         ],
         "responses": {
           "200": {
-            "description": "公海认领（容量校验，owner→本人）"
+            "description": "公海认领（分级名额校验，owner→本人）"
           }
         },
         "tags": ["customers"]
@@ -776,7 +776,7 @@
         },
         "responses": {
           "200": {
-            "description": "审批通过（changeOwner + 容量校验）"
+            "description": "审批通过（归属变更 + 分级名额校验）"
           }
         },
         "tags": ["claims"]
@@ -930,6 +930,28 @@
         "tags": ["planning"]
       }
     },
+    "/plans/items-by-date": {
+      "post": {
+        "operationId": "PlanningController_addPlanItemByDate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "按日期加计划项（周览点空白加计划，自动定位业务周）"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
     "/plans/{id}/items": {
       "post": {
         "operationId": "PlanningController_addPlanItem",
@@ -1014,6 +1036,35 @@
           }
         },
         "tags": ["planning"]
+      }
+    },
+    "/week-view": {
+      "get": {
+        "operationId": "WeekViewController_getWeekView",
+        "parameters": [
+          {
+            "name": "start",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["WeekView"]
       }
     },
     "/opportunities": {
@@ -1614,10 +1665,10 @@
           }
         }
       },
-      "CustomerLevel": {
+      "CustomerGrade": {
         "type": "string",
         "enum": ["S", "A", "B", "C"],
-        "description": "分级容量 S/A/B/C"
+        "description": "客户等级 S/A/B/C"
       },
       "CreateContactDto": {
         "type": "object",
@@ -1701,11 +1752,11 @@
             "type": "string",
             "description": "客户来源（字典快照）"
           },
-          "level": {
-            "description": "分级容量 S/A/B/C",
+          "grade": {
+            "description": "客户等级 S/A/B/C",
             "allOf": [
               {
-                "$ref": "#/components/schemas/CustomerLevel"
+                "$ref": "#/components/schemas/CustomerGrade"
               }
             ]
           },
@@ -1752,6 +1803,11 @@
       "UpdateCustomerDto": {
         "type": "object",
         "properties": {
+          "version": {
+            "type": "number",
+            "description": "读取客户时获得的版本号，用于防止覆盖他人更新",
+            "minimum": 1
+          },
           "name": {
             "type": "string",
             "description": "客户名称"
@@ -1796,30 +1852,31 @@
             "type": "object",
             "description": "客户来源"
           },
-          "level": {
-            "description": "分级容量",
+          "grade": {
+            "description": "客户等级",
             "allOf": [
               {
-                "$ref": "#/components/schemas/CustomerLevel"
+                "$ref": "#/components/schemas/CustomerGrade"
               }
             ]
+          },
+          "gradeChangeReason": {
+            "type": "string",
+            "description": "客户等级变更原因；仅等级变化时记录"
           },
           "notes": {
             "type": "object",
             "description": "备注"
-          },
-          "ownerId": {
-            "type": "object",
-            "description": "指定负责人（需容量校验）"
           }
-        }
+        },
+        "required": ["version"]
       },
       "TransferCustomerDto": {
         "type": "object",
         "properties": {
           "toOwnerId": {
             "type": "string",
-            "description": "新负责人 ID（需容量校验）"
+            "description": "新负责人 ID（需校验对应客户等级名额）"
           },
           "reason": {
             "type": "string",

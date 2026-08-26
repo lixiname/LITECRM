@@ -5,11 +5,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customerClaimRequests, customerTransfers, customers, users } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { CapacityService } from '../customers/capacity.service'
+import { GradeQuotaService } from '../customers/grade-quota.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateClaimDto } from './dto/create-claim.dto'
 import type { ReviewClaimDto } from './dto/review-claim.dto'
@@ -23,7 +23,7 @@ import type { ReviewClaimDto } from './dto/review-claim.dto'
 export class ClaimsService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly capacityService: CapacityService,
+    private readonly gradeQuotaService: GradeQuotaService,
   ) {}
 
   // 发起接管申请（§8.3）
@@ -60,7 +60,7 @@ export class ClaimsService {
     return created
   }
 
-  // 审批通过（§8.3 单点审批）：复用 changeOwner，容量校验
+  // 审批通过：名额校验、客户归属、移交历史和审批终态在同一事务内完成。
   async approve(id: string, dto: ReviewClaimDto, actor: AuthUser) {
     const claim = await this.getPending(id)
     const customer = await this.getCustomer(claim.customerId)
@@ -68,13 +68,19 @@ export class ClaimsService {
       throw new ConflictException('客户归属已变化，请重新申请')
     }
     await this.assertReviewer(claim, customer, actor)
-    await this.capacityService.assertWithinCapacity(claim.applicantId)
-
     await db.transaction(async (tx) => {
-      await tx
+      await this.gradeQuotaService.assertSlotAvailable(tx, claim.applicantId, customer.grade)
+      const [updatedCustomer] = await tx
         .update(customers)
-        .set({ ownerId: claim.applicantId })
-        .where(eq(customers.id, customer.id))
+        .set({
+          ownerId: claim.applicantId,
+          updatedAt: new Date(),
+          version: sql`${customers.version} + 1`,
+        })
+        .where(and(eq(customers.id, customer.id), eq(customers.version, customer.version)))
+        .returning({ id: customers.id })
+      if (!updatedCustomer) throw new ConflictException('客户归属已变化，请重新申请')
+
       await tx.insert(customerTransfers).values({
         customerId: customer.id,
         fromOwnerId: customer.ownerId,
@@ -82,9 +88,27 @@ export class ClaimsService {
         operatedById: actor.id,
         reason: `接管审批通过：${claim.reason}`,
       })
-      // TODO(M3)：商机/客诉当前归属 JOIN 客户自动跟随
+
+      const [reviewed] = await tx
+        .update(customerClaimRequests)
+        .set({
+          status: 'approved',
+          reviewedById: actor.id,
+          reviewComment: dto.comment ?? null,
+          reviewedAt: new Date(),
+          updatedAt: new Date(),
+          version: sql`${customerClaimRequests.version} + 1`,
+        })
+        .where(
+          and(
+            eq(customerClaimRequests.id, id),
+            eq(customerClaimRequests.status, 'pending'),
+            eq(customerClaimRequests.version, claim.version),
+          ),
+        )
+        .returning({ id: customerClaimRequests.id })
+      if (!reviewed) throw new ConflictException('申请已被处理，请刷新后重试')
     })
-    await this.markReviewed(id, 'approved', actor, dto.comment ?? null)
     // TODO(M5)：通知申请人审批结果
     return { id: claim.id, status: 'approved' }
   }
@@ -105,10 +129,22 @@ export class ClaimsService {
     if (claim.applicantId !== actor.id && actor.role !== 'admin') {
       throw new ForbiddenException('仅申请人可撤回')
     }
-    await db
+    const [withdrawn] = await db
       .update(customerClaimRequests)
-      .set({ status: 'withdrawn' })
-      .where(eq(customerClaimRequests.id, id))
+      .set({
+        status: 'withdrawn',
+        updatedAt: new Date(),
+        version: sql`${customerClaimRequests.version} + 1`,
+      })
+      .where(
+        and(
+          eq(customerClaimRequests.id, id),
+          eq(customerClaimRequests.status, 'pending'),
+          eq(customerClaimRequests.version, claim.version),
+        ),
+      )
+      .returning({ id: customerClaimRequests.id })
+    if (!withdrawn) throw new ConflictException('申请已被处理，请刷新后重试')
     return { id: claim.id, status: 'withdrawn' }
   }
 
@@ -178,14 +214,18 @@ export class ClaimsService {
     actor: AuthUser,
     comment: string | null,
   ) {
-    await db
+    const [reviewed] = await db
       .update(customerClaimRequests)
       .set({
         status,
         reviewedById: actor.id,
         reviewComment: comment,
         reviewedAt: new Date(),
+        updatedAt: new Date(),
+        version: sql`${customerClaimRequests.version} + 1`,
       })
-      .where(eq(customerClaimRequests.id, id))
+      .where(and(eq(customerClaimRequests.id, id), eq(customerClaimRequests.status, 'pending')))
+      .returning({ id: customerClaimRequests.id })
+    if (!reviewed) throw new ConflictException('申请已被处理，请刷新后重试')
   }
 }

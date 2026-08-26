@@ -26,7 +26,7 @@
         <el-descriptions-item label="名称">{{ detail.name }}</el-descriptions-item>
         <el-descriptions-item label="城市">{{ detail.city ?? '-' }}</el-descriptions-item>
         <el-descriptions-item label="产业">{{ detail.industry ?? '-' }}</el-descriptions-item>
-        <el-descriptions-item label="等级">{{ detail.level }}</el-descriptions-item>
+        <el-descriptions-item label="等级">{{ detail.grade }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="detail.status === 'active' ? 'success' : 'warning'">
             {{ statusLabel(detail.status) }}

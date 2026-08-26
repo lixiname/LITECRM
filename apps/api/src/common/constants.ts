@@ -37,9 +37,9 @@ export const ROLE_DATA_SCOPE: Record<Role, DataScope> = {
 
 // ===== M2 客户域枚举（§7.2：varchar + CHECK + 应用层枚举，不用 PG enum）=====
 
-// 客户分级容量（§7.2 capacity_config 的 level）
-export const CUSTOMER_LEVELS = ['S', 'A', 'B', 'C'] as const
-export type CustomerLevel = (typeof CUSTOMER_LEVELS)[number]
+// 客户等级：只描述客户经营价值/优先级，不描述销售人员能力等级
+export const CUSTOMER_GRADES = ['S', 'A', 'B', 'C'] as const
+export type CustomerGrade = (typeof CUSTOMER_GRADES)[number]
 
 // 客户状态（§8.3：active 在案 / invalid 无效 / public 公海）
 export const CUSTOMER_STATUSES = ['active', 'invalid', 'public'] as const

@@ -6,10 +6,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppModule } from '../../app.module'
 import { seedAccounts } from '../../../scripts/seed'
 import { db } from '../../common/db/db'
-import { customerTransfers, customers, userCapacityOverrides } from '../../common/db/schema'
+import {
+  customerGradeChanges,
+  customerTransfers,
+  customers,
+  userCustomerGradeQuotaOverrides,
+} from '../../common/db/schema'
 
-// 归属治理 + 分级容量（§8.3/§7.2）：真实 DB 端到端
-describe('归属治理与分级容量（§8.3）', () => {
+// 归属治理 + 客户分级名额（§8.3/§7.2）：真实 DB 端到端
+describe('归属治理与客户分级名额（§8.3）', () => {
   let app: INestApplication
 
   beforeAll(async () => {
@@ -24,15 +29,21 @@ describe('归属治理与分级容量（§8.3）', () => {
   beforeEach(async () => {
     await cleanupCustomers()
     await db
-      .delete(userCapacityOverrides)
-      .where(eq(userCapacityOverrides.userId, await getUserId('sales2')))
+      .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales2')))
+    await db
+      .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('admin')))
   })
 
   afterAll(async () => {
     await cleanupCustomers()
     await db
-      .delete(userCapacityOverrides)
-      .where(eq(userCapacityOverrides.userId, await getUserId('sales2')))
+      .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('sales2')))
+    await db
+      .delete(userCustomerGradeQuotaOverrides)
+      .where(eq(userCustomerGradeQuotaOverrides.userId, await getUserId('admin')))
     await app?.close()
   })
 
@@ -49,16 +60,19 @@ describe('归属治理与分级容量（§8.3）', () => {
     return (rows.rows[0] as { id: string }).id
   }
 
-  async function createCustomer(token: string, name: string) {
+  async function createCustomer(token: string, name: string, grade: 'S' | 'A' | 'B' | 'C' = 'C') {
     const res = await request(app.getHttpServer())
       .post('/api/customers')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name, contacts: [{ name: '测试联系人', phone: '13800000001' }] })
+      .send({ name, grade, contacts: [{ name: '测试联系人', phone: '13800000001' }] })
     expect(res.status).toBe(201)
     return res.body as { id: string }
   }
 
   async function cleanupCustomers() {
+    await db.execute(
+      sql`DELETE FROM customer_grade_changes WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
+    )
     await db.execute(
       sql`DELETE FROM customer_transfers WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
     )
@@ -166,14 +180,17 @@ describe('归属治理与分级容量（§8.3）', () => {
     })
   })
 
-  describe('分级容量（§7.2）', () => {
-    it('指定负责人建档超容量 → 409', async () => {
+  describe('客户分级名额（§7.2）', () => {
+    it('指定负责人建档超名额 → 409', async () => {
       const sales1 = await login('sales1', 'Crm@123456')
       const s2id = await getUserId('sales2')
-      await db.insert(userCapacityOverrides).values({ userId: s2id, level: 'C', limit: 1 })
-      // sales2 先占满容量
+      // sales2 先占满 C 级名额
       const s2 = await login('sales2', 'Crm@123456')
       await createCustomer(s2.accessToken, 'SMOKE_容量1')
+      const cCount = await activeGradeCount(s2id, 'C')
+      await db
+        .insert(userCustomerGradeQuotaOverrides)
+        .values({ userId: s2id, grade: 'C', limit: cCount })
 
       // sales1 代录，指定负责人 sales2 → 超限 409
       const res = await request(app.getHttpServer())
@@ -187,13 +204,16 @@ describe('归属治理与分级容量（§8.3）', () => {
       expect(res.status).toBe(409)
     })
 
-    it('移交超目标容量 → 409', async () => {
+    it('移交超目标名额 → 409', async () => {
       const sales1 = await login('sales1', 'Crm@123456')
       const s2id = await getUserId('sales2')
-      await db.insert(userCapacityOverrides).values({ userId: s2id, level: 'C', limit: 1 })
-      // sales2 先占满容量
+      // sales2 先占满 C 级名额
       const s2 = await login('sales2', 'Crm@123456')
       await createCustomer(s2.accessToken, 'SMOKE_容量a')
+      const cCount = await activeGradeCount(s2id, 'C')
+      await db
+        .insert(userCustomerGradeQuotaOverrides)
+        .values({ userId: s2id, grade: 'C', limit: cCount })
       // sales1 客户转给 sales2 → 应超限
       const customer = await createCustomer(sales1.accessToken, 'SMOKE_容量b')
       const res = await request(app.getHttpServer())
@@ -202,5 +222,110 @@ describe('归属治理与分级容量（§8.3）', () => {
         .send({ toOwnerId: s2id, reason: 'x' })
       expect(res.status).toBe(409)
     })
+
+    it('名额按客户等级分别计算：C 级已满仍可接收 A 级客户', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const sales2 = await login('sales2', 'Crm@123456')
+      const s2id = await getUserId('sales2')
+      await createCustomer(sales2.accessToken, 'SMOKE_C级占满', 'C')
+      const cCount = await activeGradeCount(s2id, 'C')
+      await db
+        .insert(userCustomerGradeQuotaOverrides)
+        .values({ userId: s2id, grade: 'C', limit: cCount })
+
+      const res = await request(app.getHttpServer())
+        .post('/api/customers')
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({
+          name: 'SMOKE_A级可建',
+          grade: 'A',
+          ownerId: s2id,
+          contacts: [{ phone: '13800000003' }],
+        })
+
+      expect(res.status).toBe(201)
+      expect(res.body.grade).toBe('A')
+    })
+
+    it('并发占用最后一个名额时仅一条成功', async () => {
+      const admin = await login('admin', 'Admin@123456')
+      const adminId = await getUserId('admin')
+      const currentCount = await activeGradeCount(adminId, 'C')
+      await db
+        .insert(userCustomerGradeQuotaOverrides)
+        .values({ userId: adminId, grade: 'C', limit: currentCount + 1 })
+
+      const create = (name: string) =>
+        request(app.getHttpServer())
+          .post('/api/customers')
+          .set('Authorization', `Bearer ${admin.accessToken}`)
+          .send({ name, grade: 'C', contacts: [{ phone: '13800000004' }] })
+      const results = await Promise.all([create('SMOKE_并发名额1'), create('SMOKE_并发名额2')])
+
+      expect(results.map((result) => result.status).sort()).toEqual([201, 409])
+    })
   })
+
+  describe('名称查重边界', () => {
+    it('相同 normalizedKey 仅提示，不阻止两个不同法人建档', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      await createCustomer(sales1.accessToken, 'SMOKE_同名有限公司')
+      const second = await createCustomer(sales1.accessToken, 'SMOKE_同名集团')
+
+      const [row] = await db.select().from(customers).where(eq(customers.id, second.id)).limit(1)
+      expect(row.normalizedKey).toBe('smoke_同名')
+    })
+  })
+
+  describe('客户改级与乐观锁', () => {
+    it('改级必须写原因并追加历史；旧版本不能覆盖新版本', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const customer = await createCustomer(sales1.accessToken, 'SMOKE_改级客户')
+      const [before] = await db
+        .select()
+        .from(customers)
+        .where(eq(customers.id, customer.id))
+        .limit(1)
+
+      const missingReason = await request(app.getHttpServer())
+        .patch(`/api/customers/${customer.id}`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ version: before.version, grade: 'A' })
+      expect(missingReason.status).toBe(400)
+
+      const changed = await request(app.getHttpServer())
+        .patch(`/api/customers/${customer.id}`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ version: before.version, grade: 'A', gradeChangeReason: '重点行业客户' })
+      expect(changed.status).toBe(200)
+      expect(changed.body.grade).toBe('A')
+      expect(changed.body.version).toBe(before.version + 1)
+
+      const history = await db
+        .select()
+        .from(customerGradeChanges)
+        .where(eq(customerGradeChanges.customerId, customer.id))
+      expect(history).toHaveLength(1)
+      expect(history[0]).toMatchObject({
+        fromGrade: 'C',
+        toGrade: 'A',
+        reason: '重点行业客户',
+      })
+
+      const stale = await request(app.getHttpServer())
+        .patch(`/api/customers/${customer.id}`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ version: before.version, notes: '覆盖新版本' })
+      expect(stale.status).toBe(409)
+    })
+  })
+
+  async function activeGradeCount(userId: string, grade: 'S' | 'A' | 'B' | 'C') {
+    const result = await db.execute(sql`
+      SELECT count(*)::int AS count
+      FROM customers
+      WHERE owner_id = ${userId} AND grade = ${grade} AND status = 'active'
+    `)
+    return (result.rows[0] as { count: number }).count
+  }
 })

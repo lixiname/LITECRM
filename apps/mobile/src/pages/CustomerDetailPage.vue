@@ -30,7 +30,7 @@
     <van-cell-group v-if="detail" inset title="基本信息">
       <van-cell title="城市" :value="detail.city ?? '-'" />
       <van-cell title="产业" :value="detail.industry ?? '-'" />
-      <van-cell title="等级" :value="detail.level" />
+      <van-cell title="等级" :value="detail.grade" />
       <van-cell title="状态" :value="statusLabel(detail.status)" />
       <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
       <van-cell title="地址" :value="detail.address ?? '-'" />

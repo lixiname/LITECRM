@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { baseColumns } from './common'
 import { users } from './org'
+import type { CustomerGrade } from '../../constants'
 
 /**
  * 客户域（规格 §7.2 01 组织与客户域）：
@@ -22,7 +23,7 @@ import { users } from './org'
  * 归属快照语义：子实体（商机/客诉/拜访）的 owner_id 为创建时快照，当前归属一律 JOIN 客户推导（§7.2 设计约定）
  */
 
-// 客户主表（查重键：normalized_key 归一化商号 / customer_code / 信用代码，唯一索引硬拦截 §8.2）
+// 客户主表：ERP 编码/信用代码是可空硬唯一键；normalized_key 仅用于疑似重复检索。
 export const customers = pgTable(
   'customers',
   {
@@ -42,7 +43,7 @@ export const customers = pgTable(
     website: text('website'),
     parentCustomerId: uuid('parent_customer_id'), // 集团预留（自引用，extra config 定义）
     source: text('source'), // 客户来源（字典快照）
-    level: text('level').notNull().default('C'), // 分级容量 S/A/B/C
+    grade: text('grade').$type<CustomerGrade>().notNull().default('C'), // 客户经营分级 S/A/B/C
     status: text('status').notNull().default('active'), // active 在案 / invalid 无效 / public 公海
     ownerId: uuid('owner_id').references(() => users.id), // 当前归属（唯一事实源，公海=null）
     createdById: uuid('created_by_id')
@@ -56,11 +57,11 @@ export const customers = pgTable(
     entryRefId: uuid('entry_ref_id'), // AI 素材引用（§7.1 预留）
   },
   (table) => [
-    // 查重硬拦截：三个权威键唯一（§8.2 步②）
-    uniqueIndex('customers_normalized_key_uq').on(table.normalizedKey),
+    // 只有外部权威标识硬拦截；名称归一化可能误伤不同法人，只做候选检索。
+    index('customers_normalized_key_idx').on(table.normalizedKey),
     uniqueIndex('customers_code_uq').on(table.customerCode),
     uniqueIndex('customers_credit_code_uq').on(table.unifiedSocialCreditCode),
-    check('customers_level_check', sql`${table.level} in ('S','A','B','C')`),
+    check('customers_grade_check', sql`${table.grade} in ('S','A','B','C')`),
     check('customers_status_check', sql`${table.status} in ('active','invalid','public')`),
     // 模糊检索（§7.3 模糊层）：pg_trgm + GIN 加速
     index('customers_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
@@ -70,6 +71,30 @@ export const customers = pgTable(
       columns: [table.parentCustomerId],
       foreignColumns: [table.id],
     }),
+  ],
+)
+
+// 客户等级变更历史：append-only；初始等级保留在 customers，后续变更逐条留痕。
+export const customerGradeChanges = pgTable(
+  'customer_grade_changes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    fromGrade: text('from_grade').$type<CustomerGrade>().notNull(),
+    toGrade: text('to_grade').$type<CustomerGrade>().notNull(),
+    changedById: uuid('changed_by_id')
+      .notNull()
+      .references(() => users.id),
+    reason: text('reason'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    check('customer_grade_changes_from_check', sql`${table.fromGrade} in ('S','A','B','C')`),
+    check('customer_grade_changes_to_check', sql`${table.toGrade} in ('S','A','B','C')`),
+    check('customer_grade_changes_changed_check', sql`${table.fromGrade} <> ${table.toGrade}`),
+    index('customer_grade_changes_customer_occurred_idx').on(table.customerId, table.occurredAt),
   ],
 )
 

@@ -42,7 +42,7 @@ export class ClaimsController {
   }
 
   @Post(':id/approve')
-  @ApiOkResponse({ description: '审批通过（changeOwner + 容量校验）' })
+  @ApiOkResponse({ description: '审批通过（归属变更 + 分级名额校验）' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('approve.claim')
   approve(@Param('id') id: string, @Body() dto: ReviewClaimDto, @CurrentUser() user: AuthUser) {

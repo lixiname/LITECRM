@@ -436,6 +436,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/plans/items-by-date": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanningController_addPlanItemByDate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/plans/{id}/items": {
         parameters: {
             query?: never;
@@ -494,6 +510,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PlanningController_markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/week-view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WeekViewController_getWeekView"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -798,10 +830,10 @@ export interface components {
             isActive?: boolean;
         };
         /**
-         * @description 分级容量 S/A/B/C
+         * @description 客户等级 S/A/B/C
          * @enum {string}
          */
-        CustomerLevel: "S" | "A" | "B" | "C";
+        CustomerGrade: "S" | "A" | "B" | "C";
         CreateContactDto: {
             /** @description 姓名（可空=裸电话） */
             name?: string;
@@ -839,8 +871,8 @@ export interface components {
             website?: string;
             /** @description 客户来源（字典快照） */
             source?: string;
-            /** @description 分级容量 S/A/B/C */
-            level?: components["schemas"]["CustomerLevel"];
+            /** @description 客户等级 S/A/B/C */
+            grade?: components["schemas"]["CustomerGrade"];
             /** @description 指定负责人（缺省=建档人，§8.3） */
             ownerId?: string;
             /** @description 备注 */
@@ -859,6 +891,8 @@ export interface components {
         /** @enum {string} */
         CustomerStatus: "active" | "invalid" | "public";
         UpdateCustomerDto: {
+            /** @description 读取客户时获得的版本号，用于防止覆盖他人更新 */
+            version: number;
             /** @description 客户名称 */
             name?: string;
             /** @description 客户编码 */
@@ -881,15 +915,15 @@ export interface components {
             website?: Record<string, never>;
             /** @description 客户来源 */
             source?: Record<string, never>;
-            /** @description 分级容量 */
-            level?: components["schemas"]["CustomerLevel"];
+            /** @description 客户等级 */
+            grade?: components["schemas"]["CustomerGrade"];
+            /** @description 客户等级变更原因；仅等级变化时记录 */
+            gradeChangeReason?: string;
             /** @description 备注 */
             notes?: Record<string, never>;
-            /** @description 指定负责人（需容量校验） */
-            ownerId?: Record<string, never>;
         };
         TransferCustomerDto: {
-            /** @description 新负责人 ID（需容量校验） */
+            /** @description 新负责人 ID（需校验对应客户等级名额） */
             toOwnerId: string;
             /** @description 移交原因（审计） */
             reason: string;
@@ -1457,8 +1491,8 @@ export interface operations {
                 industry?: string;
                 /** @description 客户类型筛选 */
                 customerType?: string;
-                /** @description 分级筛选 */
-                level?: "S" | "A" | "B" | "C";
+                /** @description 客户等级筛选 */
+                grade?: "S" | "A" | "B" | "C";
                 /** @description 状态筛选 */
                 status?: components["schemas"]["CustomerStatus"];
                 /** @description 页码（从 1 开始） */
@@ -1584,7 +1618,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 所有权转移（容量校验，写移交历史） */
+            /** @description 所有权转移（分级名额校验，写移交历史） */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1628,7 +1662,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 公海认领（容量校验，owner→本人） */
+            /** @description 公海认领（分级名额校验，owner→本人） */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1764,7 +1798,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 审批通过（changeOwner + 容量校验） */
+            /** @description 审批通过（归属变更 + 分级名额校验） */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1919,6 +1953,28 @@ export interface operations {
             };
         };
     };
+    PlanningController_addPlanItemByDate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanItemDto"];
+            };
+        };
+        responses: {
+            /** @description 按日期加计划项（周览点空白加计划，自动定位业务周） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     PlanningController_addPlanItem: {
         parameters: {
             query?: never;
@@ -1995,6 +2051,26 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 标记已读 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    WeekViewController_getWeekView: {
+        parameters: {
+            query: {
+                start: string;
+                end: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             200: {
                 headers: {
                     [name: string]: unknown;

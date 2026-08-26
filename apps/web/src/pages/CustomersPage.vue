@@ -11,13 +11,13 @@
           @input="onSearch"
         />
         <el-select
-          v-model="filters.level"
+          v-model="filters.grade"
           placeholder="等级"
           clearable
           style="width: 100px"
           @change="load"
         >
-          <el-option v-for="l in CUSTOMER_LEVEL_OPTIONS" :key="l" :label="l" :value="l" />
+          <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
         </el-select>
         <el-select
           v-model="filters.status"
@@ -53,7 +53,7 @@
         <el-table-column prop="name" label="名称" min-width="180" />
         <el-table-column prop="city" label="城市" width="100" />
         <el-table-column label="等级" width="70">
-          <template #default="{ row }">{{ (row as CustomerItem).level }}</template>
+          <template #default="{ row }">{{ (row as CustomerItem).grade }}</template>
         </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
@@ -87,7 +87,7 @@ import {
   useAuthStore,
   useQuery,
   listCustomers,
-  CUSTOMER_LEVEL_OPTIONS,
+  CUSTOMER_GRADE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
   type CustomerItem,
   type CustomerStatus,
@@ -98,13 +98,13 @@ const auth = useAuthStore()
 const PAGE_SIZE = 20
 
 const keyword = ref('')
-const filters = reactive<{ level?: string; status?: string }>({})
+const filters = reactive<{ grade?: string; status?: string }>({})
 const pageNum = ref(1)
 const query = ref({
   page: 1,
   pageSize: PAGE_SIZE,
   keyword: '',
-  level: undefined as string | undefined,
+  grade: undefined as string | undefined,
   status: undefined as string | undefined,
 })
 
@@ -120,7 +120,7 @@ function onSearch() {
 }
 
 watch(filters, () => {
-  query.value = { ...query.value, level: filters.level, status: filters.status, page: 1 }
+  query.value = { ...query.value, grade: filters.grade, status: filters.status, page: 1 }
   pageNum.value = 1
 })
 

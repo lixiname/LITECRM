@@ -62,7 +62,7 @@ export class CustomersController {
   // ===== 归属治理（§8.3）=====
 
   @Post(':id/transfer')
-  @ApiOkResponse({ description: '所有权转移（容量校验，写移交历史）' })
+  @ApiOkResponse({ description: '所有权转移（分级名额校验，写移交历史）' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('customer.transfer')
   transfer(
@@ -80,7 +80,7 @@ export class CustomersController {
   }
 
   @Post(':id/claim')
-  @ApiOkResponse({ description: '公海认领（容量校验，owner→本人）' })
+  @ApiOkResponse({ description: '公海认领（分级名额校验，owner→本人）' })
   claim(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.ownershipService.claim(id, user)
   }

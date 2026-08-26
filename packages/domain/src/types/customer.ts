@@ -1,7 +1,7 @@
 import type { components } from '@crm/contracts'
 
 // 客户域类型（§7.2 非 API 类型留 domain 层；枚举/请求体从 contracts import）
-export type CustomerLevel = components['schemas']['CustomerLevel']
+export type CustomerGrade = components['schemas']['CustomerGrade']
 export type CustomerStatus = components['schemas']['CustomerStatus']
 export type ClaimStatus = components['schemas']['ClaimStatus']
 export type CustomerDimension = components['schemas']['CustomerDimension']
@@ -21,7 +21,7 @@ export interface CustomerItem {
   province: string | null
   address: string | null
   source: string | null
-  level: CustomerLevel
+  grade: CustomerGrade
   status: CustomerStatus
   ownerId: string | null
   createdById: string
@@ -82,7 +82,7 @@ export interface DimensionOption {
 
 // ===== UI 选项常量（domain 层，组件不写枚举字面量）=====
 
-export const CUSTOMER_LEVEL_OPTIONS: CustomerLevel[] = ['S', 'A', 'B', 'C']
+export const CUSTOMER_GRADE_OPTIONS: CustomerGrade[] = ['S', 'A', 'B', 'C']
 
 export const CUSTOMER_STATUS_OPTIONS: { value: CustomerStatus; label: string }[] = [
   { value: 'active', label: '在案' },
