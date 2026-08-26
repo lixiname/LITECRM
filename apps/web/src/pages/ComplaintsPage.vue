@@ -64,6 +64,7 @@ function timeText(value: string | undefined): string {
   padding: var(--crm-spacing-xl);
 }
 .complaints__card {
-  max-width: 860px;
+  width: 100%;
+  max-width: none;
 }
 </style>

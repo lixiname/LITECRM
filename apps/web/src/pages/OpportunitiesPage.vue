@@ -100,6 +100,7 @@ function timeText(value: string | undefined): string {
   padding: var(--crm-spacing-xl);
 }
 .opps__card {
-  max-width: 960px;
+  width: 100%;
+  max-width: none;
 }
 </style>

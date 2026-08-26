@@ -92,6 +92,7 @@ async function act(fn: () => Promise<unknown>, msg: string) {
   padding: var(--crm-spacing-xl);
 }
 .claims__card {
-  max-width: 860px;
+  width: 100%;
+  max-width: none;
 }
 </style>

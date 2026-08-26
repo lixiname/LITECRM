@@ -290,6 +290,7 @@ async function resetPassword(user: User) {
   padding: var(--crm-spacing-xl);
 }
 .users__card {
-  max-width: 720px;
+  width: 100%;
+  max-width: none;
 }
 </style>

@@ -97,6 +97,7 @@ async function remove(id: string) {
   padding: var(--crm-spacing-lg);
 }
 .expenses__card {
-  max-width: 900px;
+  width: 100%;
+  max-width: none;
 }
 </style>

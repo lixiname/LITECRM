@@ -168,7 +168,8 @@ function eventText(event: { type: string; payload: unknown }): string {
   padding: var(--crm-spacing-xl);
 }
 .opp-detail__card {
-  max-width: 920px;
+  width: 100%;
+  max-width: none;
   margin-bottom: var(--crm-spacing-lg);
 }
 .opp-detail__deal {

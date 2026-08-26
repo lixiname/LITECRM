@@ -148,7 +148,8 @@ async function handleFollow() {
   padding: var(--crm-spacing-xl);
 }
 .c-detail__card {
-  max-width: 860px;
+  width: 100%;
+  max-width: none;
   margin-bottom: var(--crm-spacing-lg);
 }
 </style>

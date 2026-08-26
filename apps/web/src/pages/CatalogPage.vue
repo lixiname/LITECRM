@@ -158,6 +158,7 @@ async function toggle(option: DimensionOption) {
   padding: var(--crm-spacing-xl);
 }
 .catalog__card {
-  max-width: 720px;
+  width: 100%;
+  max-width: none;
 }
 </style>
