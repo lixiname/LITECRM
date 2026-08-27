@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+--> statement-breakpoint
 CREATE TABLE "contacts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
