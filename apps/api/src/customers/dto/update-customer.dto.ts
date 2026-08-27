@@ -25,12 +25,16 @@ export class UpdateCustomerDto {
   @IsString()
   unifiedSocialCreditCode?: string | null
 
-  @ApiPropertyOptional({ description: '产业', type: String, nullable: true })
+  @ApiPropertyOptional({ description: '客户行业', type: String, nullable: true })
   @IsOptional()
   @IsString()
   industry?: string | null
 
-  @ApiPropertyOptional({ description: '二级行业', type: String, nullable: true })
+  @ApiPropertyOptional({
+    description: '具体领域（与客户行业无层级约束）',
+    type: String,
+    nullable: true,
+  })
   @IsOptional()
   @IsString()
   subIndustry?: string | null
@@ -55,6 +59,16 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   province?: string | null
+
+  @ApiPropertyOptional({ description: '省级行政区划代码', type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  provinceCode?: string | null
+
+  @ApiPropertyOptional({ description: '地级市行政区划代码', type: String, nullable: true })
+  @IsOptional()
+  @IsString()
+  cityCode?: string | null
 
   @ApiPropertyOptional({ description: '地址', type: String, nullable: true })
   @IsOptional()

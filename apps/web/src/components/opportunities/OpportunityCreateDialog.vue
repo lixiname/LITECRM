@@ -43,7 +43,14 @@
         </el-select>
       </el-form-item>
       <el-form-item label="产品线">
-        <el-select v-model="form.productLine" clearable placeholder="可选" style="width: 100%">
+        <el-select
+          v-model="form.productLines"
+          multiple
+          collapse-tags
+          clearable
+          placeholder="可多选"
+          style="width: 100%"
+        >
           <el-option
             v-for="option in productLineOptions"
             :key="option.value"
@@ -53,9 +60,16 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="意向规模" required>
+      <el-form-item label="初始金额依据" required>
+        <el-select v-model="form.initialAmountBasis" style="width: 100%">
+          <el-option label="预估金额" value="estimate" />
+          <el-option label="口头报价" value="oral_quote" />
+          <el-option label="正式报价单" value="formal_quote" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="初始金额" required>
         <el-input-number
-          v-model="form.estimatedAmount"
+          v-model="form.initialAmount"
           :min="0"
           :precision="2"
           :controls="false"
@@ -63,9 +77,27 @@
           style="width: 100%"
         />
       </el-form-item>
-      <el-form-item label="金额口径">
+      <el-form-item v-if="form.initialAmountBasis === 'estimate'" label="金额口径">
         <el-checkbox v-model="form.approximate">当前为约估金额</el-checkbox>
       </el-form-item>
+
+      <el-form-item v-else label="报价时间" required>
+        <el-date-picker
+          v-model="form.initialQuotedAt"
+          type="datetime"
+          value-format="YYYY-MM-DDTHH:mm:ss"
+          style="width: 100%"
+        />
+      </el-form-item>
+
+      <template v-if="form.initialAmountBasis === 'formal_quote'">
+        <el-form-item label="报价单号">
+          <el-input v-model="form.initialQuoteNo" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="报价文件引用">
+          <el-input v-model="form.initialQuoteDocumentRef" placeholder="可选链接或文件编号" />
+        </el-form-item>
+      </template>
 
       <el-form-item label="金额说明" class="opportunity-form__wide">
         <el-input
@@ -145,8 +177,12 @@ const form = reactive({
   customerId: '',
   name: '',
   source: '',
-  productLine: '',
-  estimatedAmount: undefined as number | undefined,
+  productLines: [] as string[],
+  initialAmountBasis: 'estimate' as 'estimate' | 'oral_quote' | 'formal_quote',
+  initialAmount: undefined as number | undefined,
+  initialQuotedAt: '',
+  initialQuoteNo: '',
+  initialQuoteDocumentRef: '',
   approximate: true,
   estimateNote: '',
   discoveredDate: '',
@@ -192,8 +228,12 @@ function open() {
     customerId: props.customerId ?? '',
     name: '',
     source: '',
-    productLine: '',
-    estimatedAmount: undefined,
+    productLines: [],
+    initialAmountBasis: 'estimate',
+    initialAmount: undefined,
+    initialQuotedAt: localDateTime(new Date()),
+    initialQuoteNo: '',
+    initialQuoteDocumentRef: '',
     approximate: true,
     estimateNote: '',
     discoveredDate: today(),
@@ -211,11 +251,12 @@ async function submit() {
     !customerId ||
     !form.name.trim() ||
     !form.source ||
-    form.estimatedAmount == null ||
+    form.initialAmount == null ||
+    (form.initialAmountBasis !== 'estimate' && !form.initialQuotedAt) ||
     !form.firstActionContent.trim() ||
     !form.firstActionAt
   ) {
-    ElMessage.warning('请填写客户、商机名称、渠道、意向规模和第一步计划')
+    ElMessage.warning('请填写客户、商机名称、渠道、初始金额依据和第一步计划')
     return
   }
   if (
@@ -233,10 +274,23 @@ async function submit() {
       customerId,
       name: form.name.trim(),
       source: form.source,
-      productLine: form.productLine || undefined,
-      estimatedAmount: form.estimatedAmount,
-      approximate: form.approximate,
+      productLines: form.productLines,
+      initialAmountBasis: form.initialAmountBasis,
+      initialAmount: form.initialAmount,
+      approximate: form.initialAmountBasis === 'estimate' ? form.approximate : undefined,
       estimateNote: form.estimateNote.trim() || undefined,
+      initialQuotedAt:
+        form.initialAmountBasis === 'estimate'
+          ? undefined
+          : new Date(form.initialQuotedAt).toISOString(),
+      initialQuoteNo:
+        form.initialAmountBasis === 'formal_quote'
+          ? form.initialQuoteNo.trim() || undefined
+          : undefined,
+      initialQuoteDocumentRef:
+        form.initialAmountBasis === 'formal_quote'
+          ? form.initialQuoteDocumentRef.trim() || undefined
+          : undefined,
       discoveredDate: form.discoveredDate || undefined,
       expectedCloseDate: form.expectedCloseDate || undefined,
       firstActionContent: form.firstActionContent.trim(),

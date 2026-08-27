@@ -13,13 +13,47 @@
           <el-input v-model="form.name" placeholder="如：上海华明机械有限公司" />
         </el-form-item>
 
-        <el-form-item label="城市">
-          <el-input v-model="form.city" placeholder="城市" />
+        <el-form-item label="省 / 地级市">
+          <div class="create-customer__location">
+            <el-select v-model="form.provinceCode" clearable filterable placeholder="选择省份">
+              <el-option
+                v-for="item in provinces"
+                :key="item.code"
+                :label="item.name"
+                :value="item.code"
+              />
+            </el-select>
+            <el-select
+              v-model="form.cityCode"
+              clearable
+              filterable
+              :disabled="!form.provinceCode"
+              placeholder="选择地级市"
+            >
+              <el-option
+                v-for="item in cities"
+                :key="item.code"
+                :label="item.name"
+                :value="item.code"
+              />
+            </el-select>
+          </div>
         </el-form-item>
 
-        <el-form-item label="产业">
+        <el-form-item label="客户行业">
           <el-select v-model="form.industry" clearable placeholder="选择产业" style="width: 100%">
             <el-option v-for="o in industries" :key="o.id" :label="o.label" :value="o.name" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="具体领域">
+          <el-select
+            v-model="form.subIndustry"
+            clearable
+            placeholder="选择具体领域"
+            style="width: 100%"
+          >
+            <el-option v-for="o in businessSegments" :key="o.id" :label="o.label" :value="o.name" />
           </el-select>
         </el-form-item>
 
@@ -104,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
@@ -115,12 +149,15 @@ import {
   createClaim,
   listDimensionOptions,
   listCustomerAssignees,
+  listCities,
+  listProvinces,
   CUSTOMER_GRADE_OPTIONS,
   DEDUP_CONFIDENCE_LABELS,
   type DedupHit,
   type DimensionOption,
   type CustomerGrade,
   type AssigneeOption,
+  type AdministrativeDivision,
 } from '@crm/domain'
 
 const router = useRouter()
@@ -128,14 +165,19 @@ const auth = useAuthStore()
 
 const form = reactive({
   name: '',
-  city: '',
+  provinceCode: '',
+  cityCode: '',
   industry: undefined as string | undefined,
+  subIndustry: undefined as string | undefined,
   grade: 'C',
   ownerId: '',
   notes: '',
   contacts: [{ name: '', phone: '' } as { name?: string; phone?: string }],
 })
 const industries = ref<DimensionOption[]>([])
+const businessSegments = ref<DimensionOption[]>([])
+const provinces = ref<AdministrativeDivision[]>([])
+const cities = ref<AdministrativeDivision[]>([])
 const assignees = ref<AssigneeOption[]>([])
 const dedupHits = ref<DedupHit[]>([])
 const saving = ref(false)
@@ -144,13 +186,25 @@ const firstHit = computed(() => dedupHits.value[0])
 const canOwnCustomer = computed(() => ['sales', 'executive'].includes(auth.user?.role ?? ''))
 
 onMounted(async () => {
-  const [industryOptions, assigneeOptions] = await Promise.all([
+  const [industryOptions, segmentOptions, provinceOptions, assigneeOptions] = await Promise.all([
     listDimensionOptions('industry').catch(() => []),
+    listDimensionOptions('sub_industry').catch(() => []),
+    listProvinces().catch(() => []),
     auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
   ])
   industries.value = industryOptions.filter((option) => option.isActive)
+  businessSegments.value = segmentOptions.filter((option) => option.isActive)
+  provinces.value = provinceOptions
   assignees.value = assigneeOptions
 })
+
+watch(
+  () => form.provinceCode,
+  async (provinceCode) => {
+    form.cityCode = ''
+    cities.value = provinceCode ? await listCities(provinceCode).catch(() => []) : []
+  },
+)
 
 async function handleDedupCheck() {
   if (!form.name.trim()) {
@@ -185,8 +239,10 @@ async function handleSubmit() {
   try {
     await createCustomer({
       name: form.name.trim(),
-      city: form.city || undefined,
+      provinceCode: form.provinceCode || undefined,
+      cityCode: form.cityCode || undefined,
       industry: form.industry,
+      subIndustry: form.subIndustry,
       grade: form.grade as CustomerGrade,
       ownerId: form.ownerId || undefined,
       notes: form.notes || undefined,
@@ -226,6 +282,12 @@ async function applyClaim(hit?: DedupHit) {
   display: flex;
   flex-direction: column;
   gap: var(--crm-spacing-sm);
+}
+.create-customer__location {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--crm-spacing-sm);
+  width: 100%;
 }
 .create-customer__contact-row {
   display: flex;

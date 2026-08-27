@@ -1,12 +1,9 @@
 <template>
   <el-card class="opportunity-progress">
     <template #header>
-      <div class="opportunity-progress__header">
-        <div>
-          <strong>商机进展</strong>
-          <div class="opportunity-progress__hint">从发现需求到当前计划，按业务节点查看</div>
-        </div>
-        <el-button v-if="canCreate" type="primary" @click="$emit('create')">新建商机</el-button>
+      <div>
+        <strong>商机进展</strong>
+        <div class="opportunity-progress__hint">从发现需求到当前计划，按业务节点查看</div>
       </div>
     </template>
     <el-empty v-if="!opportunities.length" description="当前没有商机" :image-size="70" />
@@ -21,8 +18,8 @@
           <div>
             <strong>{{ opportunity.name }}</strong>
             <span class="opportunity-card__amount">{{
-              amountText(opportunity.estimatedAmount)
-            }}</span>
+              amountText(opportunity.referenceAmount)
+            }} · {{ opportunityAmountBasisLabel(opportunity.amountBasis) }}</span>
           </div>
           <el-tag :type="opportunityStageTag(opportunity.stage)">
             {{ opportunityStageLabel(opportunity.stage) }}
@@ -76,12 +73,12 @@ import {
 } from '@crm/domain'
 import {
   opportunityAmountText,
+  opportunityAmountBasisLabel,
   opportunityStageLabel,
   opportunityStageTag,
 } from '../opportunities/opportunity-presentation'
 
-const props = defineProps<{ opportunities: CustomerOpportunitySummary[]; canCreate?: boolean }>()
-defineEmits<{ create: [] }>()
+const props = defineProps<{ opportunities: CustomerOpportunitySummary[] }>()
 const router = useRouter()
 const sortedOpportunities = computed(() =>
   [...props.opportunities].sort((a, b) => Number(isOpen(b)) - Number(isOpen(a))),
@@ -118,7 +115,6 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
 .opportunity-card {
   width: 100%;
 }
-.opportunity-progress__header,
 .opportunity-card__top {
   display: flex;
   align-items: flex-start;

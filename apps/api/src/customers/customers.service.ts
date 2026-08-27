@@ -17,8 +17,11 @@ import {
   followUpActions,
   opportunities,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
   visitRecords,
+  salesRegions,
+  users,
 } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
@@ -32,6 +35,7 @@ import type { CreateContactDto } from './dto/contact.dto'
 import type { DedupCheckDto } from './dto/dedup-check.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
 import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
+import { GeographyService } from '../geography/geography.service'
 
 // 客户域（§8.2/8.3）：建档、检索、详情、维护、联系人
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
@@ -41,6 +45,7 @@ export class CustomersService {
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
     private readonly assigneeService: CustomerAssigneeService,
+    private readonly geographyService: GeographyService,
   ) {}
 
   // 建档：默认 owner=建档人；名额校验与写入处于同一事务。
@@ -145,6 +150,16 @@ export class CustomersService {
       const grade = dto.grade ?? 'C'
       await this.assigneeService.assertAssignable(tx, ownerId)
       await this.gradeQuotaService.assertSlotAvailable(tx, ownerId, grade)
+      const location =
+        dto.provinceCode !== undefined || dto.cityCode !== undefined
+          ? await this.geographyService.resolveLocation(tx, dto.provinceCode, dto.cityCode)
+          : {
+              provinceCode: null,
+              province: dto.province ?? null,
+              cityCode: null,
+              city: dto.city ?? null,
+              salesRegionId: null,
+            }
 
       const [customer] = await tx
         .insert(customers)
@@ -158,8 +173,7 @@ export class CustomersService {
           subIndustry: dto.subIndustry ?? null,
           customerType: dto.customerType ?? null,
           productLines: dto.productLines ?? [],
-          city: dto.city ?? null,
-          province: dto.province ?? null,
+          ...location,
           address: dto.address ?? null,
           website: dto.website ?? null,
           source: dto.source ?? null,
@@ -229,8 +243,45 @@ export class CustomersService {
         .from(customers)
         .where(where),
       db
-        .select()
+        .select({
+          ...getTableColumns(customers),
+          ownerName: users.displayName,
+          salesRegionName: salesRegions.name,
+          openOpportunityCount: sql<number>`(
+            select count(*)::int from ${opportunities}
+            where ${opportunities.customerId} = ${customers.id}
+              and ${opportunities.stage} in ('intent','following')
+          )`,
+          openOpportunityAmount: sql<string>`coalesce((
+            select sum(${opportunities.estimatedAmount}) from ${opportunities}
+            where ${opportunities.customerId} = ${customers.id}
+              and ${opportunities.stage} in ('intent','following')
+          ), 0)::text`,
+          activeOpportunityStage: sql<string | null>`(
+            select case
+              when bool_or(${opportunities.stage} = 'following') then 'following'
+              when bool_or(${opportunities.stage} = 'intent') then 'intent'
+              else null
+            end
+            from ${opportunities}
+            where ${opportunities.customerId} = ${customers.id}
+              and ${opportunities.stage} in ('intent','following')
+          )`,
+          nextActionAt: sql<Date | null>`(
+            select min(${followUpActions.plannedAt}) from ${followUpActions}
+            where ${followUpActions.customerId} = ${customers.id}
+              and ${followUpActions.status} = 'pending'
+          )`,
+          nextActionContent: sql<string | null>`(
+            select ${followUpActions.content} from ${followUpActions}
+            where ${followUpActions.customerId} = ${customers.id}
+              and ${followUpActions.status} = 'pending'
+            order by ${followUpActions.plannedAt} asc limit 1
+          )`,
+        })
         .from(customers)
+        .leftJoin(users, eq(customers.ownerId, users.id))
+        .leftJoin(salesRegions, eq(customers.salesRegionId, salesRegions.id))
         .where(where)
         .orderBy(orderBy, asc(customers.name))
         .limit(pageSize)
@@ -255,6 +306,7 @@ export class CustomersService {
       dealsSummary,
       latestDeals,
       currentVisitPlanRows,
+      customerSalesRegionRows,
     ] = await Promise.all([
       db
         .select({
@@ -307,6 +359,13 @@ export class CustomersService {
         )
         .orderBy(asc(followUpActions.plannedAt))
         .limit(1),
+      customer.salesRegionId
+        ? db
+            .select({ name: salesRegions.name })
+            .from(salesRegions)
+            .where(eq(salesRegions.id, customer.salesRegionId))
+            .limit(1)
+        : Promise.resolve([] as { name: string }[]),
     ])
 
     const opportunityIds = opportunitiesRows.map((item) => item.id)
@@ -316,6 +375,7 @@ export class CustomersService {
       actionRows,
       quoteRows,
       opportunityFollowUpRows,
+      opportunityProductLineRows,
       complaintActionRows,
       complaintFollowUpRows,
     ] = await Promise.all([
@@ -345,6 +405,12 @@ export class CustomersService {
             .where(inArray(opportunityFollowUps.opportunityId, opportunityIds))
             .orderBy(desc(opportunityFollowUps.occurredAt))
         : Promise.resolve([] as (typeof opportunityFollowUps.$inferSelect)[]),
+      opportunityIds.length
+        ? db
+            .select()
+            .from(opportunityProductLines)
+            .where(inArray(opportunityProductLines.opportunityId, opportunityIds))
+        : Promise.resolve([] as (typeof opportunityProductLines.$inferSelect)[]),
       complaintIds.length
         ? db
             .select()
@@ -368,7 +434,10 @@ export class CustomersService {
 
     const opportunitiesWithContext = opportunitiesRows.map((row) => {
       const currentAction = actionRows.find((action) => action.opportunityId === row.id) ?? null
-      const latestQuote = quoteRows.find((quote) => quote.opportunityId === row.id) ?? null
+      const latestQuote =
+        quoteRows.find(
+          (quote) => quote.opportunityId === row.id && quote.status === 'active',
+        ) ?? null
       const latestFollowUp =
         opportunityFollowUpRows.find((followUp) => followUp.opportunityId === row.id) ?? null
       return {
@@ -376,6 +445,11 @@ export class CustomersService {
         currentAction,
         latestQuote,
         latestFollowUp,
+        productLines: opportunityProductLineRows
+          .filter((item) => item.opportunityId === row.id)
+          .map((item) => item.productLine),
+        referenceAmount: latestQuote?.amount ?? row.estimatedAmount,
+        amountBasis: latestQuote ? `${latestQuote.kind}_quote` : row.initialAmountBasis,
         customerName: row.customerName,
         ...deriveOpportunityStagnation(row, currentAction, latestQuote, latestFollowUp),
       }
@@ -469,6 +543,7 @@ export class CustomersService {
 
     return {
       ...customer,
+      salesRegionName: customerSalesRegionRows[0]?.name ?? null,
       contacts: contactList,
       opportunities: opportunitiesWithContext,
       complaints: complaintWithContext,
@@ -496,6 +571,18 @@ export class CustomersService {
         if (nextGrade !== customer.grade && customer.ownerId && customer.status === 'active') {
           await this.gradeQuotaService.assertSlotAvailable(tx, customer.ownerId, nextGrade)
         }
+        const shouldResolveLocation = dto.provinceCode !== undefined || dto.cityCode !== undefined
+        const nextProvinceCode =
+          dto.provinceCode === undefined ? customer.provinceCode : dto.provinceCode
+        const nextCityCode =
+          dto.cityCode !== undefined
+            ? dto.cityCode
+            : dto.provinceCode !== undefined && dto.provinceCode !== customer.provinceCode
+              ? null
+              : customer.cityCode
+        const location = shouldResolveLocation
+          ? await this.geographyService.resolveLocation(tx, nextProvinceCode, nextCityCode)
+          : null
 
         const [updated] = await tx
           .update(customers)
@@ -514,8 +601,19 @@ export class CustomersService {
             subIndustry: dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry,
             customerType: dto.customerType === undefined ? customer.customerType : dto.customerType,
             productLines: dto.productLines === undefined ? customer.productLines : dto.productLines,
-            city: dto.city === undefined ? customer.city : dto.city,
-            province: dto.province === undefined ? customer.province : dto.province,
+            city: shouldResolveLocation
+              ? location!.city
+              : dto.city === undefined
+                ? customer.city
+                : dto.city,
+            province: shouldResolveLocation
+              ? location!.province
+              : dto.province === undefined
+                ? customer.province
+                : dto.province,
+            cityCode: shouldResolveLocation ? location!.cityCode : customer.cityCode,
+            provinceCode: shouldResolveLocation ? location!.provinceCode : customer.provinceCode,
+            salesRegionId: shouldResolveLocation ? location!.salesRegionId : customer.salesRegionId,
             address: dto.address === undefined ? customer.address : dto.address,
             website: dto.website === undefined ? customer.website : dto.website,
             source: dto.source === undefined ? customer.source : dto.source,

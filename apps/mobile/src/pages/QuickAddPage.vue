@@ -1,15 +1,6 @@
 <template>
   <div class="quick-add">
-    <van-nav-bar
-      :title="mode === 'plan' ? '安排销售计划' : '记录当日实际'"
-      left-arrow
-      @click-left="router.back()"
-    />
-
-    <van-tabs v-model:active="mode">
-      <van-tab title="安排计划" name="plan" />
-      <van-tab title="记录实际" name="record" />
-    </van-tabs>
+    <van-nav-bar title="快速记录当日事项" left-arrow @click-left="router.back()" />
 
     <!-- 日期快捷（§3.2 补录刚需） -->
     <div class="quick-add__date">
@@ -35,19 +26,25 @@
       <span class="quick-add__date-val">{{ date }}</span>
     </div>
 
-    <!-- 类型面板（§4.1 超兔式：意图直接） -->
-    <van-cell-group inset :title="mode === 'plan' ? '计划做什么' : '实际做了什么'">
+    <!-- 类型面板（移动端聚焦实际） -->
+    <van-cell-group inset title="记录什么">
       <van-cell
-        :title="mode === 'plan' ? '安排客户拜访' : '记录客户拜访'"
+        title="记录客户拜访"
         icon="guide-o"
         is-link
         @click="pickType('customer_visit')"
       />
       <van-cell
-        :title="mode === 'plan' ? '安排商机跟进' : '记录商机跟进'"
+        title="记录商机跟进"
         icon="chart-trending-o"
         is-link
         @click="pickType('opportunity_follow_up')"
+      />
+      <van-cell
+        title="登记客诉"
+        icon="warning-o"
+        is-link
+        @click="pickType('complaint_registered')"
       />
     </van-cell-group>
 
@@ -80,26 +77,10 @@
           placeholder="选择仍在推进的商机"
           @click="showOpportunityPicker = true"
         />
-        <van-field
-          v-if="mode === 'plan'"
-          v-model="plannedAt"
-          label="计划时间"
-          type="datetime-local"
-          required
-        />
-        <van-field
-          v-if="mode === 'plan'"
-          v-model="content"
-          label="计划内容"
-          type="textarea"
-          rows="2"
-          required
-          placeholder="写给自己看的下一步安排"
-        />
       </van-cell-group>
       <div class="quick-add__submit">
         <van-button block round type="primary" native-type="submit" :loading="saving">{{
-          mode === 'plan' ? '保存计划' : '继续填写实际情况'
+          '继续填写'
         }}</van-button>
       </div>
     </van-form>
@@ -119,13 +100,13 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
-  createSalesPlan,
   listCustomers,
   listOpportunities,
   type CustomerItem,
   type Opportunity,
-  type SalesPlanKind,
 } from '@crm/domain'
+
+type QuickRecordType = 'customer_visit' | 'opportunity_follow_up' | 'complaint_registered'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,18 +118,15 @@ const today = fmt(new Date())
 const yesterday = fmt(new Date(Date.now() - 86400000))
 const tomorrow = fmt(new Date(Date.now() + 86400000))
 
-// 日期：优先路由 query（周览空 card 传入），默认今天
+// 日期：优先路由 query（周览传入），默认今天
 const date = ref<string>((route.query.date as string) || today)
-const mode = ref<'plan' | 'record'>((route.query.mode as 'plan' | 'record') || 'plan')
-const type = ref<SalesPlanKind | null>(null)
+const type = ref<QuickRecordType | null>(null)
 const keyword = ref('')
 const customers = ref<CustomerItem[]>([])
 const loading = ref(false)
 const selectedCustomer = ref<CustomerItem>()
 const opportunities = ref<Opportunity[]>([])
 const opportunityId = ref('')
-const plannedAt = ref(`${date.value}T09:00`)
-const content = ref('')
 const saving = ref(false)
 const showOpportunityPicker = ref(false)
 const opportunityColumns = computed(() =>
@@ -160,9 +138,9 @@ const opportunityLabel = computed(
 
 function setDate(d: string) {
   date.value = d
-  plannedAt.value = `${d}T09:00`
+  // 保持快速录入日期基准；具体表单可在目标页面里再确认时间
 }
-function pickType(t: SalesPlanKind) {
+function pickType(t: QuickRecordType) {
   type.value = t
   selectedCustomer.value = undefined
   opportunityId.value = ''
@@ -196,12 +174,19 @@ function pickOpportunity({ selectedOptions }: { selectedOptions: { value: string
 
 async function continueAction() {
   if (!type.value || !selectedCustomer.value) return
-  if (type.value === 'opportunity_follow_up' && !opportunityId.value)
+  if (type.value === 'opportunity_follow_up' && !opportunityId.value) {
     return showToast('请选择要跟进的商机')
-  if (mode.value === 'record') {
+  }
+  saving.value = true
+  try {
     if (type.value === 'customer_visit') {
       await router.push({
         path: `/customers/${selectedCustomer.value.id}/visit/new`,
+        query: { date: date.value },
+      })
+    } else if (type.value === 'complaint_registered') {
+      await router.push({
+        path: `/customers/${selectedCustomer.value.id}/complaint/new`,
         query: { date: date.value },
       })
     } else {
@@ -210,22 +195,8 @@ async function continueAction() {
         query: { date: date.value },
       })
     }
-    return
-  }
-  if (!plannedAt.value || !content.value.trim()) return showToast('请填写计划时间和内容')
-  saving.value = true
-  try {
-    await createSalesPlan({
-      planKind: type.value,
-      customerId: selectedCustomer.value.id,
-      opportunityId: opportunityId.value || undefined,
-      plannedAt: new Date(plannedAt.value).toISOString(),
-      content: content.value.trim(),
-    })
-    showToast('计划已安排')
-    router.back()
   } catch (error) {
-    showToast(error instanceof Error ? error.message : '保存失败')
+    showToast(error instanceof Error ? error.message : '跳转失败')
   } finally {
     saving.value = false
   }

@@ -30,11 +30,7 @@
 
     <div v-if="detail" class="detail__workspace">
       <main class="detail__main">
-        <CustomerOpportunityProgress
-          :opportunities="detail.opportunities ?? []"
-          :can-create="canEdit"
-          @create="businessDialogs?.openOpportunity()"
-        />
+        <CustomerOpportunityProgress :opportunities="detail.opportunities ?? []" />
         <CustomerActivityTimeline :items="detail.timeline ?? []" />
       </main>
       <aside class="detail__aside">
@@ -223,9 +219,12 @@ watch([detail, executionPlan], async ([customer, plan]) => {
 watch(
   () => detail.value,
   async (customer) => {
-    if (!customer || route.query.record !== 'visit' || recordOpened.value) return
+    const record = route.query.record
+    if (!customer || (record !== 'visit' && record !== 'complaint') || recordOpened.value) return
     await nextTick()
-    businessDialogs.value?.openVisit(undefined, route.query.date as string | undefined)
+    const date = route.query.date as string | undefined
+    if (record === 'visit') businessDialogs.value?.openVisit(undefined, date)
+    else businessDialogs.value?.openComplaint(date)
     recordOpened.value = true
   },
   { immediate: true },

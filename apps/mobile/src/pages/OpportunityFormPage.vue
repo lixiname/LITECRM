@@ -19,12 +19,47 @@
           @click="showSource = true"
         />
         <van-field
-          v-model.number="form.estimatedAmount"
-          label="意向规模"
+          v-model="amountBasisLabel"
+          label="金额依据"
+          readonly
+          is-link
+          :rules="[{ required: true }]"
+          @click="showAmountBasis = true"
+        />
+        <van-field
+          v-model.number="form.initialAmount"
+          label="初始金额"
           type="number"
           placeholder="元"
-          :rules="[{ required: true, message: '请填意向规模估计' }]"
+          :rules="[{ required: true, message: '请填写初始金额' }]"
         />
+        <van-field
+          v-if="form.initialAmountBasis !== 'estimate'"
+          v-model="form.initialQuotedAt"
+          label="报价时间"
+          type="datetime-local"
+          :rules="[{ required: true }]"
+        />
+        <van-field
+          v-if="form.initialAmountBasis === 'formal_quote'"
+          v-model="form.initialQuoteNo"
+          label="报价单号"
+          placeholder="可选"
+        />
+        <van-field label="产品线">
+          <template #input>
+            <van-checkbox-group v-model="form.productLines" direction="horizontal">
+              <van-checkbox
+                v-for="option in productLineOptions"
+                :key="option.value"
+                :name="option.value"
+                shape="square"
+              >
+                {{ option.text }}
+              </van-checkbox>
+            </van-checkbox-group>
+          </template>
+        </van-field>
         <van-field
           v-model="form.firstActionContent"
           label="第一步计划"
@@ -49,6 +84,13 @@
     <van-popup v-model:show="showSource" position="bottom" round>
       <van-picker :columns="sourceColumns" @confirm="onPickSource" @cancel="showSource = false" />
     </van-popup>
+    <van-popup v-model:show="showAmountBasis" position="bottom" round>
+      <van-picker
+        :columns="amountBasisColumns"
+        @confirm="onPickAmountBasis"
+        @cancel="showAmountBasis = false"
+      />
+    </van-popup>
   </div>
 </template>
 
@@ -65,7 +107,11 @@ const customerId = route.params.id as string
 const form = reactive({
   name: '',
   source: '' as string,
-  estimatedAmount: undefined as number | undefined,
+  productLines: [] as string[],
+  initialAmountBasis: 'estimate' as 'estimate' | 'oral_quote' | 'formal_quote',
+  initialAmount: undefined as number | undefined,
+  initialQuotedAt: localInput(new Date()),
+  initialQuoteNo: '',
   firstActionContent: '',
   firstActionAt: '',
 })
@@ -74,13 +120,27 @@ const qDate = route.query.date as string | undefined
 if (qDate) form.firstActionAt = `${qDate}T09:00`
 const sourceLabel = ref('')
 const showSource = ref(false)
+const showAmountBasis = ref(false)
 const saving = ref(false)
 const sourceColumns = ref<{ value: string; text: string }[]>([])
+const productLineOptions = ref<{ value: string; text: string }[]>([])
+const amountBasisLabel = ref('预估金额')
+const amountBasisColumns = [
+  { value: 'estimate', text: '预估金额' },
+  { value: 'oral_quote', text: '口头报价' },
+  { value: 'formal_quote', text: '正式报价单' },
+]
 
 onMounted(async () => {
   try {
-    const options = await listDimensionOptions('opportunity_source')
-    sourceColumns.value = options
+    const [sources, productLines] = await Promise.all([
+      listDimensionOptions('opportunity_source'),
+      listDimensionOptions('product_line'),
+    ])
+    sourceColumns.value = sources
+      .filter((option) => option.isActive)
+      .map((option) => ({ value: option.name, text: option.label }))
+    productLineOptions.value = productLines
       .filter((option) => option.isActive)
       .map((option) => ({ value: option.name, text: option.label }))
   } catch {
@@ -93,6 +153,15 @@ function onPickSource({ selectedOptions }: { selectedOptions: { text: string; va
   sourceLabel.value = selectedOptions[0].text
   showSource.value = false
 }
+function onPickAmountBasis({
+  selectedOptions,
+}: {
+  selectedOptions: { text: string; value: 'estimate' | 'oral_quote' | 'formal_quote' }[]
+}) {
+  form.initialAmountBasis = selectedOptions[0].value
+  amountBasisLabel.value = selectedOptions[0].text
+  showAmountBasis.value = false
+}
 async function handleSubmit() {
   saving.value = true
   try {
@@ -100,7 +169,15 @@ async function handleSubmit() {
       customerId,
       name: form.name,
       source: form.source as never,
-      estimatedAmount: form.estimatedAmount!,
+      productLines: form.productLines,
+      initialAmountBasis: form.initialAmountBasis,
+      initialAmount: form.initialAmount!,
+      initialQuotedAt:
+        form.initialAmountBasis === 'estimate'
+          ? undefined
+          : new Date(form.initialQuotedAt).toISOString(),
+      initialQuoteNo:
+        form.initialAmountBasis === 'formal_quote' ? form.initialQuoteNo || undefined : undefined,
       firstActionContent: form.firstActionContent,
       firstActionAt: new Date(form.firstActionAt).toISOString(),
     })
@@ -111,6 +188,10 @@ async function handleSubmit() {
   } finally {
     saving.value = false
   }
+}
+
+function localInput(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 </script>
 

@@ -2,6 +2,7 @@
 import { baseColumns } from './common'
 import { customerGradeQuotaDefaults, userCustomerGradeQuotaOverrides, users } from './org'
 import { auditLogs } from './audit'
+import { administrativeDivisions, salesRegionAreas, salesRegions } from './geography'
 import {
   contacts,
   customerClaimRequests,
@@ -17,6 +18,7 @@ import {
   opportunities,
   opportunityEvents,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
   visitRecords,
 } from './actions'
@@ -34,6 +36,9 @@ export {
   customerGradeQuotaDefaults,
   userCustomerGradeQuotaOverrides,
   auditLogs,
+  administrativeDivisions,
+  salesRegions,
+  salesRegionAreas,
   customers,
   contacts,
   customerTransfers,
@@ -43,6 +48,7 @@ export {
   visitRecords,
   opportunities,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
   opportunityEvents,
   deals,

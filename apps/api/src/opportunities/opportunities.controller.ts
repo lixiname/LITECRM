@@ -25,7 +25,7 @@ export class OpportunitiesController {
   ) {}
 
   @Post()
-  @ApiCreatedResponse({ description: '新建商机（意向阶段）' })
+  @ApiCreatedResponse({ description: '新建商机；报价依据时同步生成首条报价' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('customer.write')
   create(@Body() dto: CreateOpportunityDto, @CurrentUser() user: AuthUser) {

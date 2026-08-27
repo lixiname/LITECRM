@@ -11,6 +11,7 @@ import {
   followUpActions,
   opportunities,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
 } from '../../common/db/schema'
 
@@ -68,6 +69,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       await tx.execute(sql`DELETE FROM deals WHERE ${sql.raw(inM3)}`)
       await tx.execute(sql`DELETE FROM opportunity_quotes WHERE ${sql.raw(opportunityInM3)}`)
       await tx.execute(sql`DELETE FROM opportunity_follow_ups WHERE ${sql.raw(opportunityInM3)}`)
+      await tx.execute(sql`DELETE FROM opportunity_product_lines WHERE ${sql.raw(opportunityInM3)}`)
       await tx.execute(sql`DELETE FROM opportunities WHERE ${sql.raw(inM3)}`)
       await tx.execute(sql`DELETE FROM visit_records WHERE ${sql.raw(inM3)}`)
       // 归属治理子表 + 联系人（客户有 contacts 时直接删客户会撞外键，须先删）
@@ -119,7 +121,8 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         customerId: customer.id,
         name: '设备升级项目',
         source: 'referral',
-        estimatedAmount: 500000,
+        initialAmountBasis: 'estimate',
+        initialAmount: 500000,
         firstActionContent: '约见技术负责人',
         firstActionAt: '2026-08-30T09:00:00+08:00',
       })
@@ -264,8 +267,9 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         customerId: customer.id,
         name: '泵浦更新项目',
         source: 'self_visit',
-        productLine: 'pump',
-        estimatedAmount: 180000,
+        productLines: ['pump', 'filtration_system'],
+        initialAmountBasis: 'estimate',
+        initialAmount: 180000,
         approximate: true,
         estimateNote: '按初步选型估算',
         discoveredDate: '2026-08-01',
@@ -282,7 +286,8 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         customerId: customer.id,
         name: '过滤系统长期报价项目',
         source: 'exhibition',
-        estimatedAmount: 420000,
+        initialAmountBasis: 'estimate',
+        initialAmount: 420000,
         firstActionContent: '等待客户反馈',
         firstActionAt: '2026-06-01T09:00:00+08:00',
       })
@@ -344,6 +349,59 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
     expect(detail.body.customerName).toBe('M3_工作台客户')
   })
 
+  it('可由正式报价原子创建商机，并保存多产品线和首条报价事实', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M3_报价诞生商机客户')
+
+    const result = await request(app.getHttpServer())
+      .post('/api/opportunities')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        customerId: customer.id,
+        name: '现场直接正式报价项目',
+        source: 'self_visit',
+        productLines: ['pump', 'filtration_system'],
+        initialAmountBasis: 'formal_quote',
+        initialAmount: 360000,
+        initialQuotedAt: '2026-08-27T10:00:00+08:00',
+        initialQuoteNo: 'Q-INITIAL-001',
+        firstActionContent: '确认客户对报价单的反馈',
+        firstActionAt: '2026-08-29T09:00:00+08:00',
+      })
+
+    expect(result.status).toBe(201)
+    expect(result.body.stage).toBe('following')
+    expect(result.body.estimatedAmount).toBeNull()
+    expect(result.body.amountBasis).toBe('formal_quote')
+    expect(result.body.referenceAmount).toBe('360000.00')
+    expect(result.body.productLines).toEqual(['pump', 'filtration_system'])
+
+    const [quotes, productLines, actions] = await Promise.all([
+      db
+        .select()
+        .from(opportunityQuotes)
+        .where(eq(opportunityQuotes.opportunityId, result.body.id)),
+      db
+        .select()
+        .from(opportunityProductLines)
+        .where(eq(opportunityProductLines.opportunityId, result.body.id)),
+      db
+        .select()
+        .from(followUpActions)
+        .where(eq(followUpActions.opportunityId, result.body.id)),
+    ])
+    expect(quotes).toHaveLength(1)
+    expect(quotes[0].kind).toBe('formal')
+    expect(quotes[0].quoteNo).toBe('Q-INITIAL-001')
+    expect(productLines.map((item) => item.productLine).sort()).toEqual([
+      'filtration_system',
+      'pump',
+    ])
+    expect(actions).toHaveLength(1)
+    expect(actions[0].originType).toBe('opportunity_quote')
+    expect(actions[0].sourceId).toBe(quotes[0].id)
+  })
+
   it('客诉登记→确认解决（§8.6 两态闭环）', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M3_客诉客户')
@@ -368,6 +426,26 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .where(eq(followUpActions.complaintId, complaintId))
       .limit(1)
 
+    const openDetail = await request(app.getHttpServer())
+      .get(`/api/complaints/${complaintId}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(openDetail.status).toBe(200)
+    expect(openDetail.body.timeline.map((item: { type: string }) => item.type)).toEqual([
+      'pending_action',
+      'registered',
+    ])
+    expect(openDetail.body.timeline[1].actorName).toBe('销售甲')
+
+    const complaintPage = await request(app.getHttpServer())
+      .get('/api/complaints?status=registered&page=1&pageSize=20&keyword=M3_客诉客户')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(complaintPage.status).toBe(200)
+    expect(complaintPage.body.total).toBe(1)
+    expect(complaintPage.body.page).toBe(1)
+    expect(complaintPage.body.pageSize).toBe(20)
+    expect(complaintPage.body.items[0].id).toBe(complaintId)
+    expect(complaintPage.body.items[0].customerName).toBe('M3_客诉客户')
+
     // 跟进确认解决（§8.6：RESOLVED → 必填解决结果）
     const resolved = await request(app.getHttpServer())
       .post(`/api/complaints/${complaintId}/follow-up`)
@@ -381,6 +459,16 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       })
     expect(resolved.status).toBe(201)
     expect(resolved.body.status).toBe('resolved')
+
+    const resolvedDetail = await request(app.getHttpServer())
+      .get(`/api/complaints/${complaintId}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(resolvedDetail.body.timeline.map((item: { type: string }) => item.type)).toEqual([
+      'resolved',
+      'follow_up',
+      'registered',
+    ])
+    expect(resolvedDetail.body.timeline[0].content).toBe('更换轴承')
 
     // 已解决后禁止再跟进
     const again = await request(app.getHttpServer())

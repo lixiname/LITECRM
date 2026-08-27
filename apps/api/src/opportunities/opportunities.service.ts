@@ -11,6 +11,7 @@ import {
   opportunities,
   opportunityEvents,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
   users,
 } from '../common/db/schema'
@@ -33,14 +34,16 @@ export class OpportunitiesService {
 
   async create(dto: CreateOpportunityDto, actor: AuthUser) {
     await this.catalogService.assertDimensionValue('opportunity_source', dto.source)
-    if (dto.productLine) {
-      await this.catalogService.assertDimensionValue('product_line', dto.productLine)
-    }
+    const productLines = [...new Set(dto.productLines ?? [])]
+    await Promise.all(
+      productLines.map((value) => this.catalogService.assertDimensionValue('product_line', value)),
+    )
     const customer = await this.opportunityAccess.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
       const occurredAt = new Date()
+      const isQuoteBorn = dto.initialAmountBasis !== 'estimate'
       const [opportunity] = await tx
         .insert(opportunities)
         .values({
@@ -48,34 +51,74 @@ export class OpportunitiesService {
           ownerId: actor.id,
           name: dto.name,
           source: dto.source,
-          productLine: dto.productLine ?? null,
-          estimatedAmount: String(dto.estimatedAmount),
+          stage: isQuoteBorn ? 'following' : 'intent',
+          initialAmountBasis: dto.initialAmountBasis,
+          estimatedAmount: dto.initialAmountBasis === 'estimate' ? String(dto.initialAmount) : null,
           approximate: dto.approximate ?? false,
           estimateNote: dto.estimateNote ?? null,
           discoveredDate: dto.discoveredDate ?? null,
           expectedCloseDate: dto.expectedCloseDate ?? null,
         })
         .returning()
+      if (productLines.length) {
+        await tx.insert(opportunityProductLines).values(
+          productLines.map((productLine) => ({ opportunityId: opportunity.id, productLine })),
+        )
+      }
+      const initialQuote = isQuoteBorn
+        ? (
+            await tx
+              .insert(opportunityQuotes)
+              .values({
+                opportunityId: opportunity.id,
+                actorId: actor.id,
+                kind: dto.initialAmountBasis === 'formal_quote' ? 'formal' : 'oral',
+                quotedAt: dto.initialQuotedAt ? new Date(dto.initialQuotedAt) : occurredAt,
+                amount: String(dto.initialAmount),
+                quoteNo:
+                  dto.initialAmountBasis === 'formal_quote'
+                    ? dto.initialQuoteNo?.trim() || null
+                    : null,
+                note: dto.estimateNote?.trim() || null,
+                documentRef:
+                  dto.initialAmountBasis === 'formal_quote'
+                    ? dto.initialQuoteDocumentRef?.trim() || null
+                    : null,
+              })
+              .returning()
+          )[0]
+        : null
       await tx.insert(opportunityEvents).values({
         opportunityId: opportunity.id,
         customerId: dto.customerId,
         actorId: actor.id,
         occurredAt,
         type: 'created',
-        payload: { name: dto.name, estimatedAmount: dto.estimatedAmount },
+        payload: {
+          name: dto.name,
+          initialAmountBasis: dto.initialAmountBasis,
+          initialAmount: dto.initialAmount,
+          quoteId: initialQuote?.id,
+        },
       })
       await this.actionsService.createLinked(tx, {
         ownerId: customer.ownerId ?? actor.id,
         customerId: dto.customerId,
         opportunityId: opportunity.id,
         planKind: 'opportunity_follow_up',
-        originType: 'opportunity',
-        sourceId: opportunity.id,
+        originType: initialQuote ? 'opportunity_quote' : 'opportunity',
+        sourceId: initialQuote?.id ?? opportunity.id,
         plannedAt: new Date(dto.firstActionAt),
         content: dto.firstActionContent,
       })
       await touchCustomerActivity(tx, dto.customerId, occurredAt)
-      return opportunity
+      return {
+        ...opportunity,
+        productLines,
+        latestQuote: initialQuote,
+        referenceAmount: initialQuote?.amount ?? opportunity.estimatedAmount,
+        amountBasis: initialQuote ? dto.initialAmountBasis : 'estimate',
+      }
     })
   }
 
@@ -91,10 +134,10 @@ export class OpportunitiesService {
     if (query.customerId) conditions.push(eq(opportunities.customerId, query.customerId))
     if (query.stage) conditions.push(eq(opportunities.stage, query.stage))
     if (query.minAmount !== undefined) {
-      conditions.push(gte(opportunities.estimatedAmount, String(query.minAmount)))
+      conditions.push(gte(this.referenceAmountSql(), String(query.minAmount)))
     }
     if (query.maxAmount !== undefined) {
-      conditions.push(lte(opportunities.estimatedAmount, String(query.maxAmount)))
+      conditions.push(lte(this.referenceAmountSql(), String(query.maxAmount)))
     }
     if (query.hasQuote !== undefined) {
       const quoteExists = sql`exists (
@@ -154,7 +197,7 @@ export class OpportunitiesService {
     const ownerIds = [
       ...new Set(rows.flatMap((row) => (row.currentOwnerId ? [row.currentOwnerId] : []))),
     ]
-    const [actions, quotes, followUps, ownerRows] = await Promise.all([
+    const [actions, quotes, followUps, productLineRows, ownerRows] = await Promise.all([
       db
         .select()
         .from(followUpActions)
@@ -172,6 +215,10 @@ export class OpportunitiesService {
         .from(opportunityFollowUps)
         .where(inArray(opportunityFollowUps.opportunityId, ids))
         .orderBy(desc(opportunityFollowUps.occurredAt)),
+      db
+        .select()
+        .from(opportunityProductLines)
+        .where(inArray(opportunityProductLines.opportunityId, ids)),
       ownerIds.length
         ? db
             .select({ id: users.id, displayName: users.displayName })
@@ -181,7 +228,8 @@ export class OpportunitiesService {
     ])
     const items = rows.map((row) => {
       const currentAction = actions.find((action) => action.opportunityId === row.id) ?? null
-      const latestQuote = quotes.find((quote) => quote.opportunityId === row.id) ?? null
+      const latestQuote =
+        quotes.find((quote) => quote.opportunityId === row.id && quote.status === 'active') ?? null
       const latestFollowUp = followUps.find((item) => item.opportunityId === row.id) ?? null
       return {
         ...row,
@@ -190,6 +238,11 @@ export class OpportunitiesService {
         currentAction,
         latestQuote,
         latestFollowUp,
+        productLines: productLineRows
+          .filter((item) => item.opportunityId === row.id)
+          .map((item) => item.productLine),
+        referenceAmount: latestQuote?.amount ?? row.estimatedAmount,
+        amountBasis: latestQuote ? `${latestQuote.kind}_quote` : row.initialAmountBasis,
         ...deriveOpportunityStagnation(row, currentAction, latestQuote, latestFollowUp),
       }
     })
@@ -198,7 +251,7 @@ export class OpportunitiesService {
 
   async findOne(id: string, actor: AuthUser) {
     const opportunity = await this.opportunityAccess.getVisible(id, actor)
-    const [followUps, quotes, events, deal, actions, owner] = await Promise.all([
+    const [followUps, quotes, productLineRows, events, deal, actions, owner] = await Promise.all([
       db
         .select()
         .from(opportunityFollowUps)
@@ -209,6 +262,10 @@ export class OpportunitiesService {
         .from(opportunityQuotes)
         .where(eq(opportunityQuotes.opportunityId, id))
         .orderBy(desc(opportunityQuotes.quotedAt)),
+      db
+        .select()
+        .from(opportunityProductLines)
+        .where(eq(opportunityProductLines.opportunityId, id)),
       db
         .select()
         .from(opportunityEvents)
@@ -229,6 +286,12 @@ export class OpportunitiesService {
       currentOwnerName: owner[0]?.displayName ?? null,
       followUps,
       quotes,
+      productLines: productLineRows.map((item) => item.productLine),
+      referenceAmount:
+        quotes.find((quote) => quote.status === 'active')?.amount ?? opportunity.estimatedAmount,
+      amountBasis: quotes.find((quote) => quote.status === 'active')
+        ? `${quotes.find((quote) => quote.status === 'active')!.kind}_quote`
+        : opportunity.initialAmountBasis,
       events,
       actions,
       deal: deal[0] ?? null,
@@ -239,5 +302,16 @@ export class OpportunitiesService {
         followUps[0] ?? null,
       ),
     }
+  }
+
+  private referenceAmountSql(): SQL {
+    return sql`coalesce((
+      select ${opportunityQuotes.amount}
+      from ${opportunityQuotes}
+      where ${opportunityQuotes.opportunityId} = ${opportunities.id}
+        and ${opportunityQuotes.status} = 'active'
+      order by ${opportunityQuotes.quotedAt} desc
+      limit 1
+    ), ${opportunities.estimatedAmount})`
   }
 }

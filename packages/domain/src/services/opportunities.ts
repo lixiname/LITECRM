@@ -36,7 +36,7 @@ export interface OpportunityListQuery {
   pageSize?: number
 }
 
-/** 新建商机（意向阶段） */
+/** 新建商机；报价依据时原子生成首条报价与反馈行动。 */
 export function createOpportunity(dto: CreateOpportunityInput): Promise<Opportunity> {
   return apiPost<Opportunity>('/opportunities', dto)
 }

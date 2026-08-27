@@ -84,6 +84,7 @@
               v-for="record in day.complaintRecords"
               :key="record.id"
               class="record-row record-row--complaint"
+              @click="router.push(`/complaints/${record.complaintId}`)"
             >
               <strong>{{ record.customerName }}</strong>
               <span
@@ -94,8 +95,7 @@
             </div>
             <div v-if="day.complaintRecords.length === 0" class="day-card__empty">暂无客诉</div>
             <div class="day-card__add">
-              <span @click="goQuickAdd(day, 'plan')">+ 安排计划</span>
-              <span @click="goQuickAdd(day, 'record')">+ 记录实际</span>
+              <span @click="goQuickAdd(day)">+ 记录实际</span>
             </div>
           </div>
         </div>
@@ -112,21 +112,8 @@
 
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
-        <div class="command-sheet__title">
-          {{ commandSheet.mode === 'reschedule' ? '计划改期' : '替换计划' }}
-        </div>
-        <van-field v-model="commandSheet.plannedAt" label="新时间" type="datetime-local" required />
-        <template v-if="commandSheet.mode === 'replace'">
-          <van-field v-model="commandSheet.content" label="新内容" required />
-          <van-field
-            v-model="commandSheet.reason"
-            label="替换原因"
-            type="textarea"
-            rows="3"
-            autosize
-            required
-          />
-        </template>
+        <div class="command-sheet__title">计划改期</div>
+        <van-field v-model="commandSheet.plannedAt" label="新日期" type="date" required />
         <div class="command-sheet__actions">
           <van-button block @click="commandSheet.visible = false">返回</van-button>
           <van-button
@@ -135,7 +122,7 @@
             :loading="commandSheet.saving"
             @click="submitActionCommand"
           >
-            {{ commandSheet.mode === 'replace' ? '确认替换' : '确认改期' }}
+            确认改期
           </van-button>
         </div>
       </div>
@@ -149,7 +136,6 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   getWeekView,
-  replaceSalesPlan,
   rescheduleSalesPlan,
   useQuery,
   type SalesPlan,
@@ -159,12 +145,11 @@ import {
 } from '@crm/domain'
 
 const router = useRouter()
-type ActionCommand = 'execute' | 'reschedule' | 'replace'
+type ActionCommand = 'execute' | 'reschedule'
 
 const actionOptions: { name: string; value: ActionCommand; color?: string }[] = [
   { name: '填写执行结果', value: 'execute' },
   { name: '改期', value: 'reschedule' },
-  { name: '替换计划', value: 'replace' },
 ]
 const today = new Date()
 const todayStr = fmt(today)
@@ -247,10 +232,7 @@ const showActionSheet = ref(false)
 const selectedAction = ref<SalesPlan>()
 const commandSheet = reactive({
   visible: false,
-  mode: 'reschedule' as 'reschedule' | 'replace',
   plannedAt: '',
-  content: '',
-  reason: '',
   saving: false,
 })
 
@@ -266,42 +248,22 @@ function selectActionCommand(option: { value: ActionCommand }) {
     void router.push(executionRoute(action))
     return
   }
-  commandSheet.mode = option.value
   commandSheet.plannedAt = localInput(action.plannedAt)
-  commandSheet.content = action.content
-  commandSheet.reason = ''
   commandSheet.visible = true
 }
 
 async function submitActionCommand() {
   const action = selectedAction.value
   if (!action) return
-  if (commandSheet.mode === 'reschedule' && !commandSheet.plannedAt)
-    return showToast('请选择新的计划时间')
-  if (
-    commandSheet.mode === 'replace' &&
-    (!commandSheet.content.trim() || !commandSheet.reason.trim())
-  )
-    return showToast('请填写新内容和替换原因')
+  if (!commandSheet.plannedAt) return showToast('请选择新的计划时间')
   commandSheet.saving = true
   try {
-    if (commandSheet.mode === 'reschedule') {
-      await rescheduleSalesPlan(
-        action.id,
-        action.version,
-        new Date(commandSheet.plannedAt).toISOString(),
-      )
-      showToast('计划已改期')
-    } else {
-      await replaceSalesPlan(
-        action.id,
-        action.version,
-        new Date(commandSheet.plannedAt).toISOString(),
-        commandSheet.content.trim(),
-        commandSheet.reason.trim(),
-      )
-      showToast('计划已替换')
-    }
+    await rescheduleSalesPlan(
+      action.id,
+      action.version,
+      toPlannedAtISOString(commandSheet.plannedAt),
+    )
+    showToast('计划已改期')
     commandSheet.visible = false
     await reload()
   } catch (error) {
@@ -322,7 +284,13 @@ function executionRoute(plan: SalesPlan) {
 function localInput(value: string): string {
   const date = new Date(value)
   const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
+}
+function toPlannedAtISOString(value: string): string {
+  const parts = value.split('-').map(Number)
+  const date = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0)
+  const offset = date.getTimezoneOffset() * 60_000
+  return new Date(date.getTime() - offset).toISOString()
 }
 
 function planLabel(kind: SalesPlanKind): string {
@@ -333,8 +301,8 @@ function planLabel(kind: SalesPlanKind): string {
   }[kind]
 }
 
-function goQuickAdd(day: DayVM, mode: 'plan' | 'record') {
-  void router.push({ path: '/quick-add', query: { date: day.date, mode } })
+function goQuickAdd(day: DayVM) {
+  void router.push({ path: '/quick-add', query: { date: day.date } })
 }
 
 function recordLabel(type: WeekBusinessRecord['type']) {

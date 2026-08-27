@@ -231,7 +231,7 @@ export class OpportunityCommandsService {
             ownerId: opportunity.currentOwnerId ?? actor.id,
             occurredAt,
             amount: String(dto.amount),
-            productLine: dto.productLine ?? opportunity.productLine,
+            productLine: dto.productLine ?? null,
             tradeType: dto.tradeType ?? null,
             note: dto.note ?? null,
             sourceOpportunityId: id,

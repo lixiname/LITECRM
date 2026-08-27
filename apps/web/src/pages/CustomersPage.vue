@@ -50,26 +50,57 @@
         border
         @row-click="(row: CustomerItem) => router.push(`/customers/${row.id}`)"
       >
-        <el-table-column prop="name" label="名称" min-width="180" />
-        <el-table-column prop="city" label="城市" width="100" />
+        <el-table-column label="客户" min-width="220">
+          <template #default="{ row }">
+            <div class="customers__name">{{ (row as CustomerItem).name }}</div>
+            <div class="customers__meta">
+              <span>{{ locationText(row as CustomerItem) }}</span>
+              <el-tag size="small" effect="plain" :type="statusTag((row as CustomerItem).status)">
+                {{ statusLabel((row as CustomerItem).status) }}
+              </el-tag>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="业务画像" min-width="170">
+          <template #default="{ row }">
+            {{ businessProfile(row as CustomerItem) }}
+          </template>
+        </el-table-column>
         <el-table-column label="等级" width="70">
           <template #default="{ row }">{{ (row as CustomerItem).grade }}</template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column label="有效商机" min-width="150">
           <template #default="{ row }">
-            <el-tag :type="statusTag((row as CustomerItem).status)">
-              {{ statusLabel((row as CustomerItem).status) }}
-            </el-tag>
+            <div v-if="(row as CustomerItem).openOpportunityCount" class="customers__stack">
+              <span>{{ opportunityText(row as CustomerItem) }}</span>
+              <span class="customers__muted">{{
+                moneyText((row as CustomerItem).openOpportunityAmount)
+              }}</span>
+            </div>
+            <span v-else class="customers__muted">暂无有效商机</span>
           </template>
         </el-table-column>
-        <el-table-column label="负责人" width="90">
-          <template #default="{ row }">
-            {{ (row as CustomerItem).ownerId === auth.user?.id ? '我' : '他人' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="最近活动" width="170">
+        <el-table-column label="最近活动" width="130">
           <template #default="{ row }">
             {{ activityTime((row as CustomerItem).lastActivityAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="下一步" min-width="190">
+          <template #default="{ row }">
+            <div v-if="(row as CustomerItem).nextActionAt" class="customers__stack">
+              <span :class="{ customers__overdue: isOverdue((row as CustomerItem).nextActionAt) }">
+                {{ actionTime((row as CustomerItem).nextActionAt) }}
+              </span>
+              <span class="customers__muted customers__ellipsis">
+                {{ (row as CustomerItem).nextActionContent }}
+              </span>
+            </div>
+            <span v-else class="customers__muted">未安排</span>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="showOwner" label="负责人" width="110">
+          <template #default="{ row }">
+            {{ (row as CustomerItem).ownerName ?? '未分配' }}
           </template>
         </el-table-column>
       </el-table>
@@ -93,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
@@ -101,15 +132,31 @@ import {
   useAuthStore,
   useQuery,
   listCustomers,
+  listDimensionOptions,
   CUSTOMER_GRADE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
   type CustomerItem,
   type CustomerStatus,
+  type DimensionOption,
 } from '@crm/domain'
 
 const router = useRouter()
 const auth = useAuthStore()
 const PAGE_SIZE = 20
+const showOwner = computed(() => auth.user?.role !== 'sales')
+const dimensionLabels = ref<Record<string, string>>({})
+
+onMounted(async () => {
+  const groups = await Promise.all([
+    listDimensionOptions('industry').catch(() => [] as DimensionOption[]),
+    listDimensionOptions('sub_industry').catch(() => [] as DimensionOption[]),
+  ])
+  for (const options of groups) {
+    for (const option of options) {
+      dimensionLabels.value[`${option.dimension}:${option.name}`] = option.label
+    }
+  }
+})
 
 const keyword = ref('')
 const filters = reactive<{ grade?: string; status?: string }>({})
@@ -157,8 +204,44 @@ function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
 }
 function activityTime(value?: string | null): string {
+  if (!value) return '暂无活动'
+  const days = Math.floor((Date.now() - new Date(value).getTime()) / 86_400_000)
+  if (days <= 0) return '今天'
+  if (days === 1) return '昨天'
+  return `${days} 天前`
+}
+function locationText(customer: CustomerItem): string {
+  return [customer.salesRegionName, customer.city].filter(Boolean).join(' · ') || '地区待完善'
+}
+function dimensionLabel(dimension: string, value?: string | null): string {
+  if (!value) return ''
+  return dimensionLabels.value[`${dimension}:${value}`] ?? value
+}
+function businessProfile(customer: CustomerItem): string {
+  return (
+    [
+      dimensionLabel('industry', customer.industry),
+      dimensionLabel('sub_industry', customer.subIndustry),
+    ]
+      .filter(Boolean)
+      .join(' · ') || '业务画像待完善'
+  )
+}
+function opportunityText(customer: CustomerItem): string {
+  const stage = customer.activeOpportunityStage === 'following' ? '跟进中' : '意向'
+  return `${stage} · ${customer.openOpportunityCount ?? 0} 个`
+}
+function moneyText(value?: string | null): string {
+  const amount = Number(value ?? 0)
+  return amount > 0 ? `预计 ¥${amount.toLocaleString()}` : '金额待补充'
+}
+function actionTime(value?: string | null): string {
   if (!value) return '-'
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  const date = new Date(value)
+  return `${isOverdue(value) ? '已逾期 · ' : ''}${date.toLocaleDateString('zh-CN')}`
+}
+function isOverdue(value?: string | null): boolean {
+  return Boolean(value && new Date(value).getTime() < Date.now())
 }
 </script>
 
@@ -169,5 +252,36 @@ function activityTime(value?: string | null): string {
 .customers__pagination {
   margin-top: var(--crm-spacing-md);
   justify-content: flex-end;
+}
+.customers__name {
+  font-weight: 600;
+  color: var(--crm-color-text-primary);
+}
+.customers__meta,
+.customers__stack {
+  display: flex;
+  gap: var(--crm-spacing-xs);
+}
+.customers__meta {
+  align-items: center;
+  margin-top: 4px;
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+}
+.customers__stack {
+  flex-direction: column;
+}
+.customers__muted {
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+}
+.customers__overdue {
+  color: var(--el-color-danger);
+  font-weight: 600;
+}
+.customers__ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

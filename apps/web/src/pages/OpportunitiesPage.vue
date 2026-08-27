@@ -106,10 +106,12 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="意向规模" width="130" align="right">
+        <el-table-column label="当前参考金额" width="155" align="right">
           <template #default="{ row }">
-            <span>{{ opportunityAmountText((row as Opportunity).estimatedAmount) }}</span>
-            <span v-if="(row as Opportunity).approximate" class="opps__muted">（约）</span>
+            <div>{{ opportunityAmountText((row as Opportunity).referenceAmount) }}</div>
+            <div class="opps__muted">
+              {{ opportunityAmountBasisLabel((row as Opportunity).amountBasis) }}
+            </div>
           </template>
         </el-table-column>
 
@@ -194,6 +196,7 @@ import AppQueryState from '../components/AppQueryState.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
 import {
   opportunityAmountText,
+  opportunityAmountBasisLabel,
   opportunityQuoteKindLabel,
   opportunityStageLabel,
   opportunityStageTag,

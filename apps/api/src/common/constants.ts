@@ -51,8 +51,8 @@ export type ClaimStatus = (typeof CLAIM_STATUSES)[number]
 
 // 字典维度（§7.2 customer_dimension_options；客户维度 + 业务分类选项，全部可配置）
 export const CUSTOMER_DIMENSIONS = [
-  'industry', // 产业
-  'sub_industry', // 二级行业
+  'industry', // 客户行业
+  'sub_industry', // 具体领域（与客户行业正交）
   'customer_type', // 客户类型
   'product_line', // 产品线
   'source', // 客户来源
@@ -83,6 +83,9 @@ export type OpportunityStage = (typeof OPPORTUNITY_STAGES)[number]
 
 export const OPPORTUNITY_QUOTE_KINDS = ['oral', 'formal'] as const
 export type OpportunityQuoteKind = (typeof OPPORTUNITY_QUOTE_KINDS)[number]
+
+export const OPPORTUNITY_INITIAL_AMOUNT_BASES = ['estimate', 'oral_quote', 'formal_quote'] as const
+export type OpportunityInitialAmountBasis = (typeof OPPORTUNITY_INITIAL_AMOUNT_BASES)[number]
 
 export const OPPORTUNITY_QUOTE_STATUSES = ['active', 'superseded', 'withdrawn'] as const
 export type OpportunityQuoteStatus = (typeof OPPORTUNITY_QUOTE_STATUSES)[number]

@@ -28,6 +28,10 @@ export interface CustomerItem {
   productLines: string[]
   city: string | null
   province: string | null
+  cityCode: string | null
+  provinceCode: string | null
+  salesRegionId: string | null
+  salesRegionName?: string | null
   address: string | null
   website: string | null
   source: string | null
@@ -41,6 +45,12 @@ export interface CustomerItem {
   notes: string | null
   createdAt: string
   updatedAt: string
+  ownerName?: string | null
+  openOpportunityCount?: number
+  openOpportunityAmount?: string
+  activeOpportunityStage?: 'intent' | 'following' | null
+  nextActionAt?: string | null
+  nextActionContent?: string | null
 }
 
 export interface Contact {

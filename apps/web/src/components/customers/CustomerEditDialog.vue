@@ -26,13 +26,43 @@
           /></el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="省份"><el-input v-model="form.province" /></el-form-item>
+          <el-form-item label="省份">
+            <el-select
+              v-model="form.provinceCode"
+              clearable
+              filterable
+              style="width: 100%"
+              @change="handleProvinceChange"
+            >
+              <el-option
+                v-for="item in provinces"
+                :key="item.code"
+                :label="item.name"
+                :value="item.code"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="城市"><el-input v-model="form.city" /></el-form-item>
+          <el-form-item label="地级市">
+            <el-select
+              v-model="form.cityCode"
+              clearable
+              filterable
+              :disabled="!form.provinceCode"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in cities"
+                :key="item.code"
+                :label="item.name"
+                :value="item.code"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="产业">
+          <el-form-item label="客户行业">
             <el-select v-model="form.industry" clearable filterable style="width: 100%">
               <el-option
                 v-for="option in options.industry"
@@ -44,7 +74,16 @@
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="二级行业"><el-input v-model="form.subIndustry" /></el-form-item>
+          <el-form-item label="具体领域">
+            <el-select v-model="form.subIndustry" clearable filterable style="width: 100%">
+              <el-option
+                v-for="option in options.sub_industry"
+                :key="option.id"
+                :label="option.label"
+                :value="option.name"
+              />
+            </el-select>
+          </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item label="客户类型">
@@ -113,11 +152,14 @@ import { ElMessage } from 'element-plus'
 import {
   CUSTOMER_GRADE_OPTIONS,
   listDimensionOptions,
+  listCities,
+  listProvinces,
   updateCustomer,
   type CustomerDetail,
   type CustomerDimension,
   type CustomerGrade,
   type DimensionOption,
+  type AdministrativeDivision,
 } from '@crm/domain'
 
 const props = defineProps<{ customer: CustomerDetail }>()
@@ -139,8 +181,8 @@ const form = reactive({
   name: '',
   customerCode: '',
   unifiedSocialCreditCode: '',
-  province: '',
-  city: '',
+  provinceCode: '',
+  cityCode: '',
   industry: '',
   subIndustry: '',
   customerType: '',
@@ -152,25 +194,37 @@ const form = reactive({
   gradeChangeReason: '',
   notes: '',
 })
+const provinces = ref<AdministrativeDivision[]>([])
+const cities = ref<AdministrativeDivision[]>([])
 
 onMounted(async () => {
-  const dimensions: CustomerDimension[] = ['industry', 'customer_type', 'source', 'product_line']
-  await Promise.all(
-    dimensions.map(async (dimension) => {
-      options[dimension] = (await listDimensionOptions(dimension).catch(() => [])).filter(
-        (option) => option.isActive,
-      )
-    }),
-  )
+  const dimensions: CustomerDimension[] = [
+    'industry',
+    'sub_industry',
+    'customer_type',
+    'source',
+    'product_line',
+  ]
+  const [, provinceOptions] = await Promise.all([
+    Promise.all(
+      dimensions.map(async (dimension) => {
+        options[dimension] = (await listDimensionOptions(dimension).catch(() => [])).filter(
+          (option) => option.isActive,
+        )
+      }),
+    ),
+    listProvinces().catch(() => []),
+  ])
+  provinces.value = provinceOptions
 })
 
-function open() {
+async function open() {
   Object.assign(form, {
     name: props.customer.name,
     customerCode: props.customer.customerCode ?? '',
     unifiedSocialCreditCode: props.customer.unifiedSocialCreditCode ?? '',
-    province: props.customer.province ?? '',
-    city: props.customer.city ?? '',
+    provinceCode: props.customer.provinceCode ?? '',
+    cityCode: '',
     industry: props.customer.industry ?? '',
     subIndustry: props.customer.subIndustry ?? '',
     customerType: props.customer.customerType ?? '',
@@ -182,7 +236,14 @@ function open() {
     gradeChangeReason: '',
     notes: props.customer.notes ?? '',
   })
+  cities.value = form.provinceCode ? await listCities(form.provinceCode).catch(() => []) : []
+  form.cityCode = props.customer.cityCode ?? ''
   visible.value = true
+}
+
+async function handleProvinceChange(provinceCode: string) {
+  form.cityCode = ''
+  cities.value = provinceCode ? await listCities(provinceCode).catch(() => []) : []
 }
 
 async function handleSave() {
@@ -197,10 +258,10 @@ async function handleSave() {
       name: form.name.trim(),
       customerCode: form.customerCode.trim() || null,
       unifiedSocialCreditCode: form.unifiedSocialCreditCode.trim() || null,
-      province: form.province.trim() || null,
-      city: form.city.trim() || null,
+      provinceCode: form.provinceCode || null,
+      cityCode: form.cityCode || null,
       industry: form.industry || null,
-      subIndustry: form.subIndustry.trim() || null,
+      subIndustry: form.subIndustry || null,
       customerType: form.customerType || null,
       source: form.source || null,
       productLines: form.productLines,

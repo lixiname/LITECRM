@@ -42,6 +42,15 @@
           <van-field v-model="quoteKind" label="报价类型" placeholder="oral / formal" required />
           <van-field v-model="amount" label="报价金额" type="number" required />
           <van-field v-model="quoteNo" label="报价单号" placeholder="正式报价时选填" />
+          <van-field
+            v-model="supersedesLabel"
+            label="改价自"
+            readonly
+            is-link
+            placeholder="独立方案，不替代"
+            @click="showSupersedes = true"
+          />
+          <van-field v-model="quoteNote" label="报价说明" placeholder="如：调整配置后重新报价" />
         </template>
         <van-field
           v-if="planHandling !== 'keep'"
@@ -65,11 +74,18 @@
         >
       </div>
     </van-form>
+    <van-popup v-model:show="showSupersedes" position="bottom" round>
+      <van-picker
+        :columns="supersedesColumns"
+        @confirm="pickSupersedes"
+        @cancel="showSupersedes = false"
+      />
+    </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
@@ -95,6 +111,19 @@ const method = ref('')
 const quoteKind = ref<'oral' | 'formal'>('oral')
 const amount = ref('')
 const quoteNo = ref('')
+const quoteNote = ref('')
+const supersedesQuoteId = ref('')
+const supersedesLabel = ref('')
+const showSupersedes = ref(false)
+const supersedesColumns = computed(() => [
+  { text: '独立方案，不替代', value: '' },
+  ...(opportunity.value?.quotes ?? [])
+    .filter((quote) => quote.status === 'active')
+    .map((quote) => ({
+      text: `${quote.kind === 'formal' ? '正式' : '口头'} · ¥${Number(quote.amount).toLocaleString()}`,
+      value: quote.id,
+    })),
+])
 const nextAt = ref(tomorrowAtNine())
 const nextContent = ref('')
 const saving = ref(false)
@@ -141,6 +170,8 @@ async function submit() {
         quotedAt: new Date().toISOString(),
         amount: Number(amount.value),
         quoteNo: quoteNo.value.trim() || undefined,
+        supersedesQuoteId: supersedesQuoteId.value || undefined,
+        note: quoteNote.value.trim() || undefined,
         sourcePlanId: linkedPlan?.id,
         keepExistingPlan: planHandling.value === 'keep' || undefined,
         nextActionAt:
@@ -155,6 +186,11 @@ async function submit() {
   } finally {
     saving.value = false
   }
+}
+function pickSupersedes({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
+  supersedesQuoteId.value = selectedOptions[0].value
+  supersedesLabel.value = selectedOptions[0].value ? selectedOptions[0].text : ''
+  showSupersedes.value = false
 }
 function tomorrowAtNine() {
   const date = new Date()

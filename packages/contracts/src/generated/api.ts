@@ -164,6 +164,54 @@ export interface paths {
         patch: operations["CatalogController_update"];
         trace?: never;
     };
+    "/geography/provinces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GeographyController_listProvinces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geography/provinces/{provinceCode}/cities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GeographyController_listCities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geography/sales-regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GeographyController_listSalesRegions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers": {
         parameters: {
             query?: never;
@@ -959,6 +1007,23 @@ export interface components {
             /** @description 是否启用 */
             isActive?: boolean;
         };
+        AdministrativeDivisionDto: {
+            /** @example 320000 */
+            code: string;
+            /** @example 江苏省 */
+            name: string;
+            /** @enum {string} */
+            level: "province" | "city";
+            /** @example 320000 */
+            parentCode?: string | null;
+        };
+        SalesRegionDto: {
+            id: string;
+            /** @example jiangsu */
+            code: string;
+            /** @example 江苏 */
+            name: string;
+        };
         /**
          * @description 客户等级 S/A/B/C
          * @enum {string}
@@ -983,9 +1048,9 @@ export interface components {
             customerCode?: string;
             /** @description 统一社会信用代码（权威硬查重键） */
             unifiedSocialCreditCode?: string;
-            /** @description 产业（字典快照） */
+            /** @description 客户行业（独立字典维度） */
             industry?: string;
-            /** @description 二级行业（字典快照） */
+            /** @description 具体领域（与客户行业无层级约束） */
             subIndustry?: string;
             /** @description 客户类型（字典快照） */
             customerType?: string;
@@ -995,6 +1060,16 @@ export interface components {
             city?: string;
             /** @description 省份 */
             province?: string;
+            /**
+             * @description 省级行政区划代码
+             * @example 320000
+             */
+            provinceCode?: string;
+            /**
+             * @description 地级市行政区划代码
+             * @example 320500
+             */
+            cityCode?: string;
             /** @description 地址 */
             address?: string;
             /** @description 网址 */
@@ -1039,9 +1114,9 @@ export interface components {
             customerCode?: string | null;
             /** @description 统一社会信用代码 */
             unifiedSocialCreditCode?: string | null;
-            /** @description 产业 */
+            /** @description 客户行业 */
             industry?: string | null;
-            /** @description 二级行业 */
+            /** @description 具体领域（与客户行业无层级约束） */
             subIndustry?: string | null;
             /** @description 客户类型 */
             customerType?: string | null;
@@ -1051,6 +1126,10 @@ export interface components {
             city?: string | null;
             /** @description 省份 */
             province?: string | null;
+            /** @description 省级行政区划代码 */
+            provinceCode?: string | null;
+            /** @description 地级市行政区划代码 */
+            cityCode?: string | null;
             /** @description 地址 */
             address?: string | null;
             /** @description 网址 */
@@ -1180,6 +1259,11 @@ export interface components {
             /** @description 下次拜访计划内容；不保留现有计划时必填 */
             nextActionContent?: string;
         };
+        /**
+         * @description 初始金额依据：预估、口头报价或正式报价
+         * @enum {string}
+         */
+        OpportunityInitialAmountBasis: "estimate" | "oral_quote" | "formal_quote";
         CreateOpportunityDto: {
             /** @description 客户 ID */
             customerId: string;
@@ -1187,16 +1271,24 @@ export interface components {
             name: string;
             /** @description 发现渠道（字典：opportunity_source） */
             source: string;
-            /** @description 意向规模估计（不生成报价） */
-            estimatedAmount: number;
+            /** @description 初始金额依据：预估、口头报价或正式报价 */
+            initialAmountBasis: components["schemas"]["OpportunityInitialAmountBasis"];
+            /** @description 初始参考金额；报价依据会同时生成首条报价事实 */
+            initialAmount: number;
             /** @description 约估 */
             approximate?: boolean;
-            /** @description 金额表述 */
+            /** @description 金额或首条报价说明 */
             estimateNote?: string;
             /** @description 需求发现日 */
             discoveredDate?: string;
-            /** @description 大类产品线 */
-            productLine?: string;
+            /** @description 产品线，多选 */
+            productLines?: string[];
+            /** @description 首条报价时间；报价依据时可填，默认创建时间 */
+            initialQuotedAt?: string;
+            /** @description 首张正式报价单号 */
+            initialQuoteNo?: string;
+            /** @description 首张正式报价单文件引用 */
+            initialQuoteDocumentRef?: string;
             /** @description 预计成交日 */
             expectedCloseDate?: string;
             /** @description 第一步行动内容 */
@@ -1699,6 +1791,65 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GeographyController_listProvinces: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdministrativeDivisionDto"][];
+                };
+            };
+        };
+    };
+    GeographyController_listCities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provinceCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdministrativeDivisionDto"][];
+                };
+            };
+        };
+    };
+    GeographyController_listSalesRegions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SalesRegionDto"][];
+                };
             };
         };
     };
@@ -2296,7 +2447,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 新建商机（意向阶段） */
+            /** @description 新建商机；报价依据时同步生成首条报价 */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -2423,7 +2574,20 @@ export interface operations {
     };
     ComplaintsController_list: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 检索客诉描述或客户名称 */
+                keyword?: string;
+                /** @description 限定客户 ID */
+                customerId?: string;
+                /** @description 处理状态 */
+                status?: "registered" | "resolved";
+                /** @description 是否只看已逾期待办 */
+                overdue?: boolean;
+                /** @description 页码（从 1 开始） */
+                page?: number;
+                /** @description 每页条数（默认 20，最大 100） */
+                pageSize?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2472,7 +2636,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 客诉详情（含跟进事件） */
+            /** @description 客诉详情（含统一生命周期时间线） */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -18,11 +18,14 @@
       <el-descriptions-item label="省份 / 城市">
         {{ [customer.province, customer.city].filter(Boolean).join(' / ') || '-' }}
       </el-descriptions-item>
-      <el-descriptions-item label="产业">
+      <el-descriptions-item label="销售大区">{{
+        customer.salesRegionName ?? '-'
+      }}</el-descriptions-item>
+      <el-descriptions-item label="客户行业">
         {{ dimensionLabel('industry', customer.industry) }}
       </el-descriptions-item>
-      <el-descriptions-item label="二级行业">{{
-        customer.subIndustry ?? '-'
+      <el-descriptions-item label="具体领域">{{
+        dimensionLabel('sub_industry', customer.subIndustry)
       }}</el-descriptions-item>
       <el-descriptions-item label="客户类型">
         {{ dimensionLabel('customer_type', customer.customerType) }}
@@ -69,7 +72,13 @@ const props = defineProps<{
 const emit = defineEmits<{ edit: [] }>()
 
 const labels = ref<Record<string, string>>({})
-const dimensions: CustomerDimension[] = ['industry', 'customer_type', 'source', 'product_line']
+const dimensions: CustomerDimension[] = [
+  'industry',
+  'sub_industry',
+  'customer_type',
+  'source',
+  'product_line',
+]
 
 onMounted(async () => {
   const groups = await Promise.all(

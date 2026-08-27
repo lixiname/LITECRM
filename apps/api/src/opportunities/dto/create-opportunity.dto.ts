@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsBoolean,
+  IsArray,
+  IsIn,
   IsISO8601,
   IsNumber,
   IsOptional,
@@ -9,8 +11,12 @@ import {
   MinLength,
   Min,
 } from 'class-validator'
+import {
+  OPPORTUNITY_INITIAL_AMOUNT_BASES,
+  type OpportunityInitialAmountBasis,
+} from '../../common/constants'
 
-// 新建商机：意向规模与第一步行动必填；意向规模不是报价。
+// 新建商机：金额依据可以是估算或首条报价；商业事实与第一步行动同事务落库。
 export class CreateOpportunityDto {
   @ApiProperty({ description: '客户 ID' })
   @IsUUID()
@@ -25,17 +31,25 @@ export class CreateOpportunityDto {
   @IsString()
   source!: string
 
-  @ApiProperty({ description: '意向规模估计（不生成报价）' })
+  @ApiProperty({
+    enum: OPPORTUNITY_INITIAL_AMOUNT_BASES,
+    enumName: 'OpportunityInitialAmountBasis',
+    description: '初始金额依据：预估、口头报价或正式报价',
+  })
+  @IsIn(OPPORTUNITY_INITIAL_AMOUNT_BASES)
+  initialAmountBasis!: OpportunityInitialAmountBasis
+
+  @ApiProperty({ description: '初始参考金额；报价依据会同时生成首条报价事实' })
   @IsNumber()
   @Min(0)
-  estimatedAmount!: number
+  initialAmount!: number
 
   @ApiPropertyOptional({ description: '约估' })
   @IsOptional()
   @IsBoolean()
   approximate?: boolean
 
-  @ApiPropertyOptional({ description: '金额表述' })
+  @ApiPropertyOptional({ description: '金额或首条报价说明' })
   @IsOptional()
   @IsString()
   estimateNote?: string
@@ -45,10 +59,26 @@ export class CreateOpportunityDto {
   @IsISO8601()
   discoveredDate?: string
 
-  @ApiPropertyOptional({ description: '大类产品线' })
+  @ApiPropertyOptional({ description: '产品线，多选', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productLines?: string[]
+
+  @ApiPropertyOptional({ description: '首条报价时间；报价依据时可填，默认创建时间' })
+  @IsOptional()
+  @IsISO8601()
+  initialQuotedAt?: string
+
+  @ApiPropertyOptional({ description: '首张正式报价单号' })
   @IsOptional()
   @IsString()
-  productLine?: string
+  initialQuoteNo?: string
+
+  @ApiPropertyOptional({ description: '首张正式报价单文件引用' })
+  @IsOptional()
+  @IsString()
+  initialQuoteDocumentRef?: string
 
   @ApiPropertyOptional({ description: '预计成交日' })
   @IsOptional()

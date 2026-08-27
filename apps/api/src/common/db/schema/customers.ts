@@ -14,6 +14,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { baseColumns } from './common'
 import { users } from './org'
+import { administrativeDivisions, salesRegions } from './geography'
 import type { CustomerGrade } from '../../constants'
 
 /**
@@ -33,12 +34,15 @@ export const customers = pgTable(
     customerCode: text('customer_code'), // ERP 编码（可选，权威硬查重）
     unifiedSocialCreditCode: text('unified_social_credit_code'), // 统一社会信用代码（可选，权威硬查重）
     aliasNames: jsonb('alias_names').$type<string[]>().default([]).notNull(), // 别名/简称
-    industry: text('industry'), // 产业（字典快照）
-    subIndustry: text('sub_industry'), // 二级行业（字典快照）
+    industry: text('industry'), // 客户行业（独立字典维度）
+    subIndustry: text('sub_industry'), // 具体领域（与客户行业正交，不是父子层级）
     customerType: text('customer_type'), // 客户类型（字典快照）
     productLines: jsonb('product_lines').$type<string[]>().default([]).notNull(), // 产品线（字典快照）
     city: text('city'),
     province: text('province'),
+    cityCode: text('city_code').references(() => administrativeDivisions.code),
+    provinceCode: text('province_code').references(() => administrativeDivisions.code),
+    salesRegionId: uuid('sales_region_id').references(() => salesRegions.id),
     address: text('address'),
     website: text('website'),
     parentCustomerId: uuid('parent_customer_id'), // 集团预留（自引用，extra config 定义）
@@ -59,6 +63,8 @@ export const customers = pgTable(
   (table) => [
     // 只有外部权威标识硬拦截；名称归一化可能误伤不同法人，只做候选检索。
     index('customers_normalized_key_idx').on(table.normalizedKey),
+    index('customers_city_code_idx').on(table.cityCode),
+    index('customers_sales_region_idx').on(table.salesRegionId),
     uniqueIndex('customers_code_uq').on(table.customerCode),
     uniqueIndex('customers_credit_code_uq').on(table.unifiedSocialCreditCode),
     check('customers_grade_check', sql`${table.grade} in ('S','A','B','C')`),

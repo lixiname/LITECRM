@@ -11,6 +11,7 @@ import {
   opportunities,
   opportunityEvents,
   opportunityFollowUps,
+  opportunityProductLines,
   opportunityQuotes,
   users,
   visitRecords,
@@ -192,7 +193,7 @@ async function seedDemoBusinessData() {
         name: '循环冷却水泵及过滤系统改造',
         stage: 'following',
         source: 'self_visit',
-        productLine: 'filtration_system',
+        initialAmountBasis: 'estimate',
         estimatedAmount: '380000',
         approximate: true,
         estimateNote: '按当前工况的初步组合估算',
@@ -208,7 +209,7 @@ async function seedDemoBusinessData() {
         name: '一期泵组节能更新',
         stage: 'won',
         source: 'referral',
-        productLine: 'pump',
+        initialAmountBasis: 'estimate',
         estimatedAmount: '600000',
         approximate: false,
         createdAt: daysFromNow(-60),
@@ -225,7 +226,7 @@ async function seedDemoBusinessData() {
         name: '精密过滤成套设备项目',
         stage: 'following',
         source: 'exhibition',
-        productLine: 'filtration_system',
+        initialAmountBasis: 'estimate',
         estimatedAmount: '260000',
         approximate: true,
         estimateNote: '展会沟通后的初始预算',
@@ -244,6 +245,15 @@ async function seedDemoBusinessData() {
           set: { ...row, updatedAt: new Date() },
         })
     }
+    await tx
+      .insert(opportunityProductLines)
+      .values([
+        { opportunityId: ids.activeOpportunity, productLine: 'filtration_system' },
+        { opportunityId: ids.activeOpportunity, productLine: 'pump' },
+        { opportunityId: ids.wonOpportunity, productLine: 'pump' },
+        { opportunityId: ids.stalledOpportunity, productLine: 'filtration_system' },
+      ])
+      .onConflictDoNothing()
 
     await tx
       .insert(opportunityFollowUps)

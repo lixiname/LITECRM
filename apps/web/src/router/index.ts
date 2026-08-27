@@ -66,8 +66,11 @@ const router = createRouter({
         {
           path: 'complaints/:id',
           name: 'complaint-detail',
-          component: () => import('@/pages/ComplaintDetailPage.vue'),
-          meta: { title: '客诉详情' },
+          redirect: (to) => ({
+            name: 'complaints',
+            query: { ...to.query, selected: String(to.params.id) },
+          }),
+          meta: { title: '客诉处理' },
         },
         {
           path: 'expenses',

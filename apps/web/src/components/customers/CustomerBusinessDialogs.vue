@@ -190,13 +190,17 @@ function openOpportunity() {
   opportunityDialog.value?.open()
 }
 
-function openComplaint() {
+function openComplaint(occurredDate?: string) {
+  const occurredAt = occurredDate ? new Date(`${occurredDate}T09:00:00`) : new Date()
+  const firstActionAt = new Date(occurredAt)
+  firstActionAt.setDate(firstActionAt.getDate() + 1)
+  firstActionAt.setHours(9, 0, 0, 0)
   Object.assign(complaintForm, {
-    occurredAt: localInput(new Date()),
+    occurredAt: localInput(occurredAt),
     type: '',
     description: '',
     firstActionContent: '',
-    firstActionAt: localInput(tomorrowAtNine()),
+    firstActionAt: localInput(firstActionAt),
   })
   visible.complaint = true
 }

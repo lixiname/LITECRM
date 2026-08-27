@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing'
 import { sql } from 'drizzle-orm'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { seedAccounts, seedDimensions } from '../../../scripts/seed'
+import { seedAccounts, seedDimensions, seedGeography } from '../../../scripts/seed'
 import { AppModule } from '../../app.module'
 import { db } from '../../common/db/db'
 
@@ -14,6 +14,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
   beforeAll(async () => {
     await seedAccounts()
     await seedDimensions()
+    await seedGeography()
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
     app = moduleRef.createNestApplication()
     app.setGlobalPrefix('api')
@@ -54,8 +55,10 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
       .set('Authorization', `Bearer ${token}`)
       .send({
         version: before.body.version,
-        province: '江苏省',
-        city: '苏州市',
+        provinceCode: '320000',
+        cityCode: '320500',
+        industry: 'electroplating',
+        subIndustry: 'hardware',
         customerType: 'end_user',
         productLines: ['pump', 'filtration_system'],
         source: 'self_visit',
@@ -70,6 +73,11 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     expect(detail.body).toMatchObject({
       province: '江苏省',
       city: '苏州市',
+      provinceCode: '320000',
+      cityCode: '320500',
+      salesRegionName: '江苏',
+      industry: 'electroplating',
+      subIndustry: 'hardware',
       customerType: 'end_user',
       productLines: ['pump', 'filtration_system'],
       source: 'self_visit',

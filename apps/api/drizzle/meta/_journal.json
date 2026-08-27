@@ -64,6 +64,20 @@
       "when": 1787890000000,
       "tag": "0008_typed_sales_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788000000000,
+      "tag": "0009_glossy_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788001000000,
+      "tag": "0010_calm_santa_claus",
+      "breakpoints": true
     }
   ]
 }

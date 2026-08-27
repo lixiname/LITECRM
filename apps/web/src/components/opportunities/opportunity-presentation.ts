@@ -1,8 +1,10 @@
 import {
   OPPORTUNITY_QUOTE_KIND_OPTIONS,
+  OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS,
   OPPORTUNITY_QUOTE_STATUS_OPTIONS,
   OPPORTUNITY_STAGE_OPTIONS,
   type OpportunityQuoteKind,
+  type OpportunityInitialAmountBasis,
   type OpportunityQuoteStatus,
   type OpportunityStage,
 } from '@crm/domain'
@@ -29,4 +31,10 @@ export function opportunityQuoteStatusLabel(status: OpportunityQuoteStatus): str
 
 export function opportunityAmountText(amount: string | null | undefined): string {
   return amount == null ? '-' : `¥${Number(amount).toLocaleString('zh-CN')}`
+}
+
+export function opportunityAmountBasisLabel(
+  basis: OpportunityInitialAmountBasis | undefined,
+): string {
+  return OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS.find((item) => item.value === basis)?.label ?? '-'
 }

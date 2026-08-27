@@ -44,14 +44,13 @@
         <el-descriptions-item label="当前负责人">{{
           opp.currentOwnerName ?? '-'
         }}</el-descriptions-item>
-        <el-descriptions-item label="意向规模"
-          >{{ opportunityAmountText(opp.estimatedAmount)
-          }}{{ opp.approximate ? '（约估）' : '' }}</el-descriptions-item
+        <el-descriptions-item label="当前参考金额">
+          {{ opportunityAmountText(opp.referenceAmount) }} ·
+          {{ opportunityAmountBasisLabel(opp.amountBasis) }}
+        </el-descriptions-item>
         >
         <el-descriptions-item label="来源">{{ sourceLabel(opp.source) }}</el-descriptions-item>
-        <el-descriptions-item label="产品线">{{
-          productLineLabel(opp.productLine)
-        }}</el-descriptions-item>
+        <el-descriptions-item label="产品线">{{ productLineLabel(opp.productLines) }}</el-descriptions-item>
         <el-descriptions-item label="金额说明">{{ opp.estimateNote || '-' }}</el-descriptions-item>
         <el-descriptions-item label="需求发现日">{{
           dateText(opp.discoveredDate)
@@ -99,6 +98,10 @@
           }}</template></el-table-column
         >
         <el-table-column prop="quoteNo" label="报价单号" />
+        <el-table-column label="调整关系" min-width="150">
+          <template #default="{ row }">{{ supersedesText(row.supersedesQuoteId) }}</template>
+        </el-table-column>
+        <el-table-column prop="note" label="说明" min-width="160" />
         <el-table-column label="状态" width="100">
           <template #default="{ row }">{{ opportunityQuoteStatusLabel(row.status) }}</template>
         </el-table-column>
@@ -150,6 +153,7 @@ import {
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
 import {
   opportunityAmountText,
+  opportunityAmountBasisLabel,
   opportunityQuoteKindLabel,
   opportunityQuoteStatusLabel,
   opportunityStageLabel,
@@ -203,11 +207,11 @@ watch(
 function sourceLabel(source: string): string {
   return sourceOptions.value?.find((option) => option.name === source)?.label ?? source
 }
-function productLineLabel(productLine: string | null): string {
-  if (!productLine) return '-'
-  return (
-    productLineOptions.value?.find((option) => option.name === productLine)?.label ?? productLine
-  )
+function productLineLabel(productLines: string[]): string {
+  if (!productLines.length) return '-'
+  return productLines
+    .map((value) => productLineOptions.value?.find((option) => option.name === value)?.label ?? value)
+    .join('、')
 }
 function formatTime(value: string | undefined | null): string {
   return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
@@ -220,15 +224,23 @@ function eventText(event: { type: string; payload: unknown }): string {
     from?: string
     to?: string
     name?: string
-    estimatedAmount?: number
+    initialAmount?: number
+    initialAmountBasis?: 'estimate' | 'oral_quote' | 'formal_quote'
     reason?: string
     quoteId?: string
   }
   if (event.type === 'created')
-    return `创建商机：${payload.name ?? ''}，意向规模 ${opportunityAmountText(payload.estimatedAmount?.toString())}`
+    return `创建商机：${payload.name ?? ''}，${opportunityAmountBasisLabel(payload.initialAmountBasis)} ${opportunityAmountText(payload.initialAmount?.toString())}`
   if (event.type === 'stage_changed')
     return `阶段：${eventStageLabel(payload.from)} → ${eventStageLabel(payload.to)}${payload.reason ? `（${payload.reason}）` : ''}`
   return payload.quoteId ? '新增报价记录' : '更新商机'
+}
+function supersedesText(quoteId: string | null): string {
+  if (!quoteId) return '独立方案 / 首次报价'
+  const previous = opp.value?.quotes.find((quote) => quote.id === quoteId)
+  return previous
+    ? `替代 ${opportunityQuoteKindLabel(previous.kind)} ${opportunityAmountText(previous.amount)}`
+    : '替代历史报价'
 }
 function eventStageLabel(stage: string | undefined): string {
   return opportunityStageLabel(stage)

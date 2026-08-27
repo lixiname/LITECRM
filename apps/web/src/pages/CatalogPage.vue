@@ -94,8 +94,8 @@ import {
 
 // 9 类维度（§7.2 customer_dimension_options）
 const DIMENSIONS: { value: CustomerDimension; label: string }[] = [
-  { value: 'industry', label: '产业' },
-  { value: 'sub_industry', label: '二级行业' },
+  { value: 'industry', label: '客户行业' },
+  { value: 'sub_industry', label: '具体领域' },
   { value: 'customer_type', label: '客户类型' },
   { value: 'product_line', label: '产品线' },
   { value: 'source', label: '客户来源' },

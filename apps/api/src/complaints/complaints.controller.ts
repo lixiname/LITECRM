@@ -8,6 +8,7 @@ import type { AuthUser } from '../auth/auth.service'
 import { ComplaintsService } from './complaints.service'
 import { CreateComplaintDto } from './dto/create-complaint.dto'
 import { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
+import { ComplaintQueryDto } from './dto/complaint-query.dto'
 
 // 客诉闭环（§8.6）：登记/跟进/确认解决（customer.write）
 @ApiTags('complaints')
@@ -26,12 +27,12 @@ export class ComplaintsController {
 
   @Get()
   @ApiOkResponse({ description: '客诉列表（客户当前归属可见）' })
-  list(@Query('customerId') customerId: string | undefined, @CurrentUser() user: AuthUser) {
-    return this.complaintsService.list(user, customerId)
+  list(@Query() query: ComplaintQueryDto, @CurrentUser() user: AuthUser) {
+    return this.complaintsService.list(query, user)
   }
 
   @Get(':id')
-  @ApiOkResponse({ description: '客诉详情（含跟进事件）' })
+  @ApiOkResponse({ description: '客诉详情（含统一生命周期时间线）' })
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.complaintsService.findOne(id, user)
   }

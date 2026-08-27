@@ -5,6 +5,7 @@ import type { components } from '@crm/contracts'
 export type VisitMethod = components['schemas']['VisitMethod']
 export type OpportunityStage = 'intent' | 'following' | 'won' | 'lost' | 'demand_disappeared'
 export type OpportunityQuoteKind = components['schemas']['OpportunityQuoteKind']
+export type OpportunityInitialAmountBasis = components['schemas']['OpportunityInitialAmountBasis']
 export type OpportunityQuoteStatus = 'active' | 'superseded' | 'withdrawn'
 export type ComplaintStatus = components['schemas']['ComplaintStatus']
 export type FollowUpOutcome = components['schemas']['FollowUpOutcome']
@@ -97,8 +98,11 @@ export interface Opportunity {
   name: string
   stage: OpportunityStage
   source: string
-  productLine: string | null
+  productLines: string[]
+  initialAmountBasis: OpportunityInitialAmountBasis
   estimatedAmount: string | null
+  referenceAmount: string | null
+  amountBasis: OpportunityInitialAmountBasis
   approximate: boolean
   estimateNote: string | null
   discoveredDate: string | null
@@ -140,6 +144,8 @@ export interface Deal {
 export interface Complaint {
   id: string
   customerId: string
+  customerName?: string
+  currentOwnerId?: string | null
   ownerId: string
   occurredAt: string
   type: string
@@ -174,6 +180,15 @@ export const OPPORTUNITY_QUOTE_KIND_OPTIONS: {
 }[] = [
   { value: 'oral', label: '口头报价' },
   { value: 'formal', label: '正式报价' },
+]
+
+export const OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS: {
+  value: OpportunityInitialAmountBasis
+  label: string
+}[] = [
+  { value: 'estimate', label: '预估金额' },
+  { value: 'oral_quote', label: '口头报价' },
+  { value: 'formal_quote', label: '正式报价单' },
 ]
 
 export const OPPORTUNITY_QUOTE_STATUS_OPTIONS: {

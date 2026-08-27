@@ -36,12 +36,12 @@ export class CreateCustomerDto {
   @IsString()
   unifiedSocialCreditCode?: string
 
-  @ApiPropertyOptional({ description: '产业（字典快照）' })
+  @ApiPropertyOptional({ description: '客户行业（独立字典维度）' })
   @IsOptional()
   @IsString()
   industry?: string
 
-  @ApiPropertyOptional({ description: '二级行业（字典快照）' })
+  @ApiPropertyOptional({ description: '具体领域（与客户行业无层级约束）' })
   @IsOptional()
   @IsString()
   subIndustry?: string
@@ -66,6 +66,16 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   province?: string
+
+  @ApiPropertyOptional({ description: '省级行政区划代码', example: '320000' })
+  @IsOptional()
+  @IsString()
+  provinceCode?: string
+
+  @ApiPropertyOptional({ description: '地级市行政区划代码', example: '320500' })
+  @IsOptional()
+  @IsString()
+  cityCode?: string
 
   @ApiPropertyOptional({ description: '地址' })
   @IsOptional()

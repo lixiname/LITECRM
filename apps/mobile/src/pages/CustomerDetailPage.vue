@@ -24,6 +24,28 @@
     </van-cell-group>
 
     <van-cell-group
+      v-if="detail?.complaints?.length"
+      inset
+      title="客诉处理"
+      class="detail__complaints"
+    >
+      <van-cell
+        v-for="complaint in detail.complaints"
+        :key="complaint.id"
+        :title="complaint.description"
+        :label="complaint.currentAction?.content ?? (complaint.status === 'resolved' ? complaint.resolution ?? '已解决' : '暂无下一处理行动')"
+        is-link
+        @click="router.push(`/complaints/${complaint.id}`)"
+      >
+        <template #value>
+          <van-tag :type="complaint.status === 'resolved' ? 'success' : 'danger'">
+            {{ complaint.status === 'resolved' ? '已解决' : '处理中' }}
+          </van-tag>
+        </template>
+      </van-cell>
+    </van-cell-group>
+
+    <van-cell-group
       v-if="detail?.opportunities?.length"
       inset
       title="商机进展"
@@ -42,7 +64,10 @@
               <van-tag :type="stageTag(opportunity.stage)">
                 {{ stageLabel(opportunity.stage) }}
               </van-tag>
-              <span>意向：{{ moneyText(opportunity.estimatedAmount) }}</span>
+              <span
+                >参考金额：{{ moneyText(opportunity.referenceAmount) }} ·
+                {{ amountBasisLabel(opportunity.amountBasis) }}</span
+              >
             </div>
             <span>最新报价：{{ moneyText(opportunity.latestQuote?.amount) }}</span>
             <span>下一步：{{ opportunity.currentAction?.content ?? '—' }}</span>
@@ -99,8 +124,13 @@
     </van-cell-group>
 
     <van-cell-group v-if="detail" inset title="客户档案" class="detail__profile">
-      <van-cell title="城市" :value="detail.city ?? '-'" />
-      <van-cell title="产业" :value="industryLabel(detail.industry)" />
+      <van-cell
+        title="省 / 地级市"
+        :value="[detail.province, detail.city].filter(Boolean).join(' / ') || '-'"
+      />
+      <van-cell title="销售大区" :value="detail.salesRegionName ?? '-'" />
+      <van-cell title="客户行业" :value="dimensionLabel('industry', detail.industry)" />
+      <van-cell title="具体领域" :value="dimensionLabel('sub_industry', detail.subIndustry)" />
       <van-cell title="等级" :value="detail.grade" />
       <van-cell title="状态" :value="statusLabel(detail.status)" />
       <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
@@ -118,9 +148,11 @@ import {
   useAuthStore,
   CUSTOMER_STATUS_OPTIONS,
   OPPORTUNITY_STAGE_OPTIONS,
+  OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS,
   type Opportunity,
   type CustomerStatus,
   type CustomerOpportunitySummary,
+  type OpportunityInitialAmountBasis,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -129,7 +161,10 @@ const auth = useAuthStore()
 const customerId = route.params.id as string
 
 const { data: detail } = useQuery(`customer:detail:${customerId}`, () => getCustomer(customerId))
-const { data: industries } = useQuery('catalog:industry', () => listDimensionOptions('industry'))
+const { data: industries } = useQuery('catalog:customer-profile', async () => [
+  ...(await listDimensionOptions('industry')),
+  ...(await listDimensionOptions('sub_industry')),
+])
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
@@ -154,13 +189,20 @@ function moneyText(amount?: string | null): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
 }
 
+function amountBasisLabel(basis: OpportunityInitialAmountBasis): string {
+  return OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS.find((item) => item.value === basis)?.label ?? basis
+}
+
 function timeText(v: string): string {
   return new Date(v).toLocaleString('zh-CN', { hour12: false })
 }
 
-function industryLabel(value?: string | null): string {
+function dimensionLabel(dimension: string, value?: string | null): string {
   if (!value) return '-'
-  return industries.value?.find((item) => item.name === value)?.label ?? value
+  return (
+    industries.value?.find((item) => item.dimension === dimension && item.name === value)?.label ??
+    value
+  )
 }
 
 function isOpenOpportunity(opportunity: CustomerOpportunitySummary): boolean {

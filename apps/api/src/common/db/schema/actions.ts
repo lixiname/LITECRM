@@ -62,7 +62,7 @@ export const opportunities = pgTable(
     name: text('name').notNull(),
     stage: text('stage').notNull().default('intent'),
     source: text('source').notNull(),
-    productLine: text('product_line'),
+    initialAmountBasis: text('initial_amount_basis').notNull().default('estimate'),
     sourceRecordId: uuid('source_record_id').references(() => visitRecords.id),
     estimatedAmount: numeric('estimated_amount', { precision: 14, scale: 2 }),
     approximate: boolean('approximate').default(false).notNull(),
@@ -81,8 +81,30 @@ export const opportunities = pgTable(
       'opportunities_stage_check',
       sql`${table.stage} in ('intent','following','won','lost','demand_disappeared')`,
     ),
+    check(
+      'opportunities_initial_amount_basis_check',
+      sql`${table.initialAmountBasis} in ('estimate','oral_quote','formal_quote')`,
+    ),
     index('opportunities_customer_idx').on(table.customerId),
     index('opportunities_owner_stage_idx').on(table.ownerId, table.stage),
+  ],
+)
+
+export const opportunityProductLines = pgTable(
+  'opportunity_product_lines',
+  {
+    opportunityId: uuid('opportunity_id')
+      .notNull()
+      .references(() => opportunities.id),
+    productLine: text('product_line').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('opportunity_product_lines_opp_product_uq').on(
+      table.opportunityId,
+      table.productLine,
+    ),
+    index('opportunity_product_lines_product_idx').on(table.productLine),
   ],
 )
 

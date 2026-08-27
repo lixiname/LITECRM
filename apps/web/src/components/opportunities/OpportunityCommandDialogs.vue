@@ -78,8 +78,8 @@
       <el-form-item v-if="quoteForm.kind === 'formal'" label="报价单号"
         ><el-input v-model="quoteForm.quoteNo"
       /></el-form-item>
-      <el-form-item label="替代报价">
-        <el-select v-model="quoteForm.supersedesQuoteId" clearable placeholder="不替代">
+      <el-form-item label="改价自">
+        <el-select v-model="quoteForm.supersedesQuoteId" clearable placeholder="新方案，不替代旧报价">
           <el-option
             v-for="quote in activeQuotes"
             :key="quote.id"
@@ -87,6 +87,12 @@
             :value="quote.id"
           />
         </el-select>
+      </el-form-item>
+      <el-form-item v-if="quoteForm.kind === 'formal'" label="文件引用">
+        <el-input v-model="quoteForm.documentRef" placeholder="可选链接或文件编号" />
+      </el-form-item>
+      <el-form-item label="报价说明">
+        <el-input v-model="quoteForm.note" placeholder="如：调整配置后重新报价" />
       </el-form-item>
       <el-form-item v-if="planHandling !== 'keep'" label="下一计划" required>
         <el-input v-model="quoteForm.nextActionContent" placeholder="如：确认客户对报价的反馈" />
@@ -184,6 +190,8 @@ const quoteForm = reactive({
   amount: undefined as number | undefined,
   quoteNo: '',
   supersedesQuoteId: '',
+  documentRef: '',
+  note: '',
   nextActionContent: '确认客户对报价的反馈',
   nextActionAt: localInput(new Date()),
 })
@@ -288,6 +296,9 @@ async function handleQuote() {
         amount: quoteForm.amount!,
         quoteNo: quoteForm.quoteNo.trim() || undefined,
         supersedesQuoteId: quoteForm.supersedesQuoteId || undefined,
+        documentRef:
+          quoteForm.kind === 'formal' ? quoteForm.documentRef.trim() || undefined : undefined,
+        note: quoteForm.note.trim() || undefined,
         sourcePlanId: linkedPlan?.id,
         keepExistingPlan: planHandling.value === 'keep' || undefined,
         nextActionContent:
