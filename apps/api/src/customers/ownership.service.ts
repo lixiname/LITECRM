@@ -9,7 +9,7 @@ import { db } from '../common/db/db'
 import { complaints, customerTransfers, customers } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { TransferCustomerDto } from './dto/transfer-customer.dto'
 import type { ReleaseCustomerDto } from './dto/release-customer.dto'
@@ -24,7 +24,7 @@ export class OwnershipService {
   constructor(
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
     private readonly assigneeService: CustomerAssigneeService,
   ) {}
 

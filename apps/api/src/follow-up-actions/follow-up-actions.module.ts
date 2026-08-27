@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common'
 import { AccessModule } from '../access/access.module'
 import { AuthModule } from '../auth/auth.module'
-import { FollowUpActionsController } from './follow-up-actions.controller'
-import { FollowUpActionsService } from './follow-up-actions.service'
+import { SalesPlansController } from './follow-up-actions.controller'
+import { SalesPlansService } from './follow-up-actions.service'
 
 @Module({
   imports: [AuthModule, AccessModule],
-  controllers: [FollowUpActionsController],
-  providers: [FollowUpActionsService],
-  exports: [FollowUpActionsService],
+  controllers: [SalesPlansController],
+  providers: [SalesPlansService],
+  exports: [SalesPlansService],
 })
-export class FollowUpActionsModule {}
+export class SalesPlansModule {}

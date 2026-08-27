@@ -57,6 +57,13 @@
       "when": 1787727473657,
       "tag": "0007_concerned_the_professor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787890000000,
+      "tag": "0008_typed_sales_plans",
+      "breakpoints": true
     }
   ]
 }

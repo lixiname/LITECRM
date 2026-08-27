@@ -115,6 +115,14 @@ export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number]
 export const FOLLOW_UP_ACTION_STATUSES = ['pending', 'completed', 'cancelled'] as const
 export type FollowUpActionStatus = (typeof FOLLOW_UP_ACTION_STATUSES)[number]
 
+// 计划准备执行的业务流程；与计划由谁产生（originType）是两个独立维度。
+export const SALES_PLAN_KINDS = [
+  'customer_visit',
+  'opportunity_follow_up',
+  'complaint_follow_up',
+] as const
+export type SalesPlanKind = (typeof SALES_PLAN_KINDS)[number]
+
 export const FOLLOW_UP_ACTION_SOURCE_TYPES = [
   'manual',
   'visit',

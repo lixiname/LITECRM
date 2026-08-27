@@ -8,7 +8,12 @@
     >
       <template #actions>
         <template v-if="detail && detail.status === 'active' && auth.hasAbility('customer.write')">
-          <el-button type="primary" @click="businessDialogs?.openVisit()">记拜访</el-button>
+          <el-button
+            type="primary"
+            @click="businessDialogs?.openVisit(detail.currentVisitPlan ?? undefined)"
+          >
+            记拜访
+          </el-button>
           <el-button @click="businessDialogs?.openOpportunity()">建商机</el-button>
           <el-button @click="businessDialogs?.openComplaint()">登客诉</el-button>
         </template>
@@ -28,67 +33,51 @@
       </template>
     </AppPageHeader>
 
-    <CustomerProfileCard
-      v-if="detail"
-      :customer="detail"
-      :owner-label="isOwner ? '我' : '他人'"
-      :editable="canEdit"
-      @edit="editDialog?.open()"
-    />
-
-    <CustomerContactsCard
-      v-if="detail"
-      :customer-id="customerId"
-      :contacts="detail.contacts"
-      :editable="canEdit"
-      @changed="reload"
-    />
-
-    <el-card v-if="detail" class="detail__card">
-      <template #header>成交与商机</template>
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="历史成交次数">{{
-          detail.dealSummary?.count ?? 0
-        }}</el-descriptions-item>
-        <el-descriptions-item label="历史成交总额">{{
-          moneyText(detail.dealSummary?.totalAmount)
-        }}</el-descriptions-item>
-        <el-descriptions-item label="最近成交">
-          {{ detail.latestDeals?.[0] ? `¥${detail.latestDeals[0].amount}` : '-' }}
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
-
-    <el-card v-if="detail" class="detail__card">
-      <template #header>相关商机</template>
-      <el-table :data="detail.opportunities ?? []" border>
-        <el-table-column prop="name" label="商机" min-width="140" />
-        <el-table-column label="阶段" width="90">
-          <template #default="{ row }">
-            <el-tag :type="stageTag((row as Opportunity).stage)">
-              {{ stageLabel((row as Opportunity).stage) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="意向规模" width="110">
-          <template #default="{ row }">{{
-            amountText((row as Opportunity).estimatedAmount)
-          }}</template>
-        </el-table-column>
-        <el-table-column label="下一行动" min-width="180">
-          <template #default="{ row }">{{
-            (row as Opportunity).currentAction?.content ?? '-'
-          }}</template>
-        </el-table-column>
-        <el-table-column label="最新报价" width="130">
-          <template #default="{ row }">{{
-            amountText((row as Opportunity).latestQuote?.amount)
-          }}</template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
-    <CustomerActivityTimeline v-if="detail" :items="detail.timeline ?? []" />
+    <div v-if="detail" class="detail__workspace">
+      <main class="detail__main">
+        <CustomerOpportunityProgress
+          :opportunities="detail.opportunities ?? []"
+          :can-create="canEdit"
+          @create="businessDialogs?.openOpportunity()"
+        />
+        <CustomerActivityTimeline :items="detail.timeline ?? []" />
+      </main>
+      <aside class="detail__aside">
+        <el-card class="detail__card">
+          <template #header>经营概览</template>
+          <div class="detail__metrics">
+            <div>
+              <strong>{{ detail.dealSummary?.count ?? 0 }}</strong
+              ><span>历史成交</span>
+            </div>
+            <div>
+              <strong>{{ moneyText(detail.dealSummary?.totalAmount) }}</strong
+              ><span>成交总额</span>
+            </div>
+            <div>
+              <strong>{{
+                detail.opportunities?.filter(
+                  (item) => item.stage === 'intent' || item.stage === 'following',
+                ).length ?? 0
+              }}</strong
+              ><span>开放商机</span>
+            </div>
+          </div>
+        </el-card>
+        <CustomerContactsCard
+          :customer-id="customerId"
+          :contacts="detail.contacts"
+          :editable="canEdit"
+          @changed="reload"
+        />
+        <CustomerProfileCard
+          :customer="detail"
+          :owner-label="isOwner ? '我' : '他人'"
+          :editable="canEdit"
+          @edit="editDialog?.open()"
+        />
+      </aside>
+    </div>
 
     <!-- 移交 -->
     <el-dialog v-model="showTransfer" title="移交客户" width="420px">
@@ -124,7 +113,7 @@
         class="detail__dialog-alert"
         type="warning"
         :closable="false"
-        title="释放后未完成行动会被取消；存在未解决客诉时系统将阻止释放。"
+        title="释放后未完成计划会被取消；存在未解决客诉时系统将阻止释放。"
       />
       <el-form label-width="80px">
         <el-form-item label="去向" required>
@@ -168,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
@@ -176,6 +165,7 @@ import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDia
 import CustomerProfileCard from '../components/customers/CustomerProfileCard.vue'
 import CustomerContactsCard from '../components/customers/CustomerContactsCard.vue'
 import CustomerActivityTimeline from '../components/customers/CustomerActivityTimeline.vue'
+import CustomerOpportunityProgress from '../components/customers/CustomerOpportunityProgress.vue'
 import CustomerEditDialog from '../components/customers/CustomerEditDialog.vue'
 import {
   useAuthStore,
@@ -186,8 +176,8 @@ import {
   claimCustomer,
   createClaim,
   listCustomerAssignees,
-  OPPORTUNITY_STAGE_OPTIONS,
-  type Opportunity,
+  getSalesPlan,
+  type SalesPlan,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -210,6 +200,28 @@ const showClaimReq = ref(false)
 const acting = ref(false)
 const businessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
 const editDialog = ref<InstanceType<typeof CustomerEditDialog>>()
+const executionPlan = ref<SalesPlan>()
+const executionOpened = ref(false)
+
+onMounted(async () => {
+  const planId = route.query.executePlan as string | undefined
+  if (!planId) return
+  try {
+    const plan = await getSalesPlan(planId)
+    if (plan.planKind !== 'customer_visit' || plan.customerId !== customerId) return
+    executionPlan.value = plan
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '计划加载失败')
+  }
+})
+
+watch([detail, executionPlan], async ([customer, plan]) => {
+  if (!customer || !plan || executionOpened.value) return
+  await nextTick()
+  if (!businessDialogs.value) return
+  businessDialogs.value.openVisit(plan)
+  executionOpened.value = true
+})
 
 const transferForm = reactive({ toOwnerId: '', reason: '' })
 const releaseForm = reactive({ target: 'pool' as 'pool' | 'invalid', reason: '' })
@@ -224,22 +236,6 @@ const availableAssignees = computed(
   () => assignees.value?.filter((user) => user.id !== detail.value?.ownerId) ?? [],
 )
 
-function stageTag(stage: Opportunity['stage']): 'success' | 'warning' | 'info' | 'danger' {
-  const stageMap: Record<Opportunity['stage'], 'success' | 'warning' | 'info' | 'danger'> = {
-    won: 'success',
-    lost: 'danger',
-    demand_disappeared: 'danger',
-    following: 'warning',
-    intent: 'info',
-  }
-  return stageMap[stage]
-}
-function stageLabel(stage: Opportunity['stage']): string {
-  return OPPORTUNITY_STAGE_OPTIONS.find((s) => s.value === stage)?.label ?? stage
-}
-function amountText(amount?: string | null): string {
-  return amount ? `¥${Number(amount).toLocaleString()}` : '-'
-}
 function moneyText(amount?: string): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
 }
@@ -290,6 +286,7 @@ async function handleClaimReq() {
 }
 
 function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', recordId: string) {
+  if (kind === 'visit') void reload()
   if (kind === 'opportunity') void router.push(`/opportunities/${recordId}`)
   if (kind === 'complaint') void router.push(`/complaints/${recordId}`)
 }
@@ -301,6 +298,31 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 }
 .detail__card {
   margin-bottom: var(--crm-spacing-lg);
+}
+.detail__workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+  gap: var(--crm-spacing-lg);
+  align-items: start;
+}
+.detail__main,
+.detail__aside {
+  display: grid;
+  gap: var(--crm-spacing-lg);
+}
+.detail__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--crm-spacing-sm);
+}
+.detail__metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail__metrics span {
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
 }
 .detail__dialog-alert {
   margin-bottom: var(--crm-spacing-md);

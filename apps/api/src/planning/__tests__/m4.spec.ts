@@ -95,7 +95,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .select()
       .from(followUpActions)
       .where(
-        sql`${followUpActions.sourceType} = 'visit' AND ${followUpActions.sourceId} = ${res.body.id}`,
+        sql`${followUpActions.originType} = 'visit' AND ${followUpActions.sourceId} = ${res.body.id}`,
       )
     expect(action).toBeDefined()
     expect(action.content).toBe('确认过滤设备选型参数')
@@ -105,6 +105,45 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
     expect(week.status).toBe(200)
     expect(week.body.actions.some((item: { id: string }) => item.id === action.id)).toBe(true)
+  })
+
+  it('周视图手工安排拜访计划，执行时保留原计划并接续下一次拜访', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M4_计划闭环客户')
+    const plan = await request(app.getHttpServer())
+      .post('/api/sales-plans')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        planKind: 'customer_visit',
+        customerId: customer.id,
+        plannedAt: '2026-09-08T09:00:00+08:00',
+        content: '了解过滤设备运行情况',
+      })
+    expect(plan.status).toBe(201)
+
+    const visit = await request(app.getHttpServer())
+      .post('/api/visits')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        customerId: customer.id,
+        sourcePlanId: plan.body.id,
+        occurredAt: '2026-09-08T10:00:00+08:00',
+        method: 'offline_visit',
+        businessSituation: '现场实际改为了解明年扩产计划',
+        nextActionAt: '2026-10-08T09:00:00+08:00',
+        nextActionContent: '确认扩产预算是否获批',
+      })
+    expect(visit.status).toBe(201)
+    expect(visit.body.sourcePlanId).toBe(plan.body.id)
+
+    const rows = await db
+      .select()
+      .from(followUpActions)
+      .where(sql`${followUpActions.customerId} = ${customer.id}`)
+    expect(rows.find((item) => item.id === plan.body.id)?.status).toBe('completed')
+    const next = rows.find((item) => item.status === 'pending')
+    expect(next?.planKind).toBe('customer_visit')
+    expect(next?.content).toBe('确认扩产预算是否获批')
   })
 
   it('费用作废不改总额：draft → submitted → voided（剔除统计留痕）', async () => {
@@ -155,7 +194,13 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     const visitRes = await request(app.getHttpServer())
       .post('/api/visits')
       .set('Authorization', `Bearer ${sales1.accessToken}`)
-      .send({ customerId: customer.id, occurredAt: new Date().toISOString(), method: 'remote' })
+      .send({
+        customerId: customer.id,
+        occurredAt: new Date().toISOString(),
+        method: 'remote',
+        nextActionAt: '2026-09-10T09:00:00+08:00',
+        nextActionContent: '再次拜访客户',
+      })
     const visitId = visitRes.body.id
 
     const comment = await request(app.getHttpServer())

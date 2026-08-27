@@ -1,6 +1,6 @@
 <template>
   <div class="opps">
-    <AppPageHeader title="商机管理" description="看清有效意向、最近推进和下一步行动">
+    <AppPageHeader title="商机管理" description="看清有效意向、最近推进和下一步计划">
       <template #actions>
         <el-button
           v-if="auth.hasAbility('customer.write')"
@@ -33,9 +33,9 @@
           <el-option label="已有报价" value="yes" />
           <el-option label="尚未报价" value="no" />
         </el-select>
-        <el-select v-model="filters.action" placeholder="行动情况" @change="applyFilters">
-          <el-option label="全部行动情况" value="all" />
-          <el-option label="缺少下一行动" value="missing" />
+        <el-select v-model="filters.action" placeholder="计划情况" @change="applyFilters">
+          <el-option label="全部计划情况" value="all" />
+          <el-option label="缺少下一计划" value="missing" />
         </el-select>
         <el-select v-model="filters.risk" placeholder="推进状态" @change="applyFilters">
           <el-option label="全部推进状态" value="all" />
@@ -84,21 +84,25 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="阶段 / 风险" min-width="170">
+        <el-table-column label="阶段" width="100">
           <template #default="{ row }">
             <div class="opps__tags">
               <el-tag :type="opportunityStageTag((row as Opportunity).stage)">
                 {{ opportunityStageLabel((row as Opportunity).stage) }}
               </el-tag>
-              <el-tag
-                v-for="risk in (row as Opportunity).riskFlags ?? []"
-                :key="risk"
-                :type="risk === 'action_overdue' ? 'danger' : 'warning'"
-                effect="plain"
-              >
-                {{ OPPORTUNITY_RISK_LABELS[risk] }}
-              </el-tag>
             </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="推进状态" min-width="150">
+          <template #default="{ row }">
+            <el-tag v-if="(row as Opportunity).riskFlags?.length" type="warning" effect="plain">
+              需处理 · {{ primaryAttention(row as Opportunity) }}
+              <template v-if="((row as Opportunity).riskFlags?.length ?? 0) > 1">
+                +{{ ((row as Opportunity).riskFlags?.length ?? 1) - 1 }}
+              </template>
+            </el-tag>
+            <el-tag v-else type="success" effect="plain">推进正常</el-tag>
           </template>
         </el-table-column>
 
@@ -136,7 +140,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="当前行动" min-width="210">
+        <el-table-column label="当前计划" min-width="210">
           <template #default="{ row }">
             <template v-if="(row as Opportunity).currentAction">
               <div class="opps__ellipsis">{{ (row as Opportunity).currentAction?.content }}</div>
@@ -149,7 +153,7 @@
                 {{ timeText((row as Opportunity).currentAction?.plannedAt) }}
               </div>
             </template>
-            <span v-else class="opps__muted">无下一行动</span>
+            <span v-else class="opps__muted">无下一计划</span>
           </template>
         </el-table-column>
 
@@ -204,6 +208,7 @@ import {
   type Opportunity,
   type OpportunityListQuery,
   type OpportunityStage,
+  type OpportunityRiskFlag,
 } from '@crm/domain'
 
 const router = useRouter()
@@ -222,6 +227,17 @@ const filters = reactive({
 })
 
 const query = ref<OpportunityListQuery>({ page: 1, pageSize: PAGE_SIZE })
+
+function primaryAttention(opportunity: Opportunity): string {
+  const priority: OpportunityRiskFlag[] = [
+    'no_pending_action',
+    'action_overdue',
+    'inactive_30d',
+    'expected_close_overdue',
+  ]
+  const primary = priority.find((item) => opportunity.riskFlags?.includes(item))
+  return primary ? OPPORTUNITY_RISK_LABELS[primary] : '需关注'
+}
 const {
   data: page,
   loading,

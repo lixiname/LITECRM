@@ -3,26 +3,24 @@ import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customers, visitRecords } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
 
-// 拜访保存已发生事实；可选下一行动写入 follow_up_actions，不复制进拜访或周计划项。
+// 拜访保存已发生事实；来源计划与下一次拜访计划在同一事务闭环，不复制进拜访事实。
 @Injectable()
 export class VisitsService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
     private readonly catalogService: CatalogService,
   ) {}
 
   async create(dto: CreateVisitDto, actor: AuthUser) {
     if (dto.visitType) await this.catalogService.assertDimensionValue('visit_type', dto.visitType)
-    if (!!dto.nextActionAt !== !!dto.nextActionContent?.trim()) {
-      throw new BadRequestException('下一行动时间和内容必须同时填写')
-    }
+    if (!dto.nextActionContent.trim()) throw new BadRequestException('下次拜访内容必填')
     const customer = await this.findCustomer(dto.customerId, actor)
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
@@ -39,19 +37,23 @@ export class VisitsService {
           businessSituation: dto.businessSituation ?? null,
           equipmentSituation: dto.equipmentSituation ?? null,
           personnelChanges: dto.personnelChanges ?? null,
+          sourcePlanId: dto.sourcePlanId ?? null,
         })
         .returning()
 
-      if (dto.nextActionAt && dto.nextActionContent) {
-        await this.actionsService.createLinked(tx, {
-          ownerId: customer.ownerId ?? actor.id,
-          customerId: dto.customerId,
-          sourceType: 'visit',
-          sourceId: visit.id,
-          plannedAt: new Date(dto.nextActionAt),
-          content: dto.nextActionContent,
-        })
-      }
+      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
+        planKind: 'customer_visit',
+        customerId: dto.customerId,
+      })
+      await this.actionsService.createLinked(tx, {
+        ownerId: customer.ownerId ?? actor.id,
+        customerId: dto.customerId,
+        planKind: 'customer_visit',
+        originType: 'visit',
+        sourceId: visit.id,
+        plannedAt: new Date(dto.nextActionAt),
+        content: dto.nextActionContent,
+      })
       await touchCustomerActivity(tx, dto.customerId, occurredAt, 'visit')
       return visit
     })

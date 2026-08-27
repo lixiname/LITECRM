@@ -10,7 +10,7 @@ import type { AuthUser } from '../auth/auth.service'
 import { CatalogService } from '../catalog/catalog.service'
 import { db } from '../common/db/db'
 import { complaintFollowUps, complaints, customers, followUpActions } from '../common/db/schema'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateComplaintDto } from './dto/create-complaint.dto'
 import type { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
@@ -20,7 +20,7 @@ export class ComplaintsService {
   constructor(
     private readonly accessService: AccessService,
     private readonly catalogService: CatalogService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
   ) {}
 
   async create(dto: CreateComplaintDto, actor: AuthUser) {
@@ -44,7 +44,8 @@ export class ComplaintsService {
         ownerId: customer.ownerId ?? actor.id,
         customerId: dto.customerId,
         complaintId: complaint.id,
-        sourceType: 'complaint',
+        planKind: 'complaint_follow_up',
+        originType: 'complaint',
         sourceId: complaint.id,
         plannedAt: new Date(dto.firstActionAt),
         content: dto.firstActionContent,
@@ -75,9 +76,14 @@ export class ComplaintsService {
           content: dto.content,
           outcome: dto.outcome,
           resolution: dto.resolution?.trim() || null,
+          sourcePlanId: dto.sourcePlanId ?? null,
         })
         .returning()
-      await this.actionsService.completeLinked(tx, dto.sourceActionId, { complaintId: id })
+      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
+        planKind: 'complaint_follow_up',
+        customerId: complaint.customerId,
+        complaintId: id,
+      })
 
       const values =
         dto.outcome === 'resolved'
@@ -106,7 +112,8 @@ export class ComplaintsService {
           ownerId: complaint.currentOwnerId ?? actor.id,
           customerId: complaint.customerId,
           complaintId: id,
-          sourceType: 'complaint_follow_up',
+          planKind: 'complaint_follow_up',
+          originType: 'complaint_follow_up',
           sourceId: followUp.id,
           plannedAt: new Date(dto.nextActionAt!),
           content: dto.nextActionContent!,

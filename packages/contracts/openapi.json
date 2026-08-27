@@ -720,31 +720,31 @@
         "tags": ["customers"]
       }
     },
-    "/actions": {
+    "/sales-plans": {
       "post": {
-        "operationId": "FollowUpActionsController_create",
+        "operationId": "SalesPlansController_create",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateFollowUpActionDto"
+                "$ref": "#/components/schemas/CreateSalesPlanDto"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "手工新增未来行动"
+            "description": "手工安排客户拜访、商机跟进或客诉处理计划"
           }
         },
-        "tags": ["follow-up-actions"]
+        "tags": ["sales-plans"]
       }
     },
-    "/actions/week": {
+    "/sales-plans/week": {
       "get": {
-        "operationId": "FollowUpActionsController_week",
+        "operationId": "SalesPlansController_week",
         "parameters": [
           {
             "name": "start",
@@ -768,12 +768,33 @@
             "description": "范围内待办 + 更早逾期待办"
           }
         },
-        "tags": ["follow-up-actions"]
+        "tags": ["sales-plans"]
       }
     },
-    "/actions/{id}/complete": {
+    "/sales-plans/{id}": {
+      "get": {
+        "operationId": "SalesPlansController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取一条可见销售计划"
+          }
+        },
+        "tags": ["sales-plans"]
+      }
+    },
+    "/sales-plans/{id}/reschedule": {
       "post": {
-        "operationId": "FollowUpActionsController_complete",
+        "operationId": "SalesPlansController_reschedule",
         "parameters": [
           {
             "name": "id",
@@ -789,7 +810,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteFollowUpActionDto"
+                "$ref": "#/components/schemas/RescheduleSalesPlanDto"
               }
             }
           }
@@ -799,12 +820,12 @@
             "description": ""
           }
         },
-        "tags": ["follow-up-actions"]
+        "tags": ["sales-plans"]
       }
     },
-    "/actions/{id}/reschedule": {
+    "/sales-plans/{id}/cancel": {
       "post": {
-        "operationId": "FollowUpActionsController_reschedule",
+        "operationId": "SalesPlansController_cancel",
         "parameters": [
           {
             "name": "id",
@@ -820,7 +841,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RescheduleFollowUpActionDto"
+                "$ref": "#/components/schemas/CancelSalesPlanDto"
               }
             }
           }
@@ -830,38 +851,7 @@
             "description": ""
           }
         },
-        "tags": ["follow-up-actions"]
-      }
-    },
-    "/actions/{id}/cancel": {
-      "post": {
-        "operationId": "FollowUpActionsController_cancel",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CancelFollowUpActionDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": ["follow-up-actions"]
+        "tags": ["sales-plans"]
       }
     },
     "/claims/customer/{customerId}": {
@@ -2269,35 +2259,46 @@
         },
         "required": ["target", "reason"]
       },
-      "CreateFollowUpActionDto": {
+      "SalesPlanKind": {
+        "type": "string",
+        "enum": ["customer_visit", "opportunity_follow_up", "complaint_follow_up"],
+        "description": "业务计划类型"
+      },
+      "CreateSalesPlanDto": {
         "type": "object",
         "properties": {
+          "planKind": {
+            "description": "业务计划类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SalesPlanKind"
+              }
+            ]
+          },
           "plannedAt": {
             "type": "string",
             "description": "计划执行时间"
           },
           "content": {
             "type": "string",
-            "description": "行动内容"
+            "description": "计划内容"
           },
           "customerId": {
             "type": "string",
             "description": "关联客户"
+          },
+          "opportunityId": {
+            "type": "string",
+            "description": "商机跟进计划关联的商机"
+          },
+          "complaintId": {
+            "type": "string",
+            "description": "客诉处理计划关联的客诉"
           }
         },
-        "required": ["plannedAt", "content"]
+        "required": ["planKind", "plannedAt", "content", "customerId"]
       },
-      "CompleteFollowUpActionDto": {
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "number",
-            "minimum": 1
-          }
-        },
-        "required": ["version"]
-      },
-      "RescheduleFollowUpActionDto": {
+      "RescheduleSalesPlanDto": {
         "type": "object",
         "properties": {
           "version": {
@@ -2311,7 +2312,7 @@
         },
         "required": ["version", "plannedAt"]
       },
-      "CancelFollowUpActionDto": {
+      "CancelSalesPlanDto": {
         "type": "object",
         "properties": {
           "version": {
@@ -2437,16 +2438,20 @@
             "type": "string",
             "description": "人员变动"
           },
+          "sourcePlanId": {
+            "type": "string",
+            "description": "本次拜访履行的来源计划"
+          },
           "nextActionAt": {
             "type": "string",
-            "description": "下一行动计划时间；与行动内容同时填写"
+            "description": "下次拜访计划时间"
           },
           "nextActionContent": {
             "type": "string",
-            "description": "下一行动内容；与计划时间同时填写"
+            "description": "下次拜访计划内容"
           }
         },
-        "required": ["customerId", "occurredAt", "method"]
+        "required": ["customerId", "occurredAt", "method", "nextActionAt", "nextActionContent"]
       },
       "CreateOpportunityDto": {
         "type": "object",
@@ -2524,13 +2529,9 @@
             "type": "string",
             "description": "沟通方式"
           },
-          "sourceVisitId": {
+          "sourcePlanId": {
             "type": "string",
-            "description": "来源拜访记录"
-          },
-          "sourceActionId": {
-            "type": "string",
-            "description": "本次完成的旧行动"
+            "description": "本次跟进履行的来源计划"
           },
           "nextActionContent": {
             "type": "string",
@@ -2577,9 +2578,9 @@
             "type": "string",
             "description": "明确替代的旧报价"
           },
-          "sourceActionId": {
+          "sourcePlanId": {
             "type": "string",
-            "description": "本次报价完成的旧行动"
+            "description": "本次报价履行的来源计划"
           },
           "nextActionContent": {
             "type": "string",
@@ -2721,9 +2722,9 @@
             "type": "string",
             "description": "解决结果（outcome=resolved 必填）"
           },
-          "sourceActionId": {
+          "sourcePlanId": {
             "type": "string",
-            "description": "本次完成的旧行动"
+            "description": "本次处理履行的来源计划"
           },
           "nextActionAt": {
             "type": "string",
@@ -2769,15 +2770,27 @@
       "CreatePlanItemDto": {
         "type": "object",
         "properties": {
-          "plannedDate": {
+          "plannedAt": {
             "type": "string",
-            "description": "计划日期"
+            "description": "计划执行时间"
+          },
+          "planKind": {
+            "description": "业务计划类型",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SalesPlanKind"
+              }
+            ]
           },
           "customerId": {
             "type": "string",
-            "description": "关联客户（可空=同行关系维护）"
+            "description": "关联客户"
           },
-          "action": {
+          "opportunityId": {
+            "type": "string",
+            "description": "关联商机"
+          },
+          "content": {
             "type": "string",
             "description": "行动计划"
           },
@@ -2786,7 +2799,7 @@
             "description": "备注"
           }
         },
-        "required": ["plannedDate", "action"]
+        "required": ["plannedAt", "planKind", "customerId", "content"]
       },
       "CommentTargetType": {
         "type": "string",

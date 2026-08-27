@@ -10,7 +10,8 @@ export type ComplaintStatus = components['schemas']['ComplaintStatus']
 export type FollowUpOutcome = components['schemas']['FollowUpOutcome']
 
 export type FollowUpActionStatus = 'pending' | 'completed' | 'cancelled'
-export type FollowUpActionSourceType =
+export type SalesPlanKind = 'customer_visit' | 'opportunity_follow_up' | 'complaint_follow_up'
+export type SalesPlanOriginType =
   | 'manual'
   | 'visit'
   | 'opportunity'
@@ -19,13 +20,14 @@ export type FollowUpActionSourceType =
   | 'complaint'
   | 'complaint_follow_up'
 
-export interface FollowUpAction {
+export interface SalesPlan {
   id: string
   ownerId: string
   customerId: string | null
   opportunityId: string | null
   complaintId: string | null
-  sourceType: FollowUpActionSourceType
+  planKind: SalesPlanKind
+  originType: SalesPlanOriginType
   sourceId: string | null
   plannedAt: string
   content: string
@@ -35,7 +37,12 @@ export interface FollowUpAction {
   version: number
   createdAt: string
   updatedAt: string
+  customerName?: string
+  opportunityName?: string | null
 }
+
+export type FollowUpAction = SalesPlan
+export type FollowUpActionSourceType = SalesPlanOriginType
 
 export interface VisitRecord {
   id: string
@@ -47,6 +54,7 @@ export interface VisitRecord {
   businessSituation: string | null
   equipmentSituation: string | null
   personnelChanges: string | null
+  sourcePlanId: string | null
   createdAt: string
 }
 
@@ -54,7 +62,7 @@ export interface OpportunityFollowUp {
   id: string
   opportunityId: string
   actorId: string
-  sourceVisitId: string | null
+  sourcePlanId: string | null
   occurredAt: string
   conclusion: string
   method: string | null
@@ -71,6 +79,7 @@ export interface OpportunityQuote {
   quoteNo: string | null
   status: OpportunityQuoteStatus
   supersedesQuoteId: string | null
+  sourcePlanId: string | null
   note: string | null
   documentRef: string | null
   version: number
@@ -177,8 +186,8 @@ export const OPPORTUNITY_QUOTE_STATUS_OPTIONS: {
 ]
 
 export const OPPORTUNITY_RISK_LABELS: Record<OpportunityRiskFlag, string> = {
-  no_pending_action: '无下一行动',
-  action_overdue: '行动已逾期',
+  no_pending_action: '无下一计划',
+  action_overdue: '计划已逾期',
   inactive_30d: '超过30天未推进',
   expected_close_overdue: '预计成交日已过',
 }

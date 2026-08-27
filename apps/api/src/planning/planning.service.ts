@@ -14,7 +14,7 @@ import {
   managementComments,
   weeklyPlans,
 } from '../common/db/schema'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateBusinessWeekDto } from './dto/create-business-week.dto'
 import type { CreateCommentDto } from './dto/create-comment.dto'
 import type { CreatePlanItemDto } from './dto/create-plan-item.dto'
@@ -23,7 +23,7 @@ import type { CreatePlanItemDto } from './dto/create-plan-item.dto'
 export class PlanningService {
   constructor(
     private readonly accessService: AccessService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
   ) {}
 
   async createBusinessWeek(dto: CreateBusinessWeekDto) {
@@ -61,13 +61,15 @@ export class PlanningService {
     return plan ? { ...plan, actions } : { plan: null, actions }
   }
 
-  // 兼容原“加计划”入口：现在直接创建 manual 行动，不再生成 weekly_plan_item。
+  // 周视图新增的是有明确业务归属的计划，不创建通用待办。
   async addPlanItemByDate(dto: CreatePlanItemDto, actor: AuthUser) {
     return this.actionsService.createManual(
       {
-        plannedAt: asLocalWorkTime(dto.plannedDate),
-        content: dto.action,
+        planKind: dto.planKind,
+        plannedAt: dto.plannedAt,
+        content: dto.content,
         customerId: dto.customerId,
+        opportunityId: dto.opportunityId,
       },
       actor,
     )
@@ -82,7 +84,8 @@ export class PlanningService {
       .limit(1)
     if (!row || row.plan.ownerId !== actor.id)
       throw new ForbiddenException('仅本人周计划可添加行动')
-    if (dto.plannedDate < row.week.weekStart || dto.plannedDate > row.week.weekEnd) {
+    const plannedDate = dto.plannedAt.slice(0, 10)
+    if (plannedDate < row.week.weekStart || plannedDate > row.week.weekEnd) {
       throw new ConflictException('行动日期需在业务周内')
     }
     return this.addPlanItemByDate(dto, actor)
@@ -143,8 +146,4 @@ export class PlanningService {
       .limit(1)
     return week ?? null
   }
-}
-
-function asLocalWorkTime(date: string): string {
-  return `${date}T09:00:00+08:00`
 }

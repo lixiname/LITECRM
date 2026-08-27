@@ -3,6 +3,12 @@
     <van-nav-bar title="记一笔拜访" left-arrow @click-left="router.back()" />
 
     <van-form @submit="handleSubmit">
+      <van-notice-bar
+        v-if="sourcePlan"
+        wrapable
+        :scrollable="false"
+        :text="`原计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
+      />
       <van-cell-group inset>
         <van-field
           v-model="form.occurredAt"
@@ -22,7 +28,6 @@
         <van-field
           v-model="visitTypeLabel"
           label="类型"
-          placeholder="选填"
           readonly
           is-link
           @click="showType = true"
@@ -46,14 +51,15 @@
         <van-field v-model="form.personnelChanges" label="人员变动" placeholder="人员变动" />
         <van-field
           v-model="form.nextActionAt"
-          label="下一行动时间"
+          label="下次拜访时间"
           type="datetime-local"
-          placeholder="选填"
+          :rules="[{ required: true, message: '请选择下次拜访时间' }]"
         />
         <van-field
           v-model="form.nextActionContent"
-          label="下一行动"
+          label="下次拜访内容"
           placeholder="如：联系技术负责人确认参数"
+          :rules="[{ required: true, message: '请填写下次拜访内容' }]"
         />
       </van-cell-group>
 
@@ -81,11 +87,18 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { createVisit, listDimensionOptions, VISIT_METHOD_OPTIONS } from '@crm/domain'
+import {
+  createVisit,
+  getSalesPlan,
+  listDimensionOptions,
+  VISIT_METHOD_OPTIONS,
+  type SalesPlan,
+} from '@crm/domain'
 
 const route = useRoute()
 const router = useRouter()
 const customerId = route.params.id as string
+const sourcePlan = ref<SalesPlan>()
 
 const form = reactive({
   occurredAt: '',
@@ -97,14 +110,15 @@ const form = reactive({
   nextActionAt: '',
   nextActionContent: '',
 })
-// 周览/记一笔预填日期（发生时间保留当前时分，下一行动默认当天 09:00）
+// 周览执行计划时，发生时间默认当前；下一次拜访默认明天 09:00。
 const qDate = route.query.date as string | undefined
-if (qDate) {
-  const now = new Date()
-  const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  form.occurredAt = `${qDate}T${hm}`
-  form.nextActionAt = `${qDate}T09:00`
-}
+const now = new Date()
+form.occurredAt = localInput(now)
+const nextVisit = new Date(now)
+nextVisit.setDate(nextVisit.getDate() + 1)
+nextVisit.setHours(9, 0, 0, 0)
+form.nextActionAt = localInput(nextVisit)
+if (qDate) form.occurredAt = `${qDate}T${localInput(now).slice(11)}`
 const methodLabel = ref('')
 const visitTypeLabel = ref('')
 const showMethod = ref(false)
@@ -118,7 +132,14 @@ const visitTypeColumns = ref<{ value: string; text: string }[]>([])
 
 onMounted(async () => {
   try {
-    const options = await listDimensionOptions('visit_type')
+    const [options, plan] = await Promise.all([
+      listDimensionOptions('visit_type'),
+      route.query.planId ? getSalesPlan(String(route.query.planId)) : Promise.resolve(undefined),
+    ])
+    if (plan && (plan.planKind !== 'customer_visit' || plan.customerId !== customerId)) {
+      throw new Error('该计划不属于当前客户拜访')
+    }
+    sourcePlan.value = plan
     visitTypeColumns.value = options
       .filter((option) => option.isActive)
       .map((option) => ({ value: option.name, text: option.label }))
@@ -139,8 +160,8 @@ function onPickType({ selectedOptions }: { selectedOptions: { text: string; valu
 }
 
 async function handleSubmit() {
-  if (!!form.nextActionAt !== !!form.nextActionContent.trim()) {
-    showToast('下一行动时间和内容需同时填写')
+  if (!form.nextActionAt || !form.nextActionContent.trim()) {
+    showToast('请填写下次拜访时间和内容')
     return
   }
   saving.value = true
@@ -153,8 +174,9 @@ async function handleSubmit() {
       businessSituation: form.businessSituation || undefined,
       equipmentSituation: form.equipmentSituation || undefined,
       personnelChanges: form.personnelChanges || undefined,
-      nextActionAt: form.nextActionAt ? new Date(form.nextActionAt).toISOString() : undefined,
-      nextActionContent: form.nextActionContent || undefined,
+      sourcePlanId: sourcePlan.value?.id,
+      nextActionAt: new Date(form.nextActionAt).toISOString(),
+      nextActionContent: form.nextActionContent,
     })
     showToast('拜访已记录')
     router.back()
@@ -163,6 +185,14 @@ async function handleSubmit() {
   } finally {
     saving.value = false
   }
+}
+
+function localInput(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
+
+function formatTime(value: string): string {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 

@@ -14,7 +14,7 @@ import {
   opportunityQuotes,
   users,
 } from '../common/db/schema'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateOpportunityDto } from './dto/create-opportunity.dto'
 import { OpportunityAccessService } from './opportunity-access.service'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
@@ -28,7 +28,7 @@ export class OpportunitiesService {
     private readonly accessService: AccessService,
     private readonly opportunityAccess: OpportunityAccessService,
     private readonly catalogService: CatalogService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
   ) {}
 
   async create(dto: CreateOpportunityDto, actor: AuthUser) {
@@ -68,7 +68,8 @@ export class OpportunitiesService {
         ownerId: customer.ownerId ?? actor.id,
         customerId: dto.customerId,
         opportunityId: opportunity.id,
-        sourceType: 'opportunity',
+        planKind: 'opportunity_follow_up',
+        originType: 'opportunity',
         sourceId: opportunity.id,
         plannedAt: new Date(dto.firstActionAt),
         content: dto.firstActionContent,

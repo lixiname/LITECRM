@@ -146,6 +146,8 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
         method: 'offline_visit',
         visitType: 'new_customer',
         businessSituation: '确认扩产计划',
+        nextActionAt: '2026-09-15T09:00:00+08:00',
+        nextActionContent: '确认扩产设备选型进展',
       })
     expect(visit.status).toBe(201)
 

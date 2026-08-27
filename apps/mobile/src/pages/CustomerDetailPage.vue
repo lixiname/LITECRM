@@ -6,13 +6,9 @@
       v-if="auth.hasAbility('customer.write') && detail?.status === 'active'"
       inset
       title="快速登记"
+      class="detail__quick"
     >
-      <van-cell
-        title="记一笔拜访"
-        icon="guide-o"
-        is-link
-        @click="router.push(`/customers/${customerId}/visit/new`)"
-      />
+      <van-cell title="记一笔拜访" icon="guide-o" is-link @click="openVisit" />
       <van-cell
         title="新建商机"
         icon="chart-trending-o"
@@ -27,29 +23,18 @@
       />
     </van-cell-group>
 
-    <van-cell-group v-if="detail" inset title="基本信息">
-      <van-cell title="城市" :value="detail.city ?? '-'" />
-      <van-cell title="产业" :value="detail.industry ?? '-'" />
-      <van-cell title="等级" :value="detail.grade" />
-      <van-cell title="状态" :value="statusLabel(detail.status)" />
-      <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
-      <van-cell title="地址" :value="detail.address ?? '-'" />
-    </van-cell-group>
-
-    <van-cell-group v-if="detail" inset title="成交与商机">
-      <van-cell title="历史成交次数" :value="detail.dealSummary?.count ?? 0" />
-      <van-cell title="历史成交总额" :value="moneyText(detail.dealSummary?.totalAmount)" />
-      <van-cell
-        title="最近成交"
-        :value="detail.latestDeals?.[0] ? moneyText(detail.latestDeals[0].amount) : '-'"
-      />
-    </van-cell-group>
-
-    <van-cell-group v-if="detail?.opportunities?.length" inset title="相关商机（最近）">
+    <van-cell-group
+      v-if="detail?.opportunities?.length"
+      inset
+      title="商机进展"
+      class="detail__opportunities"
+    >
       <van-cell
         v-for="opportunity in detail?.opportunities ?? []"
         :key="opportunity.id"
         :title="opportunity.name"
+        :is-link="isOpenOpportunity(opportunity)"
+        @click="openOpportunity(opportunity)"
       >
         <template #label>
           <div class="customer-detail__line">
@@ -61,12 +46,30 @@
             </div>
             <span>最新报价：{{ moneyText(opportunity.latestQuote?.amount) }}</span>
             <span>下一步：{{ opportunity.currentAction?.content ?? '—' }}</span>
+            <div class="customer-detail__track">
+              <span class="is-done">发现需求</span>
+              <span :class="{ 'is-done': opportunity.latestFollowUp }">跟进</span>
+              <span :class="{ 'is-done': opportunity.latestQuote }">报价</span>
+              <span
+                :class="{
+                  'is-alert':
+                    !opportunity.currentAction &&
+                    (opportunity.stage === 'intent' || opportunity.stage === 'following'),
+                }"
+                >下一步</span
+              >
+            </div>
           </div>
         </template>
       </van-cell>
     </van-cell-group>
 
-    <van-cell-group v-if="detail?.timeline?.length" inset title="活动时间线（最近）">
+    <van-cell-group
+      v-if="detail?.timeline?.length"
+      inset
+      title="客户活动时间线"
+      class="detail__timeline"
+    >
       <div class="timeline">
         <div
           v-for="item in detail?.timeline ?? []"
@@ -85,6 +88,24 @@
         </div>
       </div>
     </van-cell-group>
+
+    <van-cell-group v-if="detail" inset title="经营结果" class="detail__result">
+      <van-cell title="历史成交次数" :value="detail.dealSummary?.count ?? 0" />
+      <van-cell title="历史成交总额" :value="moneyText(detail.dealSummary?.totalAmount)" />
+      <van-cell
+        title="最近成交"
+        :value="detail.latestDeals?.[0] ? moneyText(detail.latestDeals[0].amount) : '-'"
+      />
+    </van-cell-group>
+
+    <van-cell-group v-if="detail" inset title="客户档案" class="detail__profile">
+      <van-cell title="城市" :value="detail.city ?? '-'" />
+      <van-cell title="产业" :value="industryLabel(detail.industry)" />
+      <van-cell title="等级" :value="detail.grade" />
+      <van-cell title="状态" :value="statusLabel(detail.status)" />
+      <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
+      <van-cell title="地址" :value="detail.address ?? '-'" />
+    </van-cell-group>
   </div>
 </template>
 
@@ -93,11 +114,13 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   useQuery,
   getCustomer,
+  listDimensionOptions,
   useAuthStore,
   CUSTOMER_STATUS_OPTIONS,
   OPPORTUNITY_STAGE_OPTIONS,
   type Opportunity,
   type CustomerStatus,
+  type CustomerOpportunitySummary,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -106,6 +129,7 @@ const auth = useAuthStore()
 const customerId = route.params.id as string
 
 const { data: detail } = useQuery(`customer:detail:${customerId}`, () => getCustomer(customerId))
+const { data: industries } = useQuery('catalog:industry', () => listDimensionOptions('industry'))
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
@@ -133,13 +157,65 @@ function moneyText(amount?: string | null): string {
 function timeText(v: string): string {
   return new Date(v).toLocaleString('zh-CN', { hour12: false })
 }
+
+function industryLabel(value?: string | null): string {
+  if (!value) return '-'
+  return industries.value?.find((item) => item.name === value)?.label ?? value
+}
+
+function isOpenOpportunity(opportunity: CustomerOpportunitySummary): boolean {
+  return opportunity.stage === 'intent' || opportunity.stage === 'following'
+}
+
+function openOpportunity(opportunity: CustomerOpportunitySummary) {
+  if (!isOpenOpportunity(opportunity)) return
+  router.push({
+    path: `/opportunities/${opportunity.id}/follow-up`,
+    query: opportunity.currentAction?.id ? { planId: opportunity.currentAction.id } : undefined,
+  })
+}
+
+function openVisit() {
+  router.push({
+    path: `/customers/${customerId}/visit/new`,
+    query: detail.value?.currentVisitPlan?.id
+      ? { planId: detail.value.currentVisitPlan.id }
+      : undefined,
+  })
+}
 </script>
 
 <style scoped>
+.detail {
+  display: flex;
+  flex-direction: column;
+}
 .customer-detail__line {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.customer-detail__track {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 4px;
+}
+.customer-detail__track span {
+  padding: 3px;
+  border-radius: 3px;
+  background: var(--crm-color-bg-page);
+  color: var(--crm-color-text-secondary);
+  text-align: center;
+  font-size: 11px;
+}
+.customer-detail__track .is-done {
+  color: var(--crm-color-primary);
+  background: var(--crm-color-primary-light);
+}
+.customer-detail__track .is-alert {
+  color: #d46b08;
+  background: #fff7e6;
 }
 
 .customer-detail__meta {

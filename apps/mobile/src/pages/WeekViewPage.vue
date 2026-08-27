@@ -19,7 +19,8 @@
         <div class="overdue-panel__title">更早未完成 · {{ view.overdue.length }}</div>
         <div v-for="action in view.overdue" :key="action.id" class="action-row action-row--overdue">
           <div>
-            <span class="action-row__source">{{ sourceLabel(action.sourceType) }}</span>
+            <span class="action-row__source">{{ planLabel(action.planKind) }}</span>
+            <strong>{{ action.customerName }}</strong>
             <span>{{ action.content }}</span>
             <small>{{ formatTime(action.plannedAt) }}</small>
           </div>
@@ -46,7 +47,8 @@
           <div class="day-card__body">
             <div v-for="action in day.actions" :key="action.id" class="action-row">
               <div>
-                <span class="action-row__source">{{ sourceLabel(action.sourceType) }}</span>
+                <span class="action-row__source">{{ planLabel(action.planKind) }}</span>
+                <strong>{{ action.customerName }}</strong>
                 <span>{{ action.content }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
@@ -55,7 +57,7 @@
               </van-button>
             </div>
             <div v-if="day.actions.length === 0" class="day-card__empty" @click="goQuickAdd(day)">
-              + 记一笔
+              + 安排计划
             </div>
           </div>
         </div>
@@ -73,7 +75,7 @@
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
         <div class="command-sheet__title">
-          {{ commandSheet.mode === 'reschedule' ? '改期行动' : '取消行动' }}
+          {{ commandSheet.mode === 'reschedule' ? '计划改期' : '取消计划' }}
         </div>
         <van-field
           v-if="commandSheet.mode === 'reschedule'"
@@ -113,23 +115,21 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
-  cancelFollowUpAction,
-  completeFollowUpAction,
+  cancelSalesPlan,
   getWeekView,
-  rescheduleFollowUpAction,
+  rescheduleSalesPlan,
   useQuery,
-  type FollowUpAction,
-  type FollowUpActionSourceType,
+  type SalesPlan,
+  type SalesPlanKind,
 } from '@crm/domain'
 
 const router = useRouter()
-type ActionCommand = 'open' | 'complete' | 'reschedule' | 'cancel'
+type ActionCommand = 'execute' | 'reschedule' | 'cancel'
 
 const actionOptions: { name: string; value: ActionCommand; color?: string }[] = [
-  { name: '查看关联客户', value: 'open' },
-  { name: '标记完成', value: 'complete' },
+  { name: '填写执行结果', value: 'execute' },
   { name: '改期', value: 'reschedule' },
-  { name: '取消行动', value: 'cancel', color: '#ee0a24' },
+  { name: '取消计划', value: 'cancel', color: '#ee0a24' },
 ]
 const today = new Date()
 const todayStr = fmt(today)
@@ -161,11 +161,11 @@ interface DayVM {
   weekday: string
   monthDay: string
   isToday: boolean
-  actions: FollowUpAction[]
+  actions: SalesPlan[]
 }
 
 const days = computed<DayVM[]>(() => {
-  const actionMap = new Map<string, FollowUpAction[]>()
+  const actionMap = new Map<string, SalesPlan[]>()
   for (const action of view.value?.actions ?? []) {
     const date = fmt(new Date(action.plannedAt))
     actionMap.set(date, [...(actionMap.get(date) ?? []), action])
@@ -194,18 +194,8 @@ function goToday() {
   weekOffset.value = 0
 }
 
-async function markDone(action: FollowUpAction) {
-  try {
-    await completeFollowUpAction(action.id, action.version)
-    showToast('行动已完成')
-    await reload()
-  } catch (error) {
-    showToast(error instanceof Error ? error.message : '操作失败')
-  }
-}
-
 const showActionSheet = ref(false)
-const selectedAction = ref<FollowUpAction>()
+const selectedAction = ref<SalesPlan>()
 const commandSheet = reactive({
   visible: false,
   mode: 'reschedule' as 'reschedule' | 'cancel',
@@ -214,7 +204,7 @@ const commandSheet = reactive({
   saving: false,
 })
 
-function openActionSheet(action: FollowUpAction) {
+function openActionSheet(action: SalesPlan) {
   selectedAction.value = action
   showActionSheet.value = true
 }
@@ -222,14 +212,8 @@ function openActionSheet(action: FollowUpAction) {
 function selectActionCommand(option: { value: ActionCommand }) {
   const action = selectedAction.value
   if (!action) return
-  if (option.value === 'open') {
-    const target = actionRoute(action)
-    if (target) void router.push(target)
-    else showToast('这是一项独立行动，没有关联业务详情')
-    return
-  }
-  if (option.value === 'complete') {
-    void markDone(action)
+  if (option.value === 'execute') {
+    void router.push(executionRoute(action))
     return
   }
   commandSheet.mode = option.value
@@ -248,15 +232,15 @@ async function submitActionCommand() {
   commandSheet.saving = true
   try {
     if (commandSheet.mode === 'reschedule') {
-      await rescheduleFollowUpAction(
+      await rescheduleSalesPlan(
         action.id,
         action.version,
         new Date(commandSheet.plannedAt).toISOString(),
       )
-      showToast('行动已改期')
+      showToast('计划已改期')
     } else {
-      await cancelFollowUpAction(action.id, action.version, commandSheet.reason.trim())
-      showToast('行动已取消')
+      await cancelSalesPlan(action.id, action.version, commandSheet.reason.trim())
+      showToast('计划已取消')
     }
     commandSheet.visible = false
     await reload()
@@ -267,9 +251,12 @@ async function submitActionCommand() {
   }
 }
 
-function actionRoute(action: FollowUpAction): string | undefined {
-  if (action.customerId) return `/customers/${action.customerId}`
-  return undefined
+function executionRoute(plan: SalesPlan) {
+  if (plan.planKind === 'opportunity_follow_up')
+    return `/opportunities/${plan.opportunityId}/follow-up?planId=${plan.id}`
+  if (plan.planKind === 'complaint_follow_up')
+    return `/complaints/${plan.complaintId}/follow-up?planId=${plan.id}`
+  return `/customers/${plan.customerId}/visit/new?planId=${plan.id}`
 }
 
 function localInput(value: string): string {
@@ -278,16 +265,12 @@ function localInput(value: string): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
-function sourceLabel(source: FollowUpActionSourceType): string {
+function planLabel(kind: SalesPlanKind): string {
   return {
-    manual: '手工',
-    visit: '拜访',
-    opportunity: '商机',
-    opportunity_follow_up: '商机',
-    opportunity_quote: '报价',
-    complaint: '客诉',
-    complaint_follow_up: '客诉',
-  }[source]
+    customer_visit: '客户拜访',
+    opportunity_follow_up: '商机跟进',
+    complaint_follow_up: '客诉处理',
+  }[kind]
 }
 
 function goQuickAdd(day: DayVM) {

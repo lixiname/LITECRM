@@ -10,7 +10,7 @@ import { db } from '../common/db/db'
 import { customerClaimRequests, customerTransfers, customers, users } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from '../customers/grade-quota.service'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateClaimDto } from './dto/create-claim.dto'
 import type { ReviewClaimDto } from './dto/review-claim.dto'
@@ -25,7 +25,7 @@ export class ClaimsService {
   constructor(
     private readonly accessService: AccessService,
     private readonly gradeQuotaService: GradeQuotaService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
   ) {}
 
   // 发起接管申请（§8.3）

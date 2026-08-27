@@ -31,6 +31,7 @@ import type { CustomerQueryDto } from './dto/customer-query.dto'
 import type { CreateContactDto } from './dto/contact.dto'
 import type { DedupCheckDto } from './dto/dedup-check.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
+import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
 
 // 客户域（§8.2/8.3）：建档、检索、详情、维护、联系人
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
@@ -247,48 +248,66 @@ export class CustomersService {
       .from(contacts)
       .where(eq(contacts.customerId, customer.id))
       .orderBy(desc(contacts.isKeyContact), asc(contacts.createdAt))
-    const [opportunitiesRows, recentVisits, complaintsRows, dealsSummary, latestDeals] =
-      await Promise.all([
-        db
-          .select({
-            ...getTableColumns(opportunities),
-            customerName: customers.name,
-          })
-          .from(opportunities)
-          .innerJoin(customers, eq(opportunities.customerId, customers.id))
-          .where(eq(opportunities.customerId, customer.id))
-          .orderBy(desc(opportunities.updatedAt)),
-        db
-          .select()
-          .from(visitRecords)
-          .where(eq(visitRecords.customerId, customer.id))
-          .orderBy(desc(visitRecords.occurredAt))
-          .limit(12),
-        db
-          .select()
-          .from(complaints)
-          .where(eq(complaints.customerId, customer.id))
-          .orderBy(desc(complaints.occurredAt))
-          .limit(12),
-        db
-          .select({
-            totalCount: sql<number>`count(*)::int`,
-            totalAmount: sql<string>`coalesce(sum(${deals.amount}), 0)::text`,
-          })
-          .from(deals)
-          .where(eq(deals.customerId, customer.id)),
-        db
-          .select({
-            id: deals.id,
-            amount: deals.amount,
-            occurredAt: deals.occurredAt,
-            sourceOpportunityId: deals.sourceOpportunityId,
-          })
-          .from(deals)
-          .where(eq(deals.customerId, customer.id))
-          .orderBy(desc(deals.occurredAt))
-          .limit(6),
-      ])
+    const [
+      opportunitiesRows,
+      recentVisits,
+      complaintsRows,
+      dealsSummary,
+      latestDeals,
+      currentVisitPlanRows,
+    ] = await Promise.all([
+      db
+        .select({
+          ...getTableColumns(opportunities),
+          customerName: customers.name,
+        })
+        .from(opportunities)
+        .innerJoin(customers, eq(opportunities.customerId, customers.id))
+        .where(eq(opportunities.customerId, customer.id))
+        .orderBy(desc(opportunities.updatedAt)),
+      db
+        .select()
+        .from(visitRecords)
+        .where(eq(visitRecords.customerId, customer.id))
+        .orderBy(desc(visitRecords.occurredAt))
+        .limit(12),
+      db
+        .select()
+        .from(complaints)
+        .where(eq(complaints.customerId, customer.id))
+        .orderBy(desc(complaints.occurredAt))
+        .limit(12),
+      db
+        .select({
+          totalCount: sql<number>`count(*)::int`,
+          totalAmount: sql<string>`coalesce(sum(${deals.amount}), 0)::text`,
+        })
+        .from(deals)
+        .where(eq(deals.customerId, customer.id)),
+      db
+        .select({
+          id: deals.id,
+          amount: deals.amount,
+          occurredAt: deals.occurredAt,
+          sourceOpportunityId: deals.sourceOpportunityId,
+        })
+        .from(deals)
+        .where(eq(deals.customerId, customer.id))
+        .orderBy(desc(deals.occurredAt))
+        .limit(6),
+      db
+        .select()
+        .from(followUpActions)
+        .where(
+          and(
+            eq(followUpActions.customerId, customer.id),
+            eq(followUpActions.planKind, 'customer_visit'),
+            eq(followUpActions.status, 'pending'),
+          ),
+        )
+        .orderBy(asc(followUpActions.plannedAt))
+        .limit(1),
+    ])
 
     const opportunityIds = opportunitiesRows.map((item) => item.id)
     const complaintIds = complaintsRows.map((item) => item.id)
@@ -347,12 +366,20 @@ export class CustomersService {
         : Promise.resolve([] as (typeof complaintFollowUps.$inferSelect)[]),
     ])
 
-    const opportunitiesWithContext = opportunitiesRows.map((row) => ({
-      ...row,
-      currentAction: actionRows.find((action) => action.opportunityId === row.id) ?? null,
-      latestQuote: quoteRows.find((quote) => quote.opportunityId === row.id) ?? null,
-      customerName: row.customerName,
-    }))
+    const opportunitiesWithContext = opportunitiesRows.map((row) => {
+      const currentAction = actionRows.find((action) => action.opportunityId === row.id) ?? null
+      const latestQuote = quoteRows.find((quote) => quote.opportunityId === row.id) ?? null
+      const latestFollowUp =
+        opportunityFollowUpRows.find((followUp) => followUp.opportunityId === row.id) ?? null
+      return {
+        ...row,
+        currentAction,
+        latestQuote,
+        latestFollowUp,
+        customerName: row.customerName,
+        ...deriveOpportunityStagnation(row, currentAction, latestQuote, latestFollowUp),
+      }
+    })
 
     const complaintWithContext = complaintsRows.map((row) => ({
       ...row,
@@ -449,6 +476,7 @@ export class CustomersService {
         count: dealsSummary[0]?.totalCount ?? 0,
         totalAmount: dealsSummary[0]?.totalAmount ?? '0',
       },
+      currentVisitPlan: currentVisitPlanRows[0] ?? null,
       timeline,
       latestDeals,
     }

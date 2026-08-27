@@ -2,7 +2,7 @@
   <div v-loading="loading" class="opp-detail">
     <AppPageHeader
       :title="opp?.name ?? '商机详情'"
-      description="跟进、报价、行动和成交事实"
+      description="跟进、报价、销售计划和成交事实"
       back-to="/opportunities"
       back-label="商机列表"
     >
@@ -59,7 +59,7 @@
         <el-descriptions-item label="预计成交日">{{
           dateText(opp.expectedCloseDate)
         }}</el-descriptions-item>
-        <el-descriptions-item label="下一行动">{{
+        <el-descriptions-item label="下一计划">{{
           opp.actions[0]?.content ?? '-'
         }}</el-descriptions-item>
         <el-descriptions-item label="计划时间">{{
@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getOpportunity,
@@ -174,6 +174,16 @@ const { data: productLineOptions } = useQuery('catalog:product_line', () =>
 const commands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
 const isOpen = computed(() => opp.value?.stage === 'intent' || opp.value?.stage === 'following')
 const canOperate = computed(() => isOpen.value && auth.hasAbility('customer.write'))
+
+watch(
+  () => opp.value,
+  async (value) => {
+    if (!value || !route.query.executePlan) return
+    await nextTick()
+    commands.value?.openFollow()
+  },
+  { immediate: true },
+)
 
 function sourceLabel(source: string): string {
   return sourceOptions.value?.find((option) => option.name === source)?.label ?? source

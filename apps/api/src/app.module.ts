@@ -14,7 +14,7 @@ import { OpportunitiesModule } from './opportunities/opportunities.module'
 import { ComplaintsModule } from './complaints/complaints.module'
 import { PlanningModule } from './planning/planning.module'
 import { ExpensesModule } from './expenses/expenses.module'
-import { FollowUpActionsModule } from './follow-up-actions/follow-up-actions.module'
+import { SalesPlansModule } from './follow-up-actions/follow-up-actions.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -27,7 +27,7 @@ import { FollowUpActionsModule } from './follow-up-actions/follow-up-actions.mod
     CatalogModule,
     CustomersModule,
     ClaimsModule,
-    FollowUpActionsModule,
+    SalesPlansModule,
     ActivitiesModule,
     OpportunitiesModule,
     ComplaintsModule,

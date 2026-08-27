@@ -107,7 +107,8 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .from(followUpActions)
       .where(eq(followUpActions.sourceId, visitId))
       .limit(1)
-    expect(visitAction.sourceType).toBe('visit')
+    expect(visitAction.originType).toBe('visit')
+    expect(visitAction.planKind).toBe('customer_visit')
     expect(visitAction.content).toBe('联系设备负责人确认运行参数')
 
     // 3. 新建商机：意向规模 50 万，不等同于任何一次报价
@@ -139,8 +140,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .send({
         version: 1,
         conclusion: '已确认需求',
-        sourceVisitId: visitId,
-        sourceActionId: firstAction.id,
+        sourcePlanId: firstAction.id,
         nextActionContent: '准备口头报价',
         nextActionAt: '2026-08-31T09:00:00+08:00',
       })
@@ -170,7 +170,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         kind: 'oral',
         quotedAt: '2026-09-01T10:00:00+08:00',
         amount: 600000,
-        sourceActionId: quotePreparationAction.id,
+        sourcePlanId: quotePreparationAction.id,
         nextActionContent: '确认客户对口头报价的反馈',
         nextActionAt: '2026-09-03T09:00:00+08:00',
       })
@@ -189,7 +189,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         amount: 620000,
         quoteNo: 'Q-M3-001',
         supersedesQuoteId: oralQuote.body.id,
-        sourceActionId: afterOral.body.actions[0].id,
+        sourcePlanId: afterOral.body.actions[0].id,
         nextActionContent: '确认客户对正式报价的反馈',
         nextActionAt: '2026-09-05T09:00:00+08:00',
       })
@@ -374,7 +374,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: createRes.body.version,
-        sourceActionId: firstAction.id,
+        sourcePlanId: firstAction.id,
         content: '更换轴承后解决',
         outcome: 'resolved',
         resolution: '更换轴承',

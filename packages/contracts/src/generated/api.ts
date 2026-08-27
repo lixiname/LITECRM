@@ -308,7 +308,7 @@ export interface paths {
         patch: operations["CustomersController_updateContact"];
         trace?: never;
     };
-    "/actions": {
+    "/sales-plans": {
         parameters: {
             query?: never;
             header?: never;
@@ -317,21 +317,21 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["FollowUpActionsController_create"];
+        post: operations["SalesPlansController_create"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/actions/week": {
+    "/sales-plans/week": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["FollowUpActionsController_week"];
+        get: operations["SalesPlansController_week"];
         put?: never;
         post?: never;
         delete?: never;
@@ -340,23 +340,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions/{id}/complete": {
+    "/sales-plans/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["SalesPlansController_findOne"];
         put?: never;
-        post: operations["FollowUpActionsController_complete"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/actions/{id}/reschedule": {
+    "/sales-plans/{id}/reschedule": {
         parameters: {
             query?: never;
             header?: never;
@@ -365,14 +365,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["FollowUpActionsController_reschedule"];
+        post: operations["SalesPlansController_reschedule"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/actions/{id}/cancel": {
+    "/sales-plans/{id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -381,7 +381,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["FollowUpActionsController_cancel"];
+        post: operations["SalesPlansController_cancel"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1079,23 +1079,31 @@ export interface components {
             /** @description 释放原因（审计） */
             reason: string;
         };
-        CreateFollowUpActionDto: {
+        /**
+         * @description 业务计划类型
+         * @enum {string}
+         */
+        SalesPlanKind: "customer_visit" | "opportunity_follow_up" | "complaint_follow_up";
+        CreateSalesPlanDto: {
+            /** @description 业务计划类型 */
+            planKind: components["schemas"]["SalesPlanKind"];
             /** @description 计划执行时间 */
             plannedAt: string;
-            /** @description 行动内容 */
+            /** @description 计划内容 */
             content: string;
             /** @description 关联客户 */
-            customerId?: string;
+            customerId: string;
+            /** @description 商机跟进计划关联的商机 */
+            opportunityId?: string;
+            /** @description 客诉处理计划关联的客诉 */
+            complaintId?: string;
         };
-        CompleteFollowUpActionDto: {
-            version: number;
-        };
-        RescheduleFollowUpActionDto: {
+        RescheduleSalesPlanDto: {
             version: number;
             /** @description 新的计划执行时间 */
             plannedAt: string;
         };
-        CancelFollowUpActionDto: {
+        CancelSalesPlanDto: {
             version: number;
             /** @description 取消原因 */
             reason: string;
@@ -1159,10 +1167,12 @@ export interface components {
             equipmentSituation?: string;
             /** @description 人员变动 */
             personnelChanges?: string;
-            /** @description 下一行动计划时间；与行动内容同时填写 */
-            nextActionAt?: string;
-            /** @description 下一行动内容；与计划时间同时填写 */
-            nextActionContent?: string;
+            /** @description 本次拜访履行的来源计划 */
+            sourcePlanId?: string;
+            /** @description 下次拜访计划时间 */
+            nextActionAt: string;
+            /** @description 下次拜访计划内容 */
+            nextActionContent: string;
         };
         CreateOpportunityDto: {
             /** @description 客户 ID */
@@ -1196,10 +1206,8 @@ export interface components {
             occurredAt?: string;
             /** @description 沟通方式 */
             method?: string;
-            /** @description 来源拜访记录 */
-            sourceVisitId?: string;
-            /** @description 本次完成的旧行动 */
-            sourceActionId?: string;
+            /** @description 本次跟进履行的来源计划 */
+            sourcePlanId?: string;
             /** @description 下一行动内容 */
             nextActionContent: string;
             /** @description 下一行动计划时间 */
@@ -1218,8 +1226,8 @@ export interface components {
             quoteNo?: string;
             /** @description 明确替代的旧报价 */
             supersedesQuoteId?: string;
-            /** @description 本次报价完成的旧行动 */
-            sourceActionId?: string;
+            /** @description 本次报价履行的来源计划 */
+            sourcePlanId?: string;
             /** @description 报价后的下一行动内容 */
             nextActionContent: string;
             /** @description 报价后的下一行动计划时间 */
@@ -1286,8 +1294,8 @@ export interface components {
             outcome: components["schemas"]["FollowUpOutcome"];
             /** @description 解决结果（outcome=resolved 必填） */
             resolution?: string;
-            /** @description 本次完成的旧行动 */
-            sourceActionId?: string;
+            /** @description 本次处理履行的来源计划 */
+            sourcePlanId?: string;
             /** @description 下一处理行动计划时间（followed_up 必填） */
             nextActionAt?: string;
             /** @description 下一处理行动内容（followed_up 必填） */
@@ -1306,12 +1314,16 @@ export interface components {
             isActive?: boolean;
         };
         CreatePlanItemDto: {
-            /** @description 计划日期 */
-            plannedDate: string;
-            /** @description 关联客户（可空=同行关系维护） */
-            customerId?: string;
+            /** @description 计划执行时间 */
+            plannedAt: string;
+            /** @description 业务计划类型 */
+            planKind: components["schemas"]["SalesPlanKind"];
+            /** @description 关联客户 */
+            customerId: string;
+            /** @description 关联商机 */
+            opportunityId?: string;
             /** @description 行动计划 */
-            action: string;
+            content: string;
             /** @description 备注 */
             notes?: string;
         };
@@ -1959,7 +1971,7 @@ export interface operations {
             };
         };
     };
-    FollowUpActionsController_create: {
+    SalesPlansController_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -1968,11 +1980,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateFollowUpActionDto"];
+                "application/json": components["schemas"]["CreateSalesPlanDto"];
             };
         };
         responses: {
-            /** @description 手工新增未来行动 */
+            /** @description 手工安排客户拜访、商机跟进或客诉处理计划 */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -1981,7 +1993,7 @@ export interface operations {
             };
         };
     };
-    FollowUpActionsController_week: {
+    SalesPlansController_week: {
         parameters: {
             query: {
                 start: string;
@@ -2002,7 +2014,27 @@ export interface operations {
             };
         };
     };
-    FollowUpActionsController_complete: {
+    SalesPlansController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 读取一条可见销售计划 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SalesPlansController_reschedule: {
         parameters: {
             query?: never;
             header?: never;
@@ -2013,7 +2045,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompleteFollowUpActionDto"];
+                "application/json": components["schemas"]["RescheduleSalesPlanDto"];
             };
         };
         responses: {
@@ -2025,7 +2057,7 @@ export interface operations {
             };
         };
     };
-    FollowUpActionsController_reschedule: {
+    SalesPlansController_cancel: {
         parameters: {
             query?: never;
             header?: never;
@@ -2036,30 +2068,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RescheduleFollowUpActionDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FollowUpActionsController_cancel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CancelFollowUpActionDto"];
+                "application/json": components["schemas"]["CancelSalesPlanDto"];
             };
         };
         responses: {

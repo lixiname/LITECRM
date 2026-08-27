@@ -40,7 +40,9 @@ describe('CustomerContactsCard', () => {
       global: { plugins: [ElementPlus] },
     })
 
-    expect(wrapper.findComponent({ name: 'ElTable' }).props('data')).toHaveLength(1)
+    expect(wrapper.findAll('.contacts-card__item')).toHaveLength(1)
+    expect(wrapper.text()).toContain('张工')
+    expect(wrapper.text()).toContain('138****1001')
     expect(maskPhone('13800001001')).toBe('138****1001')
 
     await wrapper.get('.contacts-card__header .el-button').trigger('click')

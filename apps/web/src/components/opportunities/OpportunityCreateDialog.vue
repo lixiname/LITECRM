@@ -94,14 +94,14 @@
         />
       </el-form-item>
 
-      <el-form-item label="第一步行动" required class="opportunity-form__wide">
+      <el-form-item label="第一步计划" required class="opportunity-form__wide">
         <el-input
           v-model="form.firstActionContent"
           placeholder="明确下一步要做什么，例如：确认工况和选型参数"
           maxlength="200"
         />
       </el-form-item>
-      <el-form-item label="行动时间" required class="opportunity-form__wide">
+      <el-form-item label="计划时间" required class="opportunity-form__wide">
         <el-date-picker
           v-model="form.firstActionAt"
           type="datetime"
@@ -215,7 +215,7 @@ async function submit() {
     !form.firstActionContent.trim() ||
     !form.firstActionAt
   ) {
-    ElMessage.warning('请填写客户、商机名称、渠道、意向规模和第一步行动')
+    ElMessage.warning('请填写客户、商机名称、渠道、意向规模和第一步计划')
     return
   }
   if (

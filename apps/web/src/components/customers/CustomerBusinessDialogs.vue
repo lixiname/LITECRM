@@ -1,5 +1,12 @@
 <template>
   <el-dialog v-model="visible.visit" title="记录拜访" width="520px">
+    <el-alert
+      v-if="sourcePlan"
+      class="business-dialog__plan"
+      type="info"
+      :closable="false"
+      :title="`原计划：${formatPlanTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
+    />
     <el-form label-width="100px">
       <el-form-item label="沟通时间" required>
         <el-input v-model="visitForm.occurredAt" type="datetime-local" />
@@ -32,10 +39,10 @@
           placeholder="客户经营、需求或本次沟通要点"
         />
       </el-form-item>
-      <el-form-item label="下一行动">
+      <el-form-item label="下次拜访" required>
         <el-input v-model="visitForm.nextActionContent" placeholder="下一步具体做什么" />
       </el-form-item>
-      <el-form-item label="行动时间">
+      <el-form-item label="下次时间" required>
         <el-input v-model="visitForm.nextActionAt" type="datetime-local" />
       </el-form-item>
     </el-form>
@@ -70,10 +77,10 @@
       <el-form-item label="问题描述" required>
         <el-input v-model="complaintForm.description" type="textarea" :rows="3" />
       </el-form-item>
-      <el-form-item label="第一步行动" required>
+      <el-form-item label="第一步计划" required>
         <el-input v-model="complaintForm.firstActionContent" placeholder="如：联系售后确认处理人" />
       </el-form-item>
-      <el-form-item label="行动时间" required>
+      <el-form-item label="计划时间" required>
         <el-input v-model="complaintForm.firstActionAt" type="datetime-local" />
       </el-form-item>
     </el-form>
@@ -95,6 +102,7 @@ import {
   listDimensionOptions,
   type DimensionOption,
   type VisitMethod,
+  type SalesPlan,
 } from '@crm/domain'
 
 const props = defineProps<{ customerId: string; customerName?: string }>()
@@ -105,6 +113,7 @@ const emit = defineEmits<{
 const visible = reactive({ visit: false, complaint: false })
 const saving = ref(false)
 const opportunityDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
+const sourcePlan = ref<SalesPlan>()
 const visitTypeOptions = ref<SelectOption[]>([])
 const complaintTypeOptions = ref<SelectOption[]>([])
 
@@ -144,14 +153,15 @@ const complaintForm = reactive({
   firstActionAt: '',
 })
 
-function openVisit() {
+function openVisit(plan?: SalesPlan) {
+  sourcePlan.value = plan
   Object.assign(visitForm, {
     occurredAt: localInput(new Date()),
     method: 'offline_visit',
     visitType: undefined,
     businessSituation: '',
     nextActionContent: '',
-    nextActionAt: '',
+    nextActionAt: localInput(tomorrowAtNine()),
   })
   visible.visit = true
 }
@@ -173,8 +183,8 @@ function openComplaint() {
 
 async function submitVisit() {
   if (!visitForm.occurredAt || !visitForm.method) return ElMessage.warning('请填写沟通时间和方式')
-  if (!!visitForm.nextActionAt !== !!visitForm.nextActionContent.trim())
-    return ElMessage.warning('下一行动内容和时间需要同时填写')
+  if (!visitForm.nextActionAt || !visitForm.nextActionContent.trim())
+    return ElMessage.warning('请填写下次拜访时间和内容')
   await run(
     () =>
       createVisit({
@@ -183,10 +193,9 @@ async function submitVisit() {
         method: visitForm.method,
         visitType: visitForm.visitType,
         businessSituation: visitForm.businessSituation.trim() || undefined,
-        nextActionContent: visitForm.nextActionContent.trim() || undefined,
-        nextActionAt: visitForm.nextActionAt
-          ? new Date(visitForm.nextActionAt).toISOString()
-          : undefined,
+        sourcePlanId: sourcePlan.value?.id,
+        nextActionContent: visitForm.nextActionContent.trim(),
+        nextActionAt: new Date(visitForm.nextActionAt).toISOString(),
       }),
     'visit',
     '拜访已记录',
@@ -205,7 +214,7 @@ async function submitComplaint() {
     !complaintForm.firstActionContent.trim() ||
     !complaintForm.firstActionAt
   )
-    return ElMessage.warning('请填写客诉信息和第一步行动')
+    return ElMessage.warning('请填写客诉信息和第一步计划')
   await run(
     () =>
       createComplaint({
@@ -251,5 +260,15 @@ function localInput(date: Date): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16)
 }
 
+function formatPlanTime(value: string): string {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+}
+
 defineExpose({ openVisit, openOpportunity, openComplaint })
 </script>
+
+<style scoped>
+.business-dialog__plan {
+  margin-bottom: var(--crm-spacing-md);
+}
+</style>

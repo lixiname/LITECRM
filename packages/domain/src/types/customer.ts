@@ -1,5 +1,12 @@
 import type { components } from '@crm/contracts'
-import type { Complaint, FollowUpAction, Opportunity, OpportunityQuote } from './actions'
+import type {
+  Complaint,
+  FollowUpAction,
+  Opportunity,
+  OpportunityFollowUp,
+  OpportunityQuote,
+  SalesPlan,
+} from './actions'
 
 // 客户域类型（§7.2 非 API 类型留 domain 层；枚举/请求体从 contracts import）
 export type CustomerGrade = components['schemas']['CustomerGrade']
@@ -46,6 +53,7 @@ export interface Contact {
 }
 
 export interface CustomerDetail extends CustomerItem {
+  currentVisitPlan?: SalesPlan | null
   opportunities?: CustomerOpportunitySummary[]
   complaints?: CustomerComplaintSummary[]
   latestDeals?: {
@@ -68,6 +76,7 @@ export interface CustomerOpportunitySummary extends Omit<
 > {
   currentAction: FollowUpAction | null
   latestQuote: OpportunityQuote | null
+  latestFollowUp: OpportunityFollowUp | null
   customerName: string
 }
 

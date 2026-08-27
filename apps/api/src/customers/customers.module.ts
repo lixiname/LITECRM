@@ -6,10 +6,10 @@ import { CustomersService } from './customers.service'
 import { OwnershipService } from './ownership.service'
 import { GradeQuotaService } from './grade-quota.service'
 import { CustomerAssigneeService } from './customer-assignee.service'
-import { FollowUpActionsModule } from '../follow-up-actions/follow-up-actions.module'
+import { SalesPlansModule } from '../follow-up-actions/follow-up-actions.module'
 
 @Module({
-  imports: [AuthModule, AccessModule, FollowUpActionsModule],
+  imports: [AuthModule, AccessModule, SalesPlansModule],
   controllers: [CustomersController],
   providers: [CustomersService, OwnershipService, GradeQuotaService, CustomerAssigneeService],
   exports: [CustomersService, OwnershipService, GradeQuotaService, CustomerAssigneeService],

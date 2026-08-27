@@ -1,6 +1,6 @@
 <template>
   <div class="complaints">
-    <AppPageHeader title="客诉管理" description="按处理状态和下一行动持续推进，直到明确解决" />
+    <AppPageHeader title="客诉管理" description="按处理状态和下一计划持续推进，直到明确解决" />
 
     <el-card class="complaints__card">
       <el-table
@@ -21,7 +21,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="下一行动" min-width="180">
+        <el-table-column label="下一计划" min-width="180">
           <template #default="{ row }">{{
             (row as Complaint).currentAction?.content ?? '-'
           }}</template>

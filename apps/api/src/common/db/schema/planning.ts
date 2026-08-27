@@ -58,7 +58,8 @@ export const followUpActions = pgTable(
     customerId: uuid('customer_id').references(() => customers.id),
     opportunityId: uuid('opportunity_id').references(() => opportunities.id),
     complaintId: uuid('complaint_id').references(() => complaints.id),
-    sourceType: text('source_type').notNull(),
+    planKind: text('plan_kind').notNull(),
+    originType: text('source_type').notNull(),
     sourceId: uuid('source_id'),
     plannedAt: timestamp('planned_at', { withTimezone: true }).notNull(),
     content: text('content').notNull(),
@@ -69,7 +70,11 @@ export const followUpActions = pgTable(
   (table) => [
     check(
       'follow_up_actions_source_type_check',
-      sql`${table.sourceType} in ('manual','visit','opportunity','opportunity_follow_up','opportunity_quote','complaint','complaint_follow_up')`,
+      sql`${table.originType} in ('manual','visit','opportunity','opportunity_follow_up','opportunity_quote','complaint','complaint_follow_up')`,
+    ),
+    check(
+      'follow_up_actions_plan_kind_check',
+      sql`${table.planKind} in ('customer_visit','opportunity_follow_up','complaint_follow_up')`,
     ),
     check(
       'follow_up_actions_status_check',
@@ -83,15 +88,28 @@ export const followUpActions = pgTable(
     ),
     check(
       'follow_up_actions_target_check',
-      sql`${table.opportunityId} is null or ${table.customerId} is not null`,
+      sql`${table.customerId} is not null and (
+        (${table.planKind} = 'customer_visit' and ${table.opportunityId} is null and ${table.complaintId} is null)
+        or (${table.planKind} = 'opportunity_follow_up' and ${table.opportunityId} is not null and ${table.complaintId} is null)
+        or (${table.planKind} = 'complaint_follow_up' and ${table.complaintId} is not null and ${table.opportunityId} is null)
+      )`,
     ),
     check(
       'follow_up_actions_complaint_target_check',
       sql`${table.complaintId} is null or ${table.customerId} is not null`,
     ),
     uniqueIndex('follow_up_actions_source_uq')
-      .on(table.sourceType, table.sourceId)
+      .on(table.originType, table.sourceId)
       .where(sql`${table.sourceId} is not null`),
+    uniqueIndex('follow_up_actions_pending_opportunity_uq')
+      .on(table.opportunityId)
+      .where(sql`${table.status} = 'pending' and ${table.opportunityId} is not null`),
+    uniqueIndex('follow_up_actions_pending_complaint_uq')
+      .on(table.complaintId)
+      .where(sql`${table.status} = 'pending' and ${table.complaintId} is not null`),
+    uniqueIndex('follow_up_actions_pending_visit_uq')
+      .on(table.customerId)
+      .where(sql`${table.status} = 'pending' and ${table.planKind} = 'customer_visit'`),
     index('follow_up_actions_owner_status_planned_idx').on(
       table.ownerId,
       table.status,

@@ -6,26 +6,25 @@
         <el-button v-if="editable" size="small" @click="openCreate">+ 添加</el-button>
       </div>
     </template>
-    <el-table :data="contacts" border empty-text="还没有联系人">
-      <el-table-column prop="name" label="姓名" min-width="100">
-        <template #default="{ row }">{{ (row as Contact).name || '未命名联系人' }}</template>
-      </el-table-column>
-      <el-table-column prop="title" label="职位" min-width="100" />
-      <el-table-column label="电话" min-width="140">
-        <template #default="{ row }">{{ maskPhone((row as Contact).phone) }}</template>
-      </el-table-column>
-      <el-table-column label="首要" width="70">
-        <template #default="{ row }">
-          <el-tag v-if="(row as Contact).isKeyContact" size="small" type="success">首要</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column v-if="editable" label="操作" width="130" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row as Contact)">编辑</el-button>
-          <el-button link type="danger" @click="handleRemove(row as Contact)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-empty v-if="!contacts.length" description="还没有联系人" :image-size="56" />
+    <div v-else class="contacts-card__list">
+      <div v-for="contact in contacts" :key="contact.id" class="contacts-card__item">
+        <div class="contacts-card__body">
+          <div class="contacts-card__name">
+            <strong>{{ contact.name || '未命名联系人' }}</strong>
+            <el-tag v-if="contact.isKeyContact" size="small" type="success">首要</el-tag>
+          </div>
+          <div class="contacts-card__meta">
+            <span>{{ contact.title || '未填写职位' }}</span>
+            <span>{{ maskPhone(contact.phone) }}</span>
+          </div>
+        </div>
+        <div v-if="editable" class="contacts-card__actions">
+          <el-button link type="primary" @click="openEdit(contact)">编辑</el-button>
+          <el-button link type="danger" @click="handleRemove(contact)">删除</el-button>
+        </div>
+      </div>
+    </div>
 
     <el-dialog v-model="visible" :title="editingId ? '编辑联系人' : '添加联系人'" width="440px">
       <el-form label-width="80px">
@@ -129,5 +128,49 @@ async function handleRemove(contact: Contact) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.contacts-card__list {
+  display: grid;
+  gap: var(--crm-spacing-sm);
+}
+.contacts-card__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--crm-spacing-sm);
+  padding: var(--crm-spacing-sm) 0;
+  border-bottom: 1px solid var(--crm-color-border);
+}
+.contacts-card__item:last-child {
+  border-bottom: 0;
+}
+.contacts-card__body,
+.contacts-card__name,
+.contacts-card__meta,
+.contacts-card__actions {
+  display: flex;
+}
+.contacts-card__body {
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.contacts-card__name,
+.contacts-card__meta {
+  align-items: center;
+  gap: var(--crm-spacing-xs);
+}
+.contacts-card__meta {
+  flex-wrap: wrap;
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+}
+.contacts-card__meta span + span::before {
+  content: '·';
+  margin-right: var(--crm-spacing-xs);
+}
+.contacts-card__actions {
+  flex: 0 0 auto;
 }
 </style>

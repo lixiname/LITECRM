@@ -1,29 +1,25 @@
 import type { components } from '@crm/contracts'
-import type { FollowUpAction } from '../types/actions'
-import { apiPost } from './http'
+import type { SalesPlan } from '../types/actions'
+import { apiGet, apiPost } from './http'
 
-export type CreateFollowUpActionInput = components['schemas']['CreateFollowUpActionDto']
+export type CreateSalesPlanInput = components['schemas']['CreateSalesPlanDto']
 
-export function createFollowUpAction(dto: CreateFollowUpActionInput): Promise<FollowUpAction> {
-  return apiPost('/actions', dto)
+export function createSalesPlan(dto: CreateSalesPlanInput): Promise<SalesPlan> {
+  return apiPost('/sales-plans', dto)
 }
 
-export function completeFollowUpAction(id: string, version: number): Promise<FollowUpAction> {
-  return apiPost(`/actions/${id}/complete`, { version })
+export function getSalesPlan(id: string): Promise<SalesPlan> {
+  return apiGet(`/sales-plans/${id}`)
 }
 
-export function rescheduleFollowUpAction(
+export function rescheduleSalesPlan(
   id: string,
   version: number,
   plannedAt: string,
-): Promise<FollowUpAction> {
-  return apiPost(`/actions/${id}/reschedule`, { version, plannedAt })
+): Promise<SalesPlan> {
+  return apiPost(`/sales-plans/${id}/reschedule`, { version, plannedAt })
 }
 
-export function cancelFollowUpAction(
-  id: string,
-  version: number,
-  reason: string,
-): Promise<FollowUpAction> {
-  return apiPost(`/actions/${id}/cancel`, { version, reason })
+export function cancelSalesPlan(id: string, version: number, reason: string): Promise<SalesPlan> {
+  return apiPost(`/sales-plans/${id}/cancel`, { version, reason })
 }

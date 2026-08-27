@@ -9,9 +9,8 @@ import {
   opportunityEvents,
   opportunityFollowUps,
   opportunityQuotes,
-  visitRecords,
 } from '../common/db/schema'
-import { FollowUpActionsService } from '../follow-up-actions/follow-up-actions.service'
+import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { CloseOpportunityDto } from './dto/close-opportunity.dto'
 import type { CreateOpportunityFollowUpDto } from './dto/create-opportunity-follow-up.dto'
 import type { CreateOpportunityQuoteDto } from './dto/create-opportunity-quote.dto'
@@ -25,7 +24,7 @@ export class OpportunityCommandsService {
   constructor(
     private readonly opportunityAccess: OpportunityAccessService,
     private readonly catalogService: CatalogService,
-    private readonly actionsService: FollowUpActionsService,
+    private readonly actionsService: SalesPlansService,
   ) {}
 
   async addFollowUp(id: string, dto: CreateOpportunityFollowUpDto, actor: AuthUser) {
@@ -33,39 +32,30 @@ export class OpportunityCommandsService {
     this.opportunityAccess.assertOpen(opportunity.stage)
 
     return db.transaction(async (tx) => {
-      if (dto.sourceVisitId) {
-        const [visit] = await tx
-          .select({ id: visitRecords.id })
-          .from(visitRecords)
-          .where(
-            and(
-              eq(visitRecords.id, dto.sourceVisitId),
-              eq(visitRecords.customerId, opportunity.customerId),
-            ),
-          )
-          .limit(1)
-        if (!visit) throw new ConflictException('来源拜访不属于该商机客户')
-      }
-
       const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date()
       const [followUp] = await tx
         .insert(opportunityFollowUps)
         .values({
           opportunityId: id,
           actorId: actor.id,
-          sourceVisitId: dto.sourceVisitId ?? null,
+          sourcePlanId: dto.sourcePlanId ?? null,
           occurredAt,
           conclusion: dto.conclusion,
           method: dto.method ?? null,
         })
         .returning()
 
-      await this.actionsService.completeLinked(tx, dto.sourceActionId, { opportunityId: id })
+      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
+        planKind: 'opportunity_follow_up',
+        customerId: opportunity.customerId,
+        opportunityId: id,
+      })
       await this.actionsService.createLinked(tx, {
         ownerId: opportunity.currentOwnerId ?? actor.id,
         customerId: opportunity.customerId,
         opportunityId: id,
-        sourceType: 'opportunity_follow_up',
+        planKind: 'opportunity_follow_up',
+        originType: 'opportunity_follow_up',
         sourceId: followUp.id,
         plannedAt: new Date(dto.nextActionAt),
         content: dto.nextActionContent,
@@ -132,17 +122,23 @@ export class OpportunityCommandsService {
           amount: String(dto.amount),
           quoteNo: dto.quoteNo?.trim() || null,
           supersedesQuoteId: dto.supersedesQuoteId ?? null,
+          sourcePlanId: dto.sourcePlanId ?? null,
           note: dto.note?.trim() || null,
           documentRef: dto.documentRef?.trim() || null,
         })
         .returning()
 
-      await this.actionsService.completeLinked(tx, dto.sourceActionId, { opportunityId: id })
+      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
+        planKind: 'opportunity_follow_up',
+        customerId: opportunity.customerId,
+        opportunityId: id,
+      })
       await this.actionsService.createLinked(tx, {
         ownerId: opportunity.currentOwnerId ?? actor.id,
         customerId: opportunity.customerId,
         opportunityId: id,
-        sourceType: 'opportunity_quote',
+        planKind: 'opportunity_follow_up',
+        originType: 'opportunity_quote',
         sourceId: quote.id,
         plannedAt: new Date(dto.nextActionAt),
         content: dto.nextActionContent,

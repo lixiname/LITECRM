@@ -22,15 +22,10 @@ export class CreateOpportunityFollowUpDto {
   @IsString()
   method?: string
 
-  @ApiPropertyOptional({ description: '来源拜访记录' })
+  @ApiPropertyOptional({ description: '本次跟进履行的来源计划' })
   @IsOptional()
   @IsUUID()
-  sourceVisitId?: string
-
-  @ApiPropertyOptional({ description: '本次完成的旧行动' })
-  @IsOptional()
-  @IsUUID()
-  sourceActionId?: string
+  sourcePlanId?: string
 
   @ApiProperty({ description: '下一行动内容' })
   @IsString()

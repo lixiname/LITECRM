@@ -60,6 +60,18 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAbility: 'customer.write' },
     },
     {
+      path: '/opportunities/:id/follow-up',
+      name: 'opportunity-follow-up',
+      component: () => import('@/pages/OpportunityFollowUpPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
+      path: '/complaints/:id/follow-up',
+      name: 'complaint-follow-up',
+      component: () => import('@/pages/ComplaintFollowUpPage.vue'),
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/pages/LoginPage.vue'),

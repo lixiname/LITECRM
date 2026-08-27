@@ -1,11 +1,18 @@
 <template>
-  <el-dialog v-model="showFollow" title="记录跟进并安排下一行动" width="480px">
+  <el-dialog v-model="showFollow" title="记录跟进并安排下一计划" width="480px">
+    <el-alert
+      v-if="opportunity.actions[0]"
+      class="opportunity-dialog__plan"
+      type="info"
+      :closable="false"
+      :title="`原计划：${formatTime(opportunity.actions[0].plannedAt)} · ${opportunity.actions[0].content}`"
+    />
     <el-form label-width="100px">
       <el-form-item label="本次结论" required
         ><el-input v-model="followForm.conclusion"
       /></el-form-item>
       <el-form-item label="沟通方式"><el-input v-model="followForm.method" /></el-form-item>
-      <el-form-item label="下一行动" required
+      <el-form-item label="下一计划" required
         ><el-input v-model="followForm.nextActionContent"
       /></el-form-item>
       <el-form-item label="计划时间" required
@@ -45,7 +52,7 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="下一行动" required>
+      <el-form-item label="下一计划" required>
         <el-input v-model="quoteForm.nextActionContent" placeholder="如：确认客户对报价的反馈" />
       </el-form-item>
       <el-form-item label="计划时间" required>
@@ -89,7 +96,7 @@
   </el-dialog>
 
   <el-dialog v-model="showClose" title="未成交结案" width="440px">
-    <el-alert type="warning" :closable="false" title="结案后商机进入终态，剩余未完成行动将取消。" />
+    <el-alert type="warning" :closable="false" title="结案后商机进入终态，剩余未完成计划将取消。" />
     <el-form label-width="90px">
       <el-form-item label="结果" required>
         <el-radio-group v-model="closeForm.result">
@@ -188,7 +195,7 @@ async function handleFollow() {
     !followForm.nextActionContent.trim() ||
     !followForm.nextActionAt
   ) {
-    return ElMessage.warning('请填写本次结论和下一行动')
+    return ElMessage.warning('请填写本次结论和下一计划')
   }
   const succeeded = await runAction(
     () =>
@@ -196,7 +203,7 @@ async function handleFollow() {
         version: props.opportunity.version,
         conclusion: followForm.conclusion.trim(),
         method: followForm.method.trim() || undefined,
-        sourceActionId: props.opportunity.actions[0]?.id,
+        sourcePlanId: props.opportunity.actions[0]?.id,
         nextActionContent: followForm.nextActionContent.trim(),
         nextActionAt: new Date(followForm.nextActionAt).toISOString(),
       }),
@@ -212,7 +219,7 @@ async function handleQuote() {
     !quoteForm.nextActionContent.trim() ||
     !quoteForm.nextActionAt
   )
-    return ElMessage.warning('请填写报价和报价后的下一行动')
+    return ElMessage.warning('请填写报价和报价后的下一计划')
   const succeeded = await runAction(
     () =>
       addOpportunityQuote(props.opportunity.id, {
@@ -222,7 +229,7 @@ async function handleQuote() {
         amount: quoteForm.amount!,
         quoteNo: quoteForm.quoteNo.trim() || undefined,
         supersedesQuoteId: quoteForm.supersedesQuoteId || undefined,
-        sourceActionId: props.opportunity.actions[0]?.id,
+        sourcePlanId: props.opportunity.actions[0]?.id,
         nextActionContent: quoteForm.nextActionContent.trim(),
         nextActionAt: new Date(quoteForm.nextActionAt).toISOString(),
       }),
@@ -274,3 +281,9 @@ function localInput(date: Date): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 </script>
+
+<style scoped>
+.opportunity-dialog__plan {
+  margin-bottom: var(--crm-spacing-md);
+}
+</style>

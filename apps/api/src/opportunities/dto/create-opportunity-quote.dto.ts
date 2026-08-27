@@ -41,10 +41,10 @@ export class CreateOpportunityQuoteDto {
   @IsUUID()
   supersedesQuoteId?: string
 
-  @ApiPropertyOptional({ description: '本次报价完成的旧行动' })
+  @ApiPropertyOptional({ description: '本次报价履行的来源计划' })
   @IsOptional()
   @IsUUID()
-  sourceActionId?: string
+  sourcePlanId?: string
 
   @ApiProperty({ description: '报价后的下一行动内容' })
   @IsString()

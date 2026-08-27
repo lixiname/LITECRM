@@ -2,7 +2,7 @@
   <div v-loading="loading" class="c-detail">
     <AppPageHeader
       title="客诉详情"
-      description="处理过程只追加，未解决事项必须有下一行动"
+      description="处理过程只追加，未解决事项必须有下一计划"
       back-to="/complaints"
       back-label="客诉列表"
     >
@@ -27,7 +27,7 @@
             {{ complaint.status === 'resolved' ? '已解决' : '处理中' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="下一行动">{{
+        <el-descriptions-item label="下一计划">{{
           complaint.actions[0]?.content ?? '-'
         }}</el-descriptions-item>
         <el-descriptions-item label="计划时间">{{
@@ -65,7 +65,7 @@
           <el-input v-model="form.resolution" />
         </el-form-item>
         <template v-else>
-          <el-form-item label="下一行动" required>
+          <el-form-item label="下一计划" required>
             <el-input v-model="form.nextActionContent" placeholder="下一步具体做什么" />
           </el-form-item>
           <el-form-item label="计划时间" required>
@@ -121,7 +121,7 @@ async function handleFollow() {
   if (form.outcome === 'resolved' && !form.resolution.trim())
     return ElMessage.warning('请填写解决结果')
   if (form.outcome === 'followed_up' && (!form.nextActionAt || !form.nextActionContent.trim()))
-    return ElMessage.warning('请填写下一行动和计划时间')
+    return ElMessage.warning('请填写下一计划和计划时间')
   if (!complaint.value) return
   acting.value = true
   try {
@@ -130,7 +130,7 @@ async function handleFollow() {
       content: form.content.trim(),
       outcome: form.outcome,
       resolution: form.outcome === 'resolved' ? form.resolution.trim() : undefined,
-      sourceActionId: complaint.value.actions[0]?.id,
+      sourcePlanId: complaint.value.actions[0]?.id,
       nextActionAt:
         form.outcome === 'followed_up' ? new Date(form.nextActionAt).toISOString() : undefined,
       nextActionContent: form.outcome === 'followed_up' ? form.nextActionContent.trim() : undefined,

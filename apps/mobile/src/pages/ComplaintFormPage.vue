@@ -29,13 +29,13 @@
         />
         <van-field
           v-model="form.firstActionAt"
-          label="第一步行动时间"
+          label="第一步计划时间"
           type="datetime-local"
           :rules="[{ required: true }]"
         />
         <van-field
           v-model="form.firstActionContent"
-          label="第一步行动"
+          label="第一步计划"
           placeholder="如：联系客户确认工况"
           :rules="[{ required: true }]"
         />

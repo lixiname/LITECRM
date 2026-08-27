@@ -37,6 +37,7 @@ export const visitRecords = pgTable(
     businessSituation: text('business_situation'),
     equipmentSituation: text('equipment_situation'),
     personnelChanges: text('personnel_changes'),
+    sourcePlanId: uuid('source_plan_id'),
     entrySource: text('entry_source'),
     entryRefId: uuid('entry_ref_id'),
   },
@@ -44,6 +45,7 @@ export const visitRecords = pgTable(
     check('visits_method_check', sql`${table.method} in ('offline_visit','remote','other')`),
     index('visits_customer_idx').on(table.customerId),
     index('visits_owner_occurred_idx').on(table.ownerId, table.occurredAt),
+    uniqueIndex('visits_source_plan_uq').on(table.sourcePlanId),
   ],
 )
 
@@ -95,7 +97,7 @@ export const opportunityFollowUps = pgTable(
     actorId: uuid('actor_id')
       .notNull()
       .references(() => users.id),
-    sourceVisitId: uuid('source_visit_id').references(() => visitRecords.id),
+    sourcePlanId: uuid('source_plan_id'),
     occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
     conclusion: text('conclusion').notNull(),
     method: text('method'),
@@ -104,7 +106,7 @@ export const opportunityFollowUps = pgTable(
   },
   (table) => [
     index('opportunity_follow_ups_opp_occurred_idx').on(table.opportunityId, table.occurredAt),
-    index('opportunity_follow_ups_source_visit_idx').on(table.sourceVisitId),
+    uniqueIndex('opportunity_follow_ups_source_plan_uq').on(table.sourcePlanId),
   ],
 )
 
@@ -124,6 +126,7 @@ export const opportunityQuotes = pgTable(
     quoteNo: text('quote_no'),
     status: text('status').notNull().default('active'),
     supersedesQuoteId: uuid('supersedes_quote_id'),
+    sourcePlanId: uuid('source_plan_id'),
     note: text('note'),
     documentRef: text('document_ref'),
   },
@@ -136,6 +139,7 @@ export const opportunityQuotes = pgTable(
     check('opportunity_quotes_amount_check', sql`${table.amount} >= 0`),
     index('opportunity_quotes_opp_quoted_idx').on(table.opportunityId, table.quotedAt),
     foreignKey({ columns: [table.supersedesQuoteId], foreignColumns: [table.id] }),
+    uniqueIndex('opportunity_quotes_source_plan_uq').on(table.sourcePlanId),
   ],
 )
 
@@ -235,9 +239,11 @@ export const complaintFollowUps = pgTable(
     content: text('content').notNull(),
     outcome: text('outcome').notNull(),
     resolution: text('resolution'),
+    sourcePlanId: uuid('source_plan_id'),
   },
   (table) => [
     check('follow_ups_outcome_check', sql`${table.outcome} in ('followed_up','resolved')`),
     index('follow_ups_complaint_idx').on(table.complaintId, table.occurredAt),
+    uniqueIndex('complaint_follow_ups_source_plan_uq').on(table.sourcePlanId),
   ],
 )

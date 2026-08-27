@@ -37,10 +37,10 @@ export class FollowUpComplaintDto {
   @IsString()
   resolution?: string
 
-  @ApiPropertyOptional({ description: '本次完成的旧行动' })
+  @ApiPropertyOptional({ description: '本次处理履行的来源计划' })
   @IsOptional()
   @IsUUID()
-  sourceActionId?: string
+  sourcePlanId?: string
 
   @ApiPropertyOptional({ description: '下一处理行动计划时间（followed_up 必填）' })
   @IsOptional()
