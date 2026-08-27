@@ -36,6 +36,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Migrate test database
+        run: pnpm --filter @crm/api db:migrate:runtime
+
       - name: Lint
         run: pnpm lint
 
