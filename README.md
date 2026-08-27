@@ -39,6 +39,14 @@ pnpm dev:mobile   # 移动端 http://localhost:5174
 pnpm dev:api      # API http://localhost:3001/api
 ```
 
+### 新环境数据库与 CI 约束
+
+- 后端测试依赖真实 PostgreSQL 表结构。新机器、空数据库和 GitHub Actions 都必须先执行迁移，再运行 `pnpm test`；否则出现 `relation "users" does not exist` 一类错误，含义是数据库尚未初始化，不是测试造数失败。
+- 客户名称模糊检索使用 PostgreSQL `pg_trgm`。首份迁移已声明 `CREATE EXTENSION IF NOT EXISTS pg_trgm`；使用本机 PostgreSQL 且 `crm` 账号没有扩展权限时，仍需先由管理员账号执行上面的扩展安装命令。
+- Windows 上若 `drizzle-kit migrate` 出现 `uv_os_get_passwd ... ENOMEM`，可改用 `pnpm --filter @crm/api db:migrate:runtime`。它执行仓库中同一批已提交 SQL 迁移，不是运行时自动同步表结构。
+- CI 使用每次全新的 PostgreSQL 容器，执行顺序固定为：安装依赖 → 数据库迁移 → Lint → 类型检查 → 测试 → 构建 → 契约无差异。不要依赖开发机上已经存在的表、扩展或历史迁移记录。
+- 判断迁移是否完整，必须至少在空数据库上验证一次；“已有开发库可以继续迁移”不能替代全新建库验证。
+
 ### 常用命令
 
 | 命令                                                        | 作用                                    |
@@ -48,6 +56,7 @@ pnpm dev:api      # API http://localhost:3001/api
 | `pnpm contracts:generate`                                   | 后端 DTO → Swagger → 契约类型重新生成   |
 | `pnpm contracts:check`                                      | 校验契约生成物无 diff（CI 用）          |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:studio`   | Drizzle 迁移生成 / 应用 / Studio 可视化 |
+| `pnpm --filter @crm/api db:migrate:runtime`                 | Windows 迁移命令异常时的等价执行入口    |
 | `pnpm format`                                               | Prettier 全量格式化                     |
 
 ### 提交流程（husky 门禁已启用）
