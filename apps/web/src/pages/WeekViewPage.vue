@@ -51,8 +51,8 @@
               <span :class="{ 'week-view__date--today': day.isToday }">{{ day.monthDay }}</span>
               <el-dropdown
                 trigger="click"
-                @command="(command: AddCommand) => handleAddCommand(command, day)"
                 class="week-view__add-trigger"
+                @command="(command: AddCommand) => handleAddCommand(command, day)"
               >
                 <el-button type="primary" plain size="small">＋ 新增</el-button>
                 <template #dropdown>

@@ -28,6 +28,12 @@ const router = createRouter({
       children: [
         { path: '', redirect: '/customers' },
         {
+          path: 'management',
+          name: 'management-dashboard',
+          component: () => import('@/pages/ManagementDashboardPage.vue'),
+          meta: { title: '管理看板', requiresAbility: 'dashboard.view' },
+        },
+        {
           path: 'customers',
           name: 'customers',
           component: () => import('@/pages/CustomersPage.vue'),
@@ -114,7 +120,8 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'login' }
   if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility))
     return { name: 'customers' }
-  if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'customers' }
+  if (to.meta.guestOnly && auth.isLoggedIn)
+    return auth.hasAbility('dashboard.view') ? { name: 'management-dashboard' } : { name: 'customers' }
   return true
 })
 

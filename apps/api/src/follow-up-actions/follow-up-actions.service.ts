@@ -262,10 +262,15 @@ export class SalesPlansService {
       .orderBy(asc(followUpActions.plannedAt))
   }
 
-  async week(actor: AuthUser, start: string, end: string) {
-    const visible = await this.accessService.getVisibleUserIds(actor)
-    const today = new Date().toISOString().slice(0, 10)
-    const visibleCondition = inArray(followUpActions.ownerId, visible)
+  async week(actor: AuthUser, start: string, end: string, requestedOwnerId?: string) {
+    const ownerId = await this.accessService.resolveVisibleUserId(actor, requestedOwnerId)
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+    const ownerCondition = eq(followUpActions.ownerId, ownerId)
     const projection = {
       ...getTableColumns(followUpActions),
       customerName: customers.name,
@@ -281,18 +286,18 @@ export class SalesPlansService {
       query()
         .where(
           and(
-            visibleCondition,
+            ownerCondition,
             eq(followUpActions.status, 'pending'),
-            sql`${followUpActions.plannedAt}::date < ${start}`,
-            sql`${followUpActions.plannedAt}::date < ${today}`,
+            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date < ${start}`,
+            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date < ${today}`,
           ),
         )
         .orderBy(asc(followUpActions.plannedAt)),
       query()
         .where(
           and(
-            visibleCondition,
-            sql`${followUpActions.plannedAt}::date between ${start} and ${end}`,
+            ownerCondition,
+            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date between ${start} and ${end}`,
           ),
         )
         .orderBy(asc(followUpActions.plannedAt)),

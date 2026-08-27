@@ -69,6 +69,17 @@ export class AccessService {
     return computeTeamVisibleIds(all, actor.id)
   }
 
+  /** 将可选人员筛选收口到组织树权限；未指定时默认本人，避免管理者个人页面混入整支团队。 */
+  async resolveVisibleUserId(
+    actor: { id: string; role: Role },
+    requestedUserId?: string,
+  ): Promise<string> {
+    const targetUserId = requestedUserId ?? actor.id
+    const visible = await this.getVisibleUserIds(actor)
+    if (!visible.includes(targetUserId)) throw new ForbiddenException('无权查看该人员数据')
+    return targetUserId
+  }
+
   // 管理链判定：actor 是否是 targetUserId 的上级（沿 reports_to_id 上溯，§8.3 assertCanContribute）
   // 权限基础设施，业务服务禁止自行遍历组织树（§6.3 约束）
   async isManagerOf(actorId: string, targetUserId: string | null): Promise<boolean> {

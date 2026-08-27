@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { and, asc, desc, eq, getTableColumns, gte, inArray, lte, sql, type SQL } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
@@ -132,6 +132,18 @@ export class OpportunitiesService {
       )
     }
     if (query.customerId) conditions.push(eq(opportunities.customerId, query.customerId))
+    if (query.ownerId) {
+      if (!visibleIds.includes(query.ownerId)) throw new BadRequestException('负责人不在可见范围内')
+      conditions.push(eq(customers.ownerId, query.ownerId))
+    }
+    if (query.salesRegionId) conditions.push(eq(customers.salesRegionId, query.salesRegionId))
+    if (query.productLine) {
+      conditions.push(sql`exists (
+        select 1 from ${opportunityProductLines}
+        where ${opportunityProductLines.opportunityId} = ${opportunities.id}
+          and ${opportunityProductLines.productLine} = ${query.productLine}
+      )`)
+    }
     if (query.stage) conditions.push(eq(opportunities.stage, query.stage))
     if (query.minAmount !== undefined) {
       conditions.push(gte(this.referenceAmountSql(), String(query.minAmount)))

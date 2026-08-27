@@ -2,6 +2,7 @@ import { apiGet } from './http'
 import type { SalesPlan } from '../types/actions'
 
 export interface ActionWeekView {
+  ownerId: string
   overdue: SalesPlan[]
   plans: SalesPlan[]
   businessRecords: WeekBusinessRecord[]
@@ -32,6 +33,8 @@ export interface WeekComplaintRecord {
 }
 
 /** 周览按同一日期范围汇集计划、实际业务记录与客诉记录。 */
-export function getWeekView(start: string, end: string): Promise<ActionWeekView> {
-  return apiGet<ActionWeekView>(`/week-view?start=${start}&end=${end}`)
+export function getWeekView(start: string, end: string, ownerId?: string): Promise<ActionWeekView> {
+  const params = new URLSearchParams({ start, end })
+  if (ownerId) params.set('ownerId', ownerId)
+  return apiGet<ActionWeekView>(`/week-view?${params.toString()}`)
 }

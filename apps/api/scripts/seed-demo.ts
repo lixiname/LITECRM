@@ -6,6 +6,7 @@ import {
   complaints,
   contacts,
   customers,
+  dailyExpenses,
   deals,
   followUpActions,
   opportunities,
@@ -16,7 +17,7 @@ import {
   users,
   visitRecords,
 } from '../src/common/db/schema'
-import { seedAccounts, seedDimensions } from './seed'
+import { seedAccounts, seedDimensions, seedGeography } from './seed'
 
 const ids = {
   activeCustomer: '10000000-0000-4000-8000-000000000001',
@@ -41,6 +42,13 @@ const ids = {
   activeEvent: '19000000-0000-4000-8000-000000000001',
   wonEvent: '19000000-0000-4000-8000-000000000002',
   stalledEvent: '19000000-0000-4000-8000-000000000003',
+  keyCustomer: '10000000-0000-4000-8000-000000000004',
+  keyOpportunity: '13000000-0000-4000-8000-000000000004',
+  keyQuote: '15000000-0000-4000-8000-000000000004',
+  keyAction: '18000000-0000-4000-8000-000000000004',
+  keyVisit: '12000000-0000-4000-8000-000000000004',
+  sales1Expense: '1a000000-0000-4000-8000-000000000001',
+  sales2Expense: '1a000000-0000-4000-8000-000000000002',
 } as const
 
 const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000)
@@ -49,12 +57,14 @@ const dateOnly = (date: Date) => date.toISOString().slice(0, 10)
 async function seedDemoBusinessData() {
   await seedAccounts()
   await seedDimensions()
-  const [sales] = await db
-    .select({ id: users.id })
+  await seedGeography()
+  const salesRows = await db
+    .select({ id: users.id, username: users.username })
     .from(users)
-    .where(eq(users.username, 'sales1'))
-    .limit(1)
-  if (!sales) throw new Error('缺少 sales1 测试账号')
+    .where(eq(users.isActive, true))
+  const sales = salesRows.find((item) => item.username === 'sales1')
+  const sales2 = salesRows.find((item) => item.username === 'sales2')
+  if (!sales || !sales2) throw new Error('缺少 sales1/sales2 测试账号')
 
   const activeAt = daysFromNow(-2)
   const wonAt = daysFromNow(-20)
@@ -115,6 +125,27 @@ async function seedDemoBusinessData() {
         createdById: sales.id,
         lastActivityAt: stalledAt,
         notes: '用于演示“报价后长期无动作”的停滞商机。',
+      },
+      {
+        id: ids.keyCustomer,
+        name: '演示·宁波海川储能科技有限公司',
+        normalizedKey: '宁波海川储能科技',
+        customerCode: 'DEMO-CUST-004',
+        industry: 'energy_storage',
+        subIndustry: 'hardware',
+        customerType: 'end_user',
+        productLines: ['filtration_system'],
+        province: '浙江省',
+        city: '宁波市',
+        provinceCode: '330000',
+        cityCode: '330200',
+        source: 'exhibition',
+        grade: 'S' as const,
+        ownerId: sales2.id,
+        createdById: sales2.id,
+        firstVisitedAt: daysFromNow(-35),
+        lastActivityAt: daysFromNow(-34),
+        notes: '用于演示管理层关注的 S 类客户与正式报价逾期。',
       },
     ]
     for (const row of customerRows) {
@@ -235,6 +266,21 @@ async function seedDemoBusinessData() {
         expectedCloseDate: dateOnly(daysFromNow(-5)),
         lastFollowUpAt: stalledAt,
       },
+      {
+        id: ids.keyOpportunity,
+        customerId: ids.keyCustomer,
+        ownerId: sales2.id,
+        name: '储能产线过滤系统扩建',
+        stage: 'following',
+        source: 'exhibition',
+        initialAmountBasis: 'formal_quote',
+        estimatedAmount: null,
+        approximate: false,
+        createdAt: daysFromNow(-40),
+        discoveredDate: dateOnly(daysFromNow(-40)),
+        expectedCloseDate: dateOnly(daysFromNow(20)),
+        lastFollowUpAt: daysFromNow(-34),
+      },
     ] as const
     for (const row of opportunityRows) {
       await tx
@@ -252,6 +298,7 @@ async function seedDemoBusinessData() {
         { opportunityId: ids.activeOpportunity, productLine: 'pump' },
         { opportunityId: ids.wonOpportunity, productLine: 'pump' },
         { opportunityId: ids.stalledOpportunity, productLine: 'filtration_system' },
+        { opportunityId: ids.keyOpportunity, productLine: 'filtration_system' },
       ])
       .onConflictDoNothing()
 
@@ -287,6 +334,17 @@ async function seedDemoBusinessData() {
         amount: '620000',
         quoteNo: 'DEMO-Q-002',
         status: 'active',
+      },
+      {
+        id: ids.keyQuote,
+        opportunityId: ids.keyOpportunity,
+        actorId: sales2.id,
+        kind: 'formal',
+        quotedAt: daysFromNow(-34),
+        amount: '880000',
+        quoteNo: 'DEMO-Q-004',
+        status: 'active',
+        note: '等待客户技术委员会确认',
       },
       {
         id: ids.stalledQuote,
@@ -357,6 +415,18 @@ async function seedDemoBusinessData() {
         status: 'pending',
       },
       {
+        id: ids.keyAction,
+        ownerId: sales2.id,
+        customerId: ids.keyCustomer,
+        opportunityId: ids.keyOpportunity,
+        planKind: 'opportunity_follow_up',
+        originType: 'opportunity_quote',
+        sourceId: ids.keyQuote,
+        plannedAt: daysFromNow(-3),
+        content: '确认储能项目正式报价评审结果',
+        status: 'pending',
+      },
+      {
         id: ids.complaintAction,
         ownerId: sales.id,
         customerId: ids.activeCustomer,
@@ -417,12 +487,61 @@ async function seedDemoBusinessData() {
           set: { occurredAt: row.occurredAt, payload: row.payload },
         })
     }
+
+    await tx
+      .insert(visitRecords)
+      .values({
+        id: ids.keyVisit,
+        customerId: ids.keyCustomer,
+        ownerId: sales2.id,
+        occurredAt: daysFromNow(-6),
+        method: 'offline_visit',
+        visitType: 'existing_maintenance',
+        businessSituation: '复核扩建产线的过滤系统参数和交付窗口。',
+      })
+      .onConflictDoUpdate({ target: visitRecords.id, set: { occurredAt: daysFromNow(-6) } })
+
+    const expenseDate = dateOnly(new Date())
+    const expenseRows = [
+      {
+        id: ids.sales1Expense,
+        ownerId: sales.id,
+        expenseDate,
+        dining: '680',
+        lodging: '420',
+        notes: '苏州客户拜访',
+        status: 'submitted',
+        submittedAt: new Date(),
+      },
+      {
+        id: ids.sales2Expense,
+        ownerId: sales2.id,
+        expenseDate,
+        gifts: '350',
+        dining: '520',
+        notes: '宁波重点客户沟通',
+        status: 'submitted',
+        submittedAt: new Date(),
+      },
+    ] as const
+    for (const row of expenseRows) {
+      await tx
+        .insert(dailyExpenses)
+        .values(row)
+        .onConflictDoUpdate({
+          target: dailyExpenses.id,
+          set: { ...row, updatedAt: new Date() },
+        })
+    }
   })
+
+  // 客户插入后按省市稳定代码回填销售大区。
+  await seedGeography()
 }
 
 seedDemoBusinessData()
   .then(() => {
-    console.log('演示数据完成：3 个客户，覆盖开放商机、成交、停滞报价、行动和客诉')
+    console.log('演示数据完成：4 个客户，覆盖团队报价池、成交、重点客户风险、行动、客诉和费用')
     process.exit(0)
   })
   .catch((error) => {

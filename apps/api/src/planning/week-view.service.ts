@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { and, eq, inArray, sql, type AnyColumn } from 'drizzle-orm'
+import { and, eq, sql, type AnyColumn } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
 import { db } from '../common/db/db'
@@ -21,13 +21,14 @@ export class WeekViewService {
     private readonly accessService: AccessService,
   ) {}
 
-  async getWeekView(user: AuthUser, start: string, end: string) {
-    const visible = await this.accessService.getVisibleUserIds(user)
-    const inRange = (column: AnyColumn) => sql`${column}::date between ${start} and ${end}`
+  async getWeekView(user: AuthUser, start: string, end: string, requestedOwnerId?: string) {
+    const ownerId = await this.accessService.resolveVisibleUserId(user, requestedOwnerId)
+    const inRange = (column: AnyColumn) =>
+      sql`(${column} at time zone 'Asia/Shanghai')::date between ${start} and ${end}`
 
     const [planView, visits, followUps, quotes, registeredComplaints, complaintUpdates] =
       await Promise.all([
-        this.plansService.week(user, start, end),
+        this.plansService.week(user, start, end, ownerId),
         db
           .select({
             id: visitRecords.id,
@@ -39,7 +40,7 @@ export class WeekViewService {
           })
           .from(visitRecords)
           .innerJoin(customers, eq(visitRecords.customerId, customers.id))
-          .where(and(inArray(customers.ownerId, visible), inRange(visitRecords.occurredAt))),
+          .where(and(eq(visitRecords.ownerId, ownerId), inRange(visitRecords.occurredAt))),
         db
           .select({
             id: opportunityFollowUps.id,
@@ -55,7 +56,7 @@ export class WeekViewService {
           .innerJoin(opportunities, eq(opportunityFollowUps.opportunityId, opportunities.id))
           .innerJoin(customers, eq(opportunities.customerId, customers.id))
           .where(
-            and(inArray(customers.ownerId, visible), inRange(opportunityFollowUps.occurredAt)),
+            and(eq(opportunityFollowUps.actorId, ownerId), inRange(opportunityFollowUps.occurredAt)),
           ),
         db
           .select({
@@ -72,7 +73,7 @@ export class WeekViewService {
           .from(opportunityQuotes)
           .innerJoin(opportunities, eq(opportunityQuotes.opportunityId, opportunities.id))
           .innerJoin(customers, eq(opportunities.customerId, customers.id))
-          .where(and(inArray(customers.ownerId, visible), inRange(opportunityQuotes.quotedAt))),
+          .where(and(eq(opportunityQuotes.actorId, ownerId), inRange(opportunityQuotes.quotedAt))),
         db
           .select({
             id: complaints.id,
@@ -83,7 +84,7 @@ export class WeekViewService {
           })
           .from(complaints)
           .innerJoin(customers, eq(complaints.customerId, customers.id))
-          .where(and(inArray(customers.ownerId, visible), inRange(complaints.occurredAt))),
+          .where(and(eq(complaints.ownerId, ownerId), inRange(complaints.occurredAt))),
         db
           .select({
             id: complaintFollowUps.id,
@@ -97,10 +98,11 @@ export class WeekViewService {
           .from(complaintFollowUps)
           .innerJoin(complaints, eq(complaintFollowUps.complaintId, complaints.id))
           .innerJoin(customers, eq(complaints.customerId, customers.id))
-          .where(and(inArray(customers.ownerId, visible), inRange(complaintFollowUps.occurredAt))),
+          .where(and(eq(complaintFollowUps.ownerId, ownerId), inRange(complaintFollowUps.occurredAt))),
       ])
 
     return {
+      ownerId,
       ...planView,
       businessRecords: [
         ...visits.map((item) => ({

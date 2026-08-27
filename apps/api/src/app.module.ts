@@ -16,6 +16,7 @@ import { PlanningModule } from './planning/planning.module'
 import { ExpensesModule } from './expenses/expenses.module'
 import { SalesPlansModule } from './follow-up-actions/follow-up-actions.module'
 import { GeographyModule } from './geography/geography.module'
+import { ReportingModule } from './reporting/reporting.module'
 
 @Module({
   // ConfigModule 全局加载 .env（§9.3）；业务模块按里程碑接入
@@ -35,6 +36,7 @@ import { GeographyModule } from './geography/geography.module'
     ComplaintsModule,
     PlanningModule,
     ExpensesModule,
+    ReportingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

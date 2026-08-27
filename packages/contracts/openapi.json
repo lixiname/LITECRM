@@ -1242,6 +1242,33 @@
             }
           },
           {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "客户当前负责人 ID（管理范围内）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "stage",
             "required": false,
             "in": "query",
@@ -1833,6 +1860,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "管理者可指定组织树内成员；默认本人",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1841,7 +1877,7 @@
           }
         },
         "tags": [
-          "WeekView"
+          "week-view"
         ]
       }
     },
@@ -1924,6 +1960,320 @@
         },
         "tags": [
           "expenses"
+        ]
+      }
+    },
+    "/reporting/members": {
+      "get": {
+        "operationId": "ReportingController_members",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "当前管理者组织树范围内可筛选人员"
+          }
+        },
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/reporting/overview": {
+      "get": {
+        "operationId": "ReportingController_overview",
+        "parameters": [
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "开始日期（YYYY-MM-DD），默认当月 1 日",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "结束日期（YYYY-MM-DD），默认今天",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "组织树内人员 ID；不传表示全部可见人员",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "管理概览：经营结果、过程风险、重点客户与费用摘要"
+          }
+        },
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/reporting/pipeline": {
+      "get": {
+        "operationId": "ReportingController_pipeline",
+        "parameters": [
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "开始日期（YYYY-MM-DD），默认当月 1 日",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "结束日期（YYYY-MM-DD），默认今天",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "组织树内人员 ID；不传表示全部可见人员",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "销售漏斗、当前报价池、期间转化与下辖人员拆分"
+          }
+        },
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/reporting/team": {
+      "get": {
+        "operationId": "ReportingController_team",
+        "parameters": [
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "开始日期（YYYY-MM-DD），默认当月 1 日",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "结束日期（YYYY-MM-DD），默认今天",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "组织树内人员 ID；不传表示全部可见人员",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "团队期间实际活动、当前待办与逾期摘要"
+          }
+        },
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/reporting/key-customers": {
+      "get": {
+        "operationId": "ReportingController_keyCustomers",
+        "parameters": [
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "开始日期（YYYY-MM-DD），默认当月 1 日",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "结束日期（YYYY-MM-DD），默认今天",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "组织树内人员 ID；不传表示全部可见人员",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "S/A 客户风险关注清单及全部重要客户组合"
+          }
+        },
+        "tags": [
+          "reporting"
+        ]
+      }
+    },
+    "/reporting/expenses": {
+      "get": {
+        "operationId": "ReportingController_expenses",
+        "parameters": [
+          {
+            "name": "start",
+            "required": false,
+            "in": "query",
+            "description": "开始日期（YYYY-MM-DD），默认当月 1 日",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end",
+            "required": false,
+            "in": "query",
+            "description": "结束日期（YYYY-MM-DD），默认今天",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "required": false,
+            "in": "query",
+            "description": "组织树内人员 ID；不传表示全部可见人员",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salesRegionId",
+            "required": false,
+            "in": "query",
+            "description": "销售大区 ID（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productLine",
+            "required": false,
+            "in": "query",
+            "description": "产品线稳定字典值（仅客户/商机类指标）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "团队已提交费用与未提交草稿摘要"
+          }
+        },
+        "tags": [
+          "reporting"
         ]
       }
     }

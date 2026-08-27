@@ -868,6 +868,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reporting/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reporting/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reporting/pipeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_pipeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reporting/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_team"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reporting/key-customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_keyCustomers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reporting/expenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_expenses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2402,6 +2498,12 @@ export interface operations {
                 keyword?: string;
                 /** @description 限定客户 ID */
                 customerId?: string;
+                /** @description 客户当前负责人 ID（管理范围内） */
+                ownerId?: string;
+                /** @description 销售大区 ID */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值 */
+                productLine?: string;
                 /** @description 商机阶段 */
                 stage?: "intent" | "following" | "won" | "lost" | "demand_disappeared";
                 /** @description 最低意向金额 */
@@ -2840,6 +2942,8 @@ export interface operations {
             query: {
                 start: string;
                 end: string;
+                /** @description 管理者可指定组织树内成员；默认本人 */
+                ownerId?: string;
             };
             header?: never;
             path?: never;
@@ -2927,6 +3031,169 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 作废（剔除统计，留痕） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前管理者组织树范围内可筛选人员 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_overview: {
+        parameters: {
+            query?: {
+                /** @description 开始日期（YYYY-MM-DD），默认当月 1 日 */
+                start?: string;
+                /** @description 结束日期（YYYY-MM-DD），默认今天 */
+                end?: string;
+                /** @description 组织树内人员 ID；不传表示全部可见人员 */
+                ownerId?: string;
+                /** @description 销售大区 ID（仅客户/商机类指标） */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值（仅客户/商机类指标） */
+                productLine?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 管理概览：经营结果、过程风险、重点客户与费用摘要 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_pipeline: {
+        parameters: {
+            query?: {
+                /** @description 开始日期（YYYY-MM-DD），默认当月 1 日 */
+                start?: string;
+                /** @description 结束日期（YYYY-MM-DD），默认今天 */
+                end?: string;
+                /** @description 组织树内人员 ID；不传表示全部可见人员 */
+                ownerId?: string;
+                /** @description 销售大区 ID（仅客户/商机类指标） */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值（仅客户/商机类指标） */
+                productLine?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 销售漏斗、当前报价池、期间转化与下辖人员拆分 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_team: {
+        parameters: {
+            query?: {
+                /** @description 开始日期（YYYY-MM-DD），默认当月 1 日 */
+                start?: string;
+                /** @description 结束日期（YYYY-MM-DD），默认今天 */
+                end?: string;
+                /** @description 组织树内人员 ID；不传表示全部可见人员 */
+                ownerId?: string;
+                /** @description 销售大区 ID（仅客户/商机类指标） */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值（仅客户/商机类指标） */
+                productLine?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 团队期间实际活动、当前待办与逾期摘要 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_keyCustomers: {
+        parameters: {
+            query?: {
+                /** @description 开始日期（YYYY-MM-DD），默认当月 1 日 */
+                start?: string;
+                /** @description 结束日期（YYYY-MM-DD），默认今天 */
+                end?: string;
+                /** @description 组织树内人员 ID；不传表示全部可见人员 */
+                ownerId?: string;
+                /** @description 销售大区 ID（仅客户/商机类指标） */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值（仅客户/商机类指标） */
+                productLine?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description S/A 客户风险关注清单及全部重要客户组合 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_expenses: {
+        parameters: {
+            query?: {
+                /** @description 开始日期（YYYY-MM-DD），默认当月 1 日 */
+                start?: string;
+                /** @description 结束日期（YYYY-MM-DD），默认今天 */
+                end?: string;
+                /** @description 组织树内人员 ID；不传表示全部可见人员 */
+                ownerId?: string;
+                /** @description 销售大区 ID（仅客户/商机类指标） */
+                salesRegionId?: string;
+                /** @description 产品线稳定字典值（仅客户/商机类指标） */
+                productLine?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 团队已提交费用与未提交草稿摘要 */
             200: {
                 headers: {
                     [name: string]: unknown;

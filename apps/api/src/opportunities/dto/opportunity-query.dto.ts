@@ -32,6 +32,21 @@ export class OpportunityQueryDto {
   @IsUUID()
   customerId?: string
 
+  @ApiPropertyOptional({ description: '客户当前负责人 ID（管理范围内）' })
+  @IsOptional()
+  @IsUUID()
+  ownerId?: string
+
+  @ApiPropertyOptional({ description: '销售大区 ID' })
+  @IsOptional()
+  @IsUUID()
+  salesRegionId?: string
+
+  @ApiPropertyOptional({ description: '产品线稳定字典值' })
+  @IsOptional()
+  @IsString()
+  productLine?: string
+
   @ApiPropertyOptional({ description: '商机阶段', enum: OPPORTUNITY_STAGES })
   @IsOptional()
   @IsIn(OPPORTUNITY_STAGES)

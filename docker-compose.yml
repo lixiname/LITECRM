@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: crm_dev_password
       POSTGRES_DB: litecrm
     ports:
-      - '5432:5432'
+      # Windows 开发机常已有本地 PostgreSQL 占用 5432；容器固定发布到 5433，避免静默连错库。
+      - '5433:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
       # 首次初始化时自动建 pg_trgm 扩展（规格 §7.3 查重检索依赖）

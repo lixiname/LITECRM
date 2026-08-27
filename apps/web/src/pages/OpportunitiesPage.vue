@@ -13,6 +13,18 @@
     </AppPageHeader>
 
     <el-card class="opps__card">
+      <el-alert
+        v-if="hasManagementScope"
+        type="info"
+        :closable="false"
+        show-icon
+        class="opps__scope-alert"
+      >
+        <template #title>
+          已应用管理看板下钻筛选
+          <el-button link type="primary" @click="clearManagementScope">清除</el-button>
+        </template>
+      </el-alert>
       <div class="opps__filters">
         <el-input
           v-model="filters.keyword"
@@ -188,8 +200,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
@@ -215,6 +227,7 @@ import {
 } from '@crm/domain'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const PAGE_SIZE = 20
 const pageNum = ref(1)
@@ -229,7 +242,20 @@ const filters = reactive({
   maxAmount: undefined as number | undefined,
 })
 
-const query = ref<OpportunityListQuery>({ page: 1, pageSize: PAGE_SIZE })
+const managementScope = reactive({
+  ownerId: typeof route.query.ownerId === 'string' ? route.query.ownerId : undefined,
+  salesRegionId:
+    typeof route.query.salesRegionId === 'string' ? route.query.salesRegionId : undefined,
+  productLine: typeof route.query.productLine === 'string' ? route.query.productLine : undefined,
+})
+if (route.query.stagnant === 'true') filters.risk = 'stagnant'
+const hasManagementScope = computed(() => Object.values(managementScope).some(Boolean))
+const query = ref<OpportunityListQuery>({
+  page: 1,
+  pageSize: PAGE_SIZE,
+  ...managementScope,
+  stagnant: route.query.stagnant === 'true' ? true : undefined,
+})
 
 function primaryAttention(opportunity: Opportunity): string {
   const priority: OpportunityRiskFlag[] = [
@@ -274,6 +300,7 @@ function applyFilters() {
     hasQuote: filters.quote === 'all' ? undefined : filters.quote === 'yes',
     noNextAction: filters.action === 'missing' ? true : undefined,
     stagnant: filters.risk === 'all' ? undefined : filters.risk === 'stagnant',
+    ...managementScope,
   }
   void reload()
 }
@@ -288,6 +315,12 @@ function resetFilters() {
     minAmount: undefined,
     maxAmount: undefined,
   })
+  applyFilters()
+}
+
+function clearManagementScope() {
+  Object.assign(managementScope, { ownerId: undefined, salesRegionId: undefined, productLine: undefined })
+  void router.replace('/opportunities')
   applyFilters()
 }
 
@@ -328,6 +361,9 @@ function isActionOverdue(action: FollowUpAction | null | undefined): boolean {
     auto;
   gap: var(--crm-spacing-sm);
   align-items: center;
+  margin-bottom: var(--crm-spacing-md);
+}
+.opps__scope-alert {
   margin-bottom: var(--crm-spacing-md);
 }
 .opps__amount-filter {

@@ -26,6 +26,9 @@ export interface OpportunityDetail extends Opportunity {
 export interface OpportunityListQuery {
   keyword?: string
   customerId?: string
+  ownerId?: string
+  salesRegionId?: string
+  productLine?: string
   stage?: string
   minAmount?: number
   maxAmount?: number

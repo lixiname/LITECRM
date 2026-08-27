@@ -3,6 +3,9 @@
     <el-aside width="200px" class="app-layout__aside">
       <div class="app-layout__logo">Lite CRM</div>
       <el-menu :default-active="activeMenu" router class="app-layout__menu">
+        <el-menu-item v-if="auth.hasAbility('dashboard.view')" index="/management">
+          管理看板
+        </el-menu-item>
         <el-menu-item index="/customers">客户</el-menu-item>
         <el-menu-item index="/opportunities">商机</el-menu-item>
         <el-menu-item index="/complaints">客诉</el-menu-item>
