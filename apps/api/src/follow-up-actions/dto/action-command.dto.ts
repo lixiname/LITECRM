@@ -14,8 +14,17 @@ export class RescheduleSalesPlanDto extends SalesPlanVersionDto {
   plannedAt!: string
 }
 
-export class CancelSalesPlanDto extends SalesPlanVersionDto {
-  @ApiProperty({ description: '取消原因' })
+export class ReplaceSalesPlanDto extends SalesPlanVersionDto {
+  @ApiProperty({ description: '替代计划的执行时间' })
+  @IsISO8601()
+  plannedAt!: string
+
+  @ApiProperty({ description: '替代计划的内容' })
+  @IsString()
+  @MinLength(1)
+  content!: string
+
+  @ApiProperty({ description: '替换原因' })
   @IsString()
   @MinLength(1)
   reason!: string

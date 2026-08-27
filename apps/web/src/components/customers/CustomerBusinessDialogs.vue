@@ -7,7 +7,20 @@
       :closable="false"
       :title="`原计划：${formatPlanTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
     />
+    <el-alert
+      v-else-if="currentVisitPlan"
+      class="business-dialog__plan"
+      type="warning"
+      :closable="false"
+      :title="`已有计划：${formatPlanTime(currentVisitPlan.plannedAt)} · ${currentVisitPlan.content}`"
+    />
     <el-form label-width="100px">
+      <el-form-item v-if="!sourcePlan && currentVisitPlan" label="与原计划">
+        <el-radio-group v-model="planHandling">
+          <el-radio value="execute">关联并完成原计划</el-radio>
+          <el-radio value="keep">本次为临时拜访，保留原计划</el-radio>
+        </el-radio-group>
+      </el-form-item>
       <el-form-item label="沟通时间" required>
         <el-input v-model="visitForm.occurredAt" type="datetime-local" />
       </el-form-item>
@@ -39,10 +52,10 @@
           placeholder="客户经营、需求或本次沟通要点"
         />
       </el-form-item>
-      <el-form-item label="下次拜访" required>
+      <el-form-item v-if="planHandling !== 'keep'" label="下次拜访" required>
         <el-input v-model="visitForm.nextActionContent" placeholder="下一步具体做什么" />
       </el-form-item>
-      <el-form-item label="下次时间" required>
+      <el-form-item v-if="planHandling !== 'keep'" label="下次时间" required>
         <el-input v-model="visitForm.nextActionAt" type="datetime-local" />
       </el-form-item>
     </el-form>
@@ -105,7 +118,11 @@ import {
   type SalesPlan,
 } from '@crm/domain'
 
-const props = defineProps<{ customerId: string; customerName?: string }>()
+const props = defineProps<{
+  customerId: string
+  customerName?: string
+  currentVisitPlan?: SalesPlan
+}>()
 const emit = defineEmits<{
   changed: [kind: 'visit' | 'opportunity' | 'complaint', recordId: string]
 }>()
@@ -114,6 +131,7 @@ const visible = reactive({ visit: false, complaint: false })
 const saving = ref(false)
 const opportunityDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
 const sourcePlan = ref<SalesPlan>()
+const planHandling = ref<'execute' | 'keep' | 'new'>('new')
 const visitTypeOptions = ref<SelectOption[]>([])
 const complaintTypeOptions = ref<SelectOption[]>([])
 
@@ -153,10 +171,12 @@ const complaintForm = reactive({
   firstActionAt: '',
 })
 
-function openVisit(plan?: SalesPlan) {
+function openVisit(plan?: SalesPlan, occurredDate?: string) {
   sourcePlan.value = plan
+  planHandling.value = plan ? 'execute' : props.currentVisitPlan ? 'execute' : 'new'
+  const occurredAt = occurredDate ? new Date(`${occurredDate}T09:00:00`) : new Date()
   Object.assign(visitForm, {
-    occurredAt: localInput(new Date()),
+    occurredAt: localInput(occurredAt),
     method: 'offline_visit',
     visitType: undefined,
     businessSituation: '',
@@ -183,8 +203,13 @@ function openComplaint() {
 
 async function submitVisit() {
   if (!visitForm.occurredAt || !visitForm.method) return ElMessage.warning('请填写沟通时间和方式')
-  if (!visitForm.nextActionAt || !visitForm.nextActionContent.trim())
+  if (
+    planHandling.value !== 'keep' &&
+    (!visitForm.nextActionAt || !visitForm.nextActionContent.trim())
+  )
     return ElMessage.warning('请填写下次拜访时间和内容')
+  const linkedPlan =
+    sourcePlan.value ?? (planHandling.value === 'execute' ? props.currentVisitPlan : undefined)
   await run(
     () =>
       createVisit({
@@ -193,9 +218,14 @@ async function submitVisit() {
         method: visitForm.method,
         visitType: visitForm.visitType,
         businessSituation: visitForm.businessSituation.trim() || undefined,
-        sourcePlanId: sourcePlan.value?.id,
-        nextActionContent: visitForm.nextActionContent.trim(),
-        nextActionAt: new Date(visitForm.nextActionAt).toISOString(),
+        sourcePlanId: linkedPlan?.id,
+        keepExistingPlan: planHandling.value === 'keep' || undefined,
+        nextActionContent:
+          planHandling.value === 'keep' ? undefined : visitForm.nextActionContent.trim(),
+        nextActionAt:
+          planHandling.value === 'keep'
+            ? undefined
+            : new Date(visitForm.nextActionAt).toISOString(),
       }),
     'visit',
     '拜访已记录',

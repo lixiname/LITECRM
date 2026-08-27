@@ -3,7 +3,7 @@ import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
-import { CancelSalesPlanDto, RescheduleSalesPlanDto } from './dto/action-command.dto'
+import { ReplaceSalesPlanDto, RescheduleSalesPlanDto } from './dto/action-command.dto'
 import { CreateSalesPlanDto } from './dto/create-follow-up-action.dto'
 import { SalesPlansService } from './follow-up-actions.service'
 
@@ -20,7 +20,7 @@ export class SalesPlansController {
   }
 
   @Get('week')
-  @ApiOkResponse({ description: '范围内待办 + 更早逾期待办' })
+  @ApiOkResponse({ description: '范围内全部计划 + 更早逾期待办' })
   week(@Query('start') start: string, @Query('end') end: string, @CurrentUser() actor: AuthUser) {
     return this.plansService.week(actor, start, end)
   }
@@ -40,8 +40,12 @@ export class SalesPlansController {
     return this.plansService.reschedule(id, dto.version, dto.plannedAt, actor)
   }
 
-  @Post(':id/cancel')
-  cancel(@Param('id') id: string, @Body() dto: CancelSalesPlanDto, @CurrentUser() actor: AuthUser) {
-    return this.plansService.cancel(id, dto.version, dto.reason, actor)
+  @Post(':id/replace')
+  replace(
+    @Param('id') id: string,
+    @Body() dto: ReplaceSalesPlanDto,
+    @CurrentUser() actor: AuthUser,
+  ) {
+    return this.plansService.replace(id, dto, actor)
   }
 }

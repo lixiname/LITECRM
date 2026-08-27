@@ -53,6 +53,13 @@
     </el-card>
 
     <el-dialog v-model="showFollow" title="跟进客诉" width="420px">
+      <el-alert
+        v-if="complaint?.actions[0]"
+        class="c-detail__plan"
+        type="info"
+        :closable="false"
+        :title="`原计划：${formatTime(complaint.actions[0].plannedAt)} · ${complaint.actions[0].content}`"
+      />
       <el-form label-width="90px">
         <el-form-item label="处理确认" required><el-input v-model="form.content" /></el-form-item>
         <el-form-item label="结果" required>
@@ -82,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useQuery, getComplaint, followUpComplaint, listDimensionOptions } from '@crm/domain'
@@ -108,6 +115,21 @@ const form = reactive({
   nextActionContent: '',
   nextActionAt: '',
 })
+
+const routePlanOpened = ref(false)
+watch(
+  () => complaint.value,
+  (value) => {
+    if (!value || routePlanOpened.value || !route.query.executePlan) return
+    if (value.actions[0]?.id !== route.query.executePlan) {
+      ElMessage.error('该计划不是当前客诉的待处理计划')
+      return
+    }
+    showFollow.value = true
+    routePlanOpened.value = true
+  },
+  { immediate: true },
+)
 
 function typeLabel(type: string): string {
   return typeOptions.value?.find((option) => option.name === type)?.label ?? type
@@ -154,5 +176,8 @@ async function handleFollow() {
   width: 100%;
   max-width: none;
   margin-bottom: var(--crm-spacing-lg);
+}
+.c-detail__plan {
+  margin-bottom: var(--crm-spacing-md);
 }
 </style>

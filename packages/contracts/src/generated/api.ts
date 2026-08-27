@@ -372,7 +372,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/sales-plans/{id}/cancel": {
+    "/sales-plans/{id}/replace": {
         parameters: {
             query?: never;
             header?: never;
@@ -381,7 +381,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["SalesPlansController_cancel"];
+        post: operations["SalesPlansController_replace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1103,9 +1103,13 @@ export interface components {
             /** @description 新的计划执行时间 */
             plannedAt: string;
         };
-        CancelSalesPlanDto: {
+        ReplaceSalesPlanDto: {
             version: number;
-            /** @description 取消原因 */
+            /** @description 替代计划的执行时间 */
+            plannedAt: string;
+            /** @description 替代计划的内容 */
+            content: string;
+            /** @description 替换原因 */
             reason: string;
         };
         CreateClaimDto: {
@@ -1169,10 +1173,12 @@ export interface components {
             personnelChanges?: string;
             /** @description 本次拜访履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 下次拜访计划时间 */
-            nextActionAt: string;
-            /** @description 下次拜访计划内容 */
-            nextActionContent: string;
+            /** @description 临时记录时保留当前未完成计划，不另建下一计划 */
+            keepExistingPlan?: boolean;
+            /** @description 下次拜访计划时间；不保留现有计划时必填 */
+            nextActionAt?: string;
+            /** @description 下次拜访计划内容；不保留现有计划时必填 */
+            nextActionContent?: string;
         };
         CreateOpportunityDto: {
             /** @description 客户 ID */
@@ -1208,10 +1214,12 @@ export interface components {
             method?: string;
             /** @description 本次跟进履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 下一行动内容 */
-            nextActionContent: string;
-            /** @description 下一行动计划时间 */
-            nextActionAt: string;
+            /** @description 临时记录时保留当前未完成计划，不另建下一计划 */
+            keepExistingPlan?: boolean;
+            /** @description 下一行动内容；不保留现有计划时必填 */
+            nextActionContent?: string;
+            /** @description 下一行动计划时间；不保留现有计划时必填 */
+            nextActionAt?: string;
         };
         /** @enum {string} */
         OpportunityQuoteKind: "oral" | "formal";
@@ -1228,10 +1236,12 @@ export interface components {
             supersedesQuoteId?: string;
             /** @description 本次报价履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 报价后的下一行动内容 */
-            nextActionContent: string;
-            /** @description 报价后的下一行动计划时间 */
-            nextActionAt: string;
+            /** @description 临时报价时保留当前未完成计划，不另建下一计划 */
+            keepExistingPlan?: boolean;
+            /** @description 报价后的下一行动内容；不保留现有计划时必填 */
+            nextActionContent?: string;
+            /** @description 报价后的下一行动计划时间；不保留现有计划时必填 */
+            nextActionAt?: string;
             note?: string;
             /** @description 可选文件引用；不要求上传 */
             documentRef?: string;
@@ -2005,7 +2015,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 范围内待办 + 更早逾期待办 */
+            /** @description 范围内全部计划 + 更早逾期待办 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2057,7 +2067,7 @@ export interface operations {
             };
         };
     };
-    SalesPlansController_cancel: {
+    SalesPlansController_replace: {
         parameters: {
             query?: never;
             header?: never;
@@ -2068,7 +2078,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CancelSalesPlanDto"];
+                "application/json": components["schemas"]["ReplaceSalesPlanDto"];
             };
         };
         responses: {

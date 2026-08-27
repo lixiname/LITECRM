@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { AuthUser } from '../auth/auth.service'
 import { CatalogService } from '../catalog/catalog.service'
@@ -30,6 +30,7 @@ export class OpportunityCommandsService {
   async addFollowUp(id: string, dto: CreateOpportunityFollowUpDto, actor: AuthUser) {
     const opportunity = await this.opportunityAccess.getEditable(id, actor)
     this.opportunityAccess.assertOpen(opportunity.stage)
+    this.assertNextPlanDecision(dto)
 
     return db.transaction(async (tx) => {
       const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date()
@@ -50,16 +51,24 @@ export class OpportunityCommandsService {
         customerId: opportunity.customerId,
         opportunityId: id,
       })
-      await this.actionsService.createLinked(tx, {
-        ownerId: opportunity.currentOwnerId ?? actor.id,
-        customerId: opportunity.customerId,
-        opportunityId: id,
-        planKind: 'opportunity_follow_up',
-        originType: 'opportunity_follow_up',
-        sourceId: followUp.id,
-        plannedAt: new Date(dto.nextActionAt),
-        content: dto.nextActionContent,
-      })
+      if (dto.keepExistingPlan) {
+        await this.actionsService.assertPendingExists(tx, {
+          planKind: 'opportunity_follow_up',
+          customerId: opportunity.customerId,
+          opportunityId: id,
+        })
+      } else {
+        await this.actionsService.createLinked(tx, {
+          ownerId: opportunity.currentOwnerId ?? actor.id,
+          customerId: opportunity.customerId,
+          opportunityId: id,
+          planKind: 'opportunity_follow_up',
+          originType: 'opportunity_follow_up',
+          sourceId: followUp.id,
+          plannedAt: new Date(dto.nextActionAt!),
+          content: dto.nextActionContent!,
+        })
+      }
 
       const nextStage = opportunity.stage === 'intent' ? 'following' : opportunity.stage
       const [updated] = await tx
@@ -90,6 +99,7 @@ export class OpportunityCommandsService {
   async addQuote(id: string, dto: CreateOpportunityQuoteDto, actor: AuthUser) {
     const opportunity = await this.opportunityAccess.getEditable(id, actor)
     this.opportunityAccess.assertOpen(opportunity.stage)
+    this.assertNextPlanDecision(dto)
 
     return db.transaction(async (tx) => {
       if (dto.supersedesQuoteId) {
@@ -133,16 +143,24 @@ export class OpportunityCommandsService {
         customerId: opportunity.customerId,
         opportunityId: id,
       })
-      await this.actionsService.createLinked(tx, {
-        ownerId: opportunity.currentOwnerId ?? actor.id,
-        customerId: opportunity.customerId,
-        opportunityId: id,
-        planKind: 'opportunity_follow_up',
-        originType: 'opportunity_quote',
-        sourceId: quote.id,
-        plannedAt: new Date(dto.nextActionAt),
-        content: dto.nextActionContent,
-      })
+      if (dto.keepExistingPlan) {
+        await this.actionsService.assertPendingExists(tx, {
+          planKind: 'opportunity_follow_up',
+          customerId: opportunity.customerId,
+          opportunityId: id,
+        })
+      } else {
+        await this.actionsService.createLinked(tx, {
+          ownerId: opportunity.currentOwnerId ?? actor.id,
+          customerId: opportunity.customerId,
+          opportunityId: id,
+          planKind: 'opportunity_follow_up',
+          originType: 'opportunity_quote',
+          sourceId: quote.id,
+          plannedAt: new Date(dto.nextActionAt!),
+          content: dto.nextActionContent!,
+        })
+      }
 
       const [updated] = await tx
         .update(opportunities)
@@ -267,6 +285,18 @@ export class OpportunityCommandsService {
       await touchCustomerActivity(tx, opportunity.customerId, closedAt)
       return updated
     })
+  }
+
+  private assertNextPlanDecision(dto: {
+    sourcePlanId?: string
+    keepExistingPlan?: boolean
+    nextActionAt?: string
+    nextActionContent?: string
+  }) {
+    if (dto.sourcePlanId && dto.keepExistingPlan)
+      throw new BadRequestException('执行来源计划时不能同时保留该计划')
+    if (!dto.keepExistingPlan && (!dto.nextActionAt || !dto.nextActionContent?.trim()))
+      throw new BadRequestException('请安排下一计划，或明确保留当前计划')
   }
 }
 

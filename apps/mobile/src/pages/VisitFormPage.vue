@@ -9,7 +9,24 @@
         :scrollable="false"
         :text="`原计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
       />
+      <van-notice-bar
+        v-else-if="existingPlan"
+        color="#9b6a00"
+        background="#fff7e6"
+        wrapable
+        :scrollable="false"
+        :text="`已有计划：${formatTime(existingPlan.plannedAt)} · ${existingPlan.content}`"
+      />
       <van-cell-group inset>
+        <van-radio-group
+          v-if="!sourcePlan && existingPlan"
+          v-model="planHandling"
+          direction="horizontal"
+          class="visit-form__handling"
+        >
+          <van-radio name="execute">关联并完成原计划</van-radio>
+          <van-radio name="keep">临时拜访，保留原计划</van-radio>
+        </van-radio-group>
         <van-field
           v-model="form.occurredAt"
           label="时间"
@@ -50,12 +67,14 @@
         />
         <van-field v-model="form.personnelChanges" label="人员变动" placeholder="人员变动" />
         <van-field
+          v-if="planHandling !== 'keep'"
           v-model="form.nextActionAt"
           label="下次拜访时间"
           type="datetime-local"
           :rules="[{ required: true, message: '请选择下次拜访时间' }]"
         />
         <van-field
+          v-if="planHandling !== 'keep'"
           v-model="form.nextActionContent"
           label="下次拜访内容"
           placeholder="如：联系技术负责人确认参数"
@@ -89,6 +108,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   createVisit,
+  getCustomer,
   getSalesPlan,
   listDimensionOptions,
   VISIT_METHOD_OPTIONS,
@@ -99,6 +119,8 @@ const route = useRoute()
 const router = useRouter()
 const customerId = route.params.id as string
 const sourcePlan = ref<SalesPlan>()
+const existingPlan = ref<SalesPlan>()
+const planHandling = ref<'execute' | 'keep' | 'new'>('new')
 
 const form = reactive({
   occurredAt: '',
@@ -132,14 +154,17 @@ const visitTypeColumns = ref<{ value: string; text: string }[]>([])
 
 onMounted(async () => {
   try {
-    const [options, plan] = await Promise.all([
+    const [options, plan, customer] = await Promise.all([
       listDimensionOptions('visit_type'),
       route.query.planId ? getSalesPlan(String(route.query.planId)) : Promise.resolve(undefined),
+      getCustomer(customerId),
     ])
     if (plan && (plan.planKind !== 'customer_visit' || plan.customerId !== customerId)) {
       throw new Error('该计划不属于当前客户拜访')
     }
     sourcePlan.value = plan
+    existingPlan.value = customer.currentVisitPlan ?? undefined
+    planHandling.value = plan ? 'execute' : existingPlan.value ? 'execute' : 'new'
     visitTypeColumns.value = options
       .filter((option) => option.isActive)
       .map((option) => ({ value: option.name, text: option.label }))
@@ -160,12 +185,14 @@ function onPickType({ selectedOptions }: { selectedOptions: { text: string; valu
 }
 
 async function handleSubmit() {
-  if (!form.nextActionAt || !form.nextActionContent.trim()) {
+  if (planHandling.value !== 'keep' && (!form.nextActionAt || !form.nextActionContent.trim())) {
     showToast('请填写下次拜访时间和内容')
     return
   }
   saving.value = true
   try {
+    const linkedPlan =
+      sourcePlan.value ?? (planHandling.value === 'execute' ? existingPlan.value : undefined)
     await createVisit({
       customerId,
       occurredAt: new Date(form.occurredAt).toISOString(),
@@ -174,9 +201,11 @@ async function handleSubmit() {
       businessSituation: form.businessSituation || undefined,
       equipmentSituation: form.equipmentSituation || undefined,
       personnelChanges: form.personnelChanges || undefined,
-      sourcePlanId: sourcePlan.value?.id,
-      nextActionAt: new Date(form.nextActionAt).toISOString(),
-      nextActionContent: form.nextActionContent,
+      sourcePlanId: linkedPlan?.id,
+      keepExistingPlan: planHandling.value === 'keep' || undefined,
+      nextActionAt:
+        planHandling.value === 'keep' ? undefined : new Date(form.nextActionAt).toISOString(),
+      nextActionContent: planHandling.value === 'keep' ? undefined : form.nextActionContent,
     })
     showToast('拜访已记录')
     router.back()
@@ -199,5 +228,10 @@ function formatTime(value: string): string {
 <style scoped>
 .visit-form__submit {
   margin: var(--crm-spacing-lg) var(--crm-spacing-md);
+}
+.visit-form__handling {
+  display: flex;
+  gap: 10px;
+  padding: var(--crm-spacing-md);
 }
 </style>

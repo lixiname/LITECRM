@@ -765,7 +765,7 @@
         ],
         "responses": {
           "200": {
-            "description": "范围内待办 + 更早逾期待办"
+            "description": "范围内全部计划 + 更早逾期待办"
           }
         },
         "tags": ["sales-plans"]
@@ -823,9 +823,9 @@
         "tags": ["sales-plans"]
       }
     },
-    "/sales-plans/{id}/cancel": {
+    "/sales-plans/{id}/replace": {
       "post": {
-        "operationId": "SalesPlansController_cancel",
+        "operationId": "SalesPlansController_replace",
         "parameters": [
           {
             "name": "id",
@@ -841,7 +841,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CancelSalesPlanDto"
+                "$ref": "#/components/schemas/ReplaceSalesPlanDto"
               }
             }
           }
@@ -2312,19 +2312,27 @@
         },
         "required": ["version", "plannedAt"]
       },
-      "CancelSalesPlanDto": {
+      "ReplaceSalesPlanDto": {
         "type": "object",
         "properties": {
           "version": {
             "type": "number",
             "minimum": 1
           },
+          "plannedAt": {
+            "type": "string",
+            "description": "替代计划的执行时间"
+          },
+          "content": {
+            "type": "string",
+            "description": "替代计划的内容"
+          },
           "reason": {
             "type": "string",
-            "description": "取消原因"
+            "description": "替换原因"
           }
         },
-        "required": ["version", "reason"]
+        "required": ["version", "plannedAt", "content", "reason"]
       },
       "CreateClaimDto": {
         "type": "object",
@@ -2442,16 +2450,20 @@
             "type": "string",
             "description": "本次拜访履行的来源计划"
           },
+          "keepExistingPlan": {
+            "type": "boolean",
+            "description": "临时记录时保留当前未完成计划，不另建下一计划"
+          },
           "nextActionAt": {
             "type": "string",
-            "description": "下次拜访计划时间"
+            "description": "下次拜访计划时间；不保留现有计划时必填"
           },
           "nextActionContent": {
             "type": "string",
-            "description": "下次拜访计划内容"
+            "description": "下次拜访计划内容；不保留现有计划时必填"
           }
         },
-        "required": ["customerId", "occurredAt", "method", "nextActionAt", "nextActionContent"]
+        "required": ["customerId", "occurredAt", "method"]
       },
       "CreateOpportunityDto": {
         "type": "object",
@@ -2533,16 +2545,20 @@
             "type": "string",
             "description": "本次跟进履行的来源计划"
           },
+          "keepExistingPlan": {
+            "type": "boolean",
+            "description": "临时记录时保留当前未完成计划，不另建下一计划"
+          },
           "nextActionContent": {
             "type": "string",
-            "description": "下一行动内容"
+            "description": "下一行动内容；不保留现有计划时必填"
           },
           "nextActionAt": {
             "type": "string",
-            "description": "下一行动计划时间"
+            "description": "下一行动计划时间；不保留现有计划时必填"
           }
         },
-        "required": ["version", "conclusion", "nextActionContent", "nextActionAt"]
+        "required": ["version", "conclusion"]
       },
       "OpportunityQuoteKind": {
         "type": "string",
@@ -2582,13 +2598,17 @@
             "type": "string",
             "description": "本次报价履行的来源计划"
           },
+          "keepExistingPlan": {
+            "type": "boolean",
+            "description": "临时报价时保留当前未完成计划，不另建下一计划"
+          },
           "nextActionContent": {
             "type": "string",
-            "description": "报价后的下一行动内容"
+            "description": "报价后的下一行动内容；不保留现有计划时必填"
           },
           "nextActionAt": {
             "type": "string",
-            "description": "报价后的下一行动计划时间"
+            "description": "报价后的下一行动计划时间；不保留现有计划时必填"
           },
           "note": {
             "type": "string"
@@ -2598,7 +2618,7 @@
             "description": "可选文件引用；不要求上传"
           }
         },
-        "required": ["version", "kind", "quotedAt", "amount", "nextActionContent", "nextActionAt"]
+        "required": ["version", "kind", "quotedAt", "amount"]
       },
       "WinOpportunityDto": {
         "type": "object",

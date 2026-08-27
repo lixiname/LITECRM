@@ -8,12 +8,7 @@
     >
       <template #actions>
         <template v-if="detail && detail.status === 'active' && auth.hasAbility('customer.write')">
-          <el-button
-            type="primary"
-            @click="businessDialogs?.openVisit(detail.currentVisitPlan ?? undefined)"
-          >
-            记拜访
-          </el-button>
+          <el-button type="primary" @click="businessDialogs?.openVisit()"> 记拜访 </el-button>
           <el-button @click="businessDialogs?.openOpportunity()">建商机</el-button>
           <el-button @click="businessDialogs?.openComplaint()">登客诉</el-button>
         </template>
@@ -150,6 +145,7 @@
       ref="businessDialogs"
       :customer-id="customerId"
       :customer-name="detail.name"
+      :current-visit-plan="detail.currentVisitPlan ?? undefined"
       @changed="handleBusinessChanged"
     />
     <CustomerEditDialog v-if="detail" ref="editDialog" :customer="detail" @saved="reload" />
@@ -202,6 +198,7 @@ const businessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
 const editDialog = ref<InstanceType<typeof CustomerEditDialog>>()
 const executionPlan = ref<SalesPlan>()
 const executionOpened = ref(false)
+const recordOpened = ref(false)
 
 onMounted(async () => {
   const planId = route.query.executePlan as string | undefined
@@ -222,6 +219,17 @@ watch([detail, executionPlan], async ([customer, plan]) => {
   businessDialogs.value.openVisit(plan)
   executionOpened.value = true
 })
+
+watch(
+  () => detail.value,
+  async (customer) => {
+    if (!customer || route.query.record !== 'visit' || recordOpened.value) return
+    await nextTick()
+    businessDialogs.value?.openVisit(undefined, route.query.date as string | undefined)
+    recordOpened.value = true
+  },
+  { immediate: true },
+)
 
 const transferForm = reactive({ toOwnerId: '', reason: '' })
 const releaseForm = reactive({ target: 'pool' as 'pool' | 'invalid', reason: '' })

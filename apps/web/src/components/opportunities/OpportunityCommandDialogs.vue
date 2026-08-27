@@ -1,21 +1,37 @@
 <template>
   <el-dialog v-model="showFollow" title="记录跟进并安排下一计划" width="480px">
     <el-alert
-      v-if="opportunity.actions[0]"
+      v-if="sourcePlan"
       class="opportunity-dialog__plan"
       type="info"
       :closable="false"
-      :title="`原计划：${formatTime(opportunity.actions[0].plannedAt)} · ${opportunity.actions[0].content}`"
+      :title="`原计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
+    />
+    <el-alert
+      v-else-if="opportunity.actions[0]"
+      class="opportunity-dialog__plan"
+      type="warning"
+      :closable="false"
+      :title="`已有计划：${formatTime(opportunity.actions[0].plannedAt)} · ${opportunity.actions[0].content}`"
     />
     <el-form label-width="100px">
+      <el-form-item v-if="!sourcePlan && opportunity.actions[0]" label="与原计划">
+        <el-radio-group v-model="planHandling">
+          <el-radio value="execute">关联并完成原计划</el-radio>
+          <el-radio value="keep">本次为临时记录，保留原计划</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="跟进时间" required>
+        <el-input v-model="followForm.occurredAt" type="datetime-local" />
+      </el-form-item>
       <el-form-item label="本次结论" required
         ><el-input v-model="followForm.conclusion"
       /></el-form-item>
       <el-form-item label="沟通方式"><el-input v-model="followForm.method" /></el-form-item>
-      <el-form-item label="下一计划" required
+      <el-form-item v-if="planHandling !== 'keep'" label="下一计划" required
         ><el-input v-model="followForm.nextActionContent"
       /></el-form-item>
-      <el-form-item label="计划时间" required
+      <el-form-item v-if="planHandling !== 'keep'" label="计划时间" required
         ><el-input v-model="followForm.nextActionAt" type="datetime-local"
       /></el-form-item>
     </el-form>
@@ -26,7 +42,27 @@
   </el-dialog>
 
   <el-dialog v-model="showQuote" title="记录报价（不会自动成交）" width="480px">
+    <el-alert
+      v-if="sourcePlan"
+      class="opportunity-dialog__plan"
+      type="info"
+      :closable="false"
+      :title="`原计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
+    />
+    <el-alert
+      v-else-if="opportunity.actions[0]"
+      class="opportunity-dialog__plan"
+      type="warning"
+      :closable="false"
+      :title="`已有计划：${formatTime(opportunity.actions[0].plannedAt)} · ${opportunity.actions[0].content}`"
+    />
     <el-form label-width="100px">
+      <el-form-item v-if="!sourcePlan && opportunity.actions[0]" label="与原计划">
+        <el-radio-group v-model="planHandling">
+          <el-radio value="execute">关联并完成原计划</el-radio>
+          <el-radio value="keep">本次为临时报价，保留原计划</el-radio>
+        </el-radio-group>
+      </el-form-item>
       <el-form-item label="报价类型" required>
         <el-radio-group v-model="quoteForm.kind">
           <el-radio value="oral">口头报价</el-radio>
@@ -52,10 +88,10 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="下一计划" required>
+      <el-form-item v-if="planHandling !== 'keep'" label="下一计划" required>
         <el-input v-model="quoteForm.nextActionContent" placeholder="如：确认客户对报价的反馈" />
       </el-form-item>
-      <el-form-item label="计划时间" required>
+      <el-form-item v-if="planHandling !== 'keep'" label="计划时间" required>
         <el-input v-model="quoteForm.nextActionAt" type="datetime-local" />
       </el-form-item>
     </el-form>
@@ -123,6 +159,7 @@ import {
   winOpportunity,
   type OpportunityDetail,
   type OpportunityQuote,
+  type SalesPlan,
 } from '@crm/domain'
 
 const props = defineProps<{ opportunity: OpportunityDetail }>()
@@ -132,7 +169,10 @@ const showQuote = ref(false)
 const showWin = ref(false)
 const showClose = ref(false)
 const acting = ref(false)
+const sourcePlan = ref<SalesPlan>()
+const planHandling = ref<'execute' | 'keep' | 'new'>('new')
 const followForm = reactive({
+  occurredAt: localInput(new Date()),
   conclusion: '',
   method: '',
   nextActionContent: '',
@@ -157,10 +197,17 @@ const activeQuotes = computed(() =>
   props.opportunity.quotes.filter((quote) => quote.status === 'active'),
 )
 
-function openFollow() {
+function openFollow(plan?: SalesPlan, occurredDate?: string) {
+  sourcePlan.value = plan
+  planHandling.value = plan ? 'execute' : props.opportunity.actions[0] ? 'execute' : 'new'
+  followForm.conclusion = ''
+  followForm.method = ''
+  if (occurredDate) followForm.occurredAt = `${occurredDate}T09:00`
   showFollow.value = true
 }
-function openQuote() {
+function openQuote(plan?: SalesPlan) {
+  sourcePlan.value = plan
+  planHandling.value = plan ? 'execute' : props.opportunity.actions[0] ? 'execute' : 'new'
   showQuote.value = true
 }
 function openWin() {
@@ -192,20 +239,29 @@ async function runAction(action: () => Promise<unknown>, message: string): Promi
 async function handleFollow() {
   if (
     !followForm.conclusion.trim() ||
-    !followForm.nextActionContent.trim() ||
-    !followForm.nextActionAt
+    (planHandling.value !== 'keep' &&
+      (!followForm.nextActionContent.trim() || !followForm.nextActionAt))
   ) {
     return ElMessage.warning('请填写本次结论和下一计划')
   }
+  const linkedPlan =
+    sourcePlan.value ??
+    (planHandling.value === 'execute' ? props.opportunity.actions[0] : undefined)
   const succeeded = await runAction(
     () =>
       addOpportunityFollowUp(props.opportunity.id, {
         version: props.opportunity.version,
         conclusion: followForm.conclusion.trim(),
+        occurredAt: new Date(followForm.occurredAt).toISOString(),
         method: followForm.method.trim() || undefined,
-        sourcePlanId: props.opportunity.actions[0]?.id,
-        nextActionContent: followForm.nextActionContent.trim(),
-        nextActionAt: new Date(followForm.nextActionAt).toISOString(),
+        sourcePlanId: linkedPlan?.id,
+        keepExistingPlan: planHandling.value === 'keep' || undefined,
+        nextActionContent:
+          planHandling.value === 'keep' ? undefined : followForm.nextActionContent.trim(),
+        nextActionAt:
+          planHandling.value === 'keep'
+            ? undefined
+            : new Date(followForm.nextActionAt).toISOString(),
       }),
     '跟进已记录',
   )
@@ -216,10 +272,13 @@ async function handleQuote() {
   if (
     quoteForm.amount == null ||
     !quoteForm.quotedAt ||
-    !quoteForm.nextActionContent.trim() ||
-    !quoteForm.nextActionAt
+    (planHandling.value !== 'keep' &&
+      (!quoteForm.nextActionContent.trim() || !quoteForm.nextActionAt))
   )
     return ElMessage.warning('请填写报价和报价后的下一计划')
+  const linkedPlan =
+    sourcePlan.value ??
+    (planHandling.value === 'execute' ? props.opportunity.actions[0] : undefined)
   const succeeded = await runAction(
     () =>
       addOpportunityQuote(props.opportunity.id, {
@@ -229,9 +288,14 @@ async function handleQuote() {
         amount: quoteForm.amount!,
         quoteNo: quoteForm.quoteNo.trim() || undefined,
         supersedesQuoteId: quoteForm.supersedesQuoteId || undefined,
-        sourcePlanId: props.opportunity.actions[0]?.id,
-        nextActionContent: quoteForm.nextActionContent.trim(),
-        nextActionAt: new Date(quoteForm.nextActionAt).toISOString(),
+        sourcePlanId: linkedPlan?.id,
+        keepExistingPlan: planHandling.value === 'keep' || undefined,
+        nextActionContent:
+          planHandling.value === 'keep' ? undefined : quoteForm.nextActionContent.trim(),
+        nextActionAt:
+          planHandling.value === 'keep'
+            ? undefined
+            : new Date(quoteForm.nextActionAt).toISOString(),
       }),
     '报价已记录',
   )

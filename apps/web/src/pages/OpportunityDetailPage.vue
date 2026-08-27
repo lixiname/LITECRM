@@ -141,6 +141,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getOpportunity,
+  getSalesPlan,
   listDimensionOptions,
   OPPORTUNITY_RISK_LABELS,
   useAuthStore,
@@ -172,15 +173,29 @@ const { data: productLineOptions } = useQuery('catalog:product_line', () =>
   listDimensionOptions('product_line'),
 )
 const commands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
+const routeCommandOpened = ref(false)
 const isOpen = computed(() => opp.value?.stage === 'intent' || opp.value?.stage === 'following')
 const canOperate = computed(() => isOpen.value && auth.hasAbility('customer.write'))
 
 watch(
   () => opp.value,
   async (value) => {
-    if (!value || !route.query.executePlan) return
+    if (!value || routeCommandOpened.value) return
     await nextTick()
-    commands.value?.openFollow()
+    if (route.query.executePlan) {
+      const plan = await getSalesPlan(route.query.executePlan as string)
+      commands.value?.openFollow(plan)
+      routeCommandOpened.value = true
+      return
+    }
+    if (route.query.record === 'follow-up') {
+      commands.value?.openFollow(undefined, route.query.date as string | undefined)
+      routeCommandOpened.value = true
+    }
+    if (route.query.record === 'quote') {
+      commands.value?.openQuote()
+      routeCommandOpened.value = true
+    }
   },
   { immediate: true },
 )

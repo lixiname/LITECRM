@@ -6,6 +6,7 @@ import { db, type DbClient } from '../common/db/db'
 import { complaints, customers, followUpActions, opportunities } from '../common/db/schema'
 import type { FollowUpActionSourceType, SalesPlanKind } from '../common/constants'
 import type { CreateSalesPlanDto } from './dto/create-follow-up-action.dto'
+import type { ReplaceSalesPlanDto } from './dto/action-command.dto'
 
 export interface NewLinkedAction {
   ownerId: string
@@ -122,26 +123,38 @@ export class SalesPlansService {
     return updated
   }
 
-  async cancel(id: string, version: number, reason: string, actor: AuthUser) {
+  async replace(id: string, dto: ReplaceSalesPlanDto, actor: AuthUser) {
     await this.assertVisible(id, actor)
-    const [updated] = await db
-      .update(followUpActions)
-      .set({
-        status: 'cancelled',
-        cancelReason: reason.trim(),
-        updatedAt: new Date(),
-        version: sql`${followUpActions.version} + 1`,
+    return db.transaction(async (tx) => {
+      const [replaced] = await tx
+        .update(followUpActions)
+        .set({
+          status: 'cancelled',
+          cancelReason: `计划已替换：${dto.reason.trim()}`,
+          updatedAt: new Date(),
+          version: sql`${followUpActions.version} + 1`,
+        })
+        .where(
+          and(
+            eq(followUpActions.id, id),
+            eq(followUpActions.status, 'pending'),
+            eq(followUpActions.version, dto.version),
+          ),
+        )
+        .returning()
+      if (!replaced) throw new ConflictException('计划已变化，请刷新后重试')
+      const replacement = await this.createLinked(tx, {
+        ownerId: replaced.ownerId,
+        customerId: replaced.customerId,
+        opportunityId: replaced.opportunityId,
+        complaintId: replaced.complaintId,
+        planKind: replaced.planKind as SalesPlanKind,
+        originType: 'manual',
+        plannedAt: new Date(dto.plannedAt),
+        content: dto.content,
       })
-      .where(
-        and(
-          eq(followUpActions.id, id),
-          eq(followUpActions.status, 'pending'),
-          eq(followUpActions.version, version),
-        ),
-      )
-      .returning()
-    if (!updated) throw new ConflictException('行动已变化，请刷新后重试')
-    return updated
+      return { replaced, replacement }
+    })
   }
 
   async fulfillLinked(
@@ -175,6 +188,32 @@ export class SalesPlansService {
       .where(and(...conditions))
       .returning({ id: followUpActions.id })
     if (!updated) throw new ConflictException('来源计划不存在、已执行或不属于当前业务')
+  }
+
+  async assertPendingExists(
+    tx: DbClient,
+    target: {
+      planKind: SalesPlanKind
+      customerId?: string
+      opportunityId?: string
+      complaintId?: string
+    },
+  ) {
+    const conditions = [
+      eq(followUpActions.status, 'pending'),
+      eq(followUpActions.planKind, target.planKind),
+    ]
+    if (target.customerId) conditions.push(eq(followUpActions.customerId, target.customerId))
+    if (target.opportunityId)
+      conditions.push(eq(followUpActions.opportunityId, target.opportunityId))
+    if (target.complaintId) conditions.push(eq(followUpActions.complaintId, target.complaintId))
+    const [existing] = await tx
+      .select({ id: followUpActions.id })
+      .from(followUpActions)
+      .where(and(...conditions))
+      .limit(1)
+    if (!existing) throw new ConflictException('没有可保留的当前计划，请明确安排下一计划')
+    return existing
   }
 
   async cancelPendingForOpportunity(tx: DbClient, opportunityId: string, reason: string) {
@@ -226,7 +265,7 @@ export class SalesPlansService {
   async week(actor: AuthUser, start: string, end: string) {
     const visible = await this.accessService.getVisibleUserIds(actor)
     const today = new Date().toISOString().slice(0, 10)
-    const base = [inArray(followUpActions.ownerId, visible), eq(followUpActions.status, 'pending')]
+    const visibleCondition = inArray(followUpActions.ownerId, visible)
     const projection = {
       ...getTableColumns(followUpActions),
       customerName: customers.name,
@@ -242,17 +281,23 @@ export class SalesPlansService {
       query()
         .where(
           and(
-            ...base,
+            visibleCondition,
+            eq(followUpActions.status, 'pending'),
             sql`${followUpActions.plannedAt}::date < ${start}`,
             sql`${followUpActions.plannedAt}::date < ${today}`,
           ),
         )
         .orderBy(asc(followUpActions.plannedAt)),
       query()
-        .where(and(...base, sql`${followUpActions.plannedAt}::date between ${start} and ${end}`))
+        .where(
+          and(
+            visibleCondition,
+            sql`${followUpActions.plannedAt}::date between ${start} and ${end}`,
+          ),
+        )
         .orderBy(asc(followUpActions.plannedAt)),
     ])
-    return { overdue, actions: ranged }
+    return { overdue, plans: ranged }
   }
 
   async findOne(id: string, actor: AuthUser) {

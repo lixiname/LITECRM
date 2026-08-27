@@ -20,6 +20,12 @@ export function rescheduleSalesPlan(
   return apiPost(`/sales-plans/${id}/reschedule`, { version, plannedAt })
 }
 
-export function cancelSalesPlan(id: string, version: number, reason: string): Promise<SalesPlan> {
-  return apiPost(`/sales-plans/${id}/cancel`, { version, reason })
+export function replaceSalesPlan(
+  id: string,
+  version: number,
+  plannedAt: string,
+  content: string,
+  reason: string,
+): Promise<{ replaced: SalesPlan; replacement: SalesPlan }> {
+  return apiPost(`/sales-plans/${id}/replace`, { version, plannedAt, content, reason })
 }

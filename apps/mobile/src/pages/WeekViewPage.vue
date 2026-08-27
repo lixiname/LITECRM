@@ -45,19 +45,57 @@
           </div>
 
           <div class="day-card__body">
-            <div v-for="action in day.actions" :key="action.id" class="action-row">
+            <div class="day-card__section">计划</div>
+            <div
+              v-for="action in day.plans"
+              :key="action.id"
+              class="action-row"
+              :class="{
+                'action-row--completed': action.status === 'completed',
+                'action-row--cancelled': action.status === 'cancelled',
+              }"
+            >
               <div>
                 <span class="action-row__source">{{ planLabel(action.planKind) }}</span>
                 <strong>{{ action.customerName }}</strong>
                 <span>{{ action.content }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
-              <van-button size="mini" plain type="primary" @click="openActionSheet(action)">
+              <van-button
+                v-if="action.status === 'pending'"
+                size="mini"
+                plain
+                type="primary"
+                @click="openActionSheet(action)"
+              >
                 处理
               </van-button>
             </div>
-            <div v-if="day.actions.length === 0" class="day-card__empty" @click="goQuickAdd(day)">
-              + 安排计划
+            <div v-if="day.plans.length === 0" class="day-card__empty">暂无计划</div>
+            <div class="day-card__section">业务记录</div>
+            <div v-for="record in day.businessRecords" :key="record.id" class="record-row">
+              <strong>{{ record.customerName }}</strong>
+              <span>{{ recordLabel(record.type) }} · {{ record.summary }}</span>
+              <small>{{ timeOnly(record.occurredAt) }}</small>
+            </div>
+            <div v-if="day.businessRecords.length === 0" class="day-card__empty">暂无业务记录</div>
+            <div class="day-card__section">客诉</div>
+            <div
+              v-for="record in day.complaintRecords"
+              :key="record.id"
+              class="record-row record-row--complaint"
+            >
+              <strong>{{ record.customerName }}</strong>
+              <span
+                >{{ record.type === 'complaint_registered' ? '客诉登记' : '客诉跟进' }} ·
+                {{ record.summary }}</span
+              >
+              <small>{{ timeOnly(record.occurredAt) }}</small>
+            </div>
+            <div v-if="day.complaintRecords.length === 0" class="day-card__empty">暂无客诉</div>
+            <div class="day-card__add">
+              <span @click="goQuickAdd(day, 'plan')">+ 安排计划</span>
+              <span @click="goQuickAdd(day, 'record')">+ 记录实际</span>
             </div>
           </div>
         </div>
@@ -75,34 +113,29 @@
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
         <div class="command-sheet__title">
-          {{ commandSheet.mode === 'reschedule' ? '计划改期' : '取消计划' }}
+          {{ commandSheet.mode === 'reschedule' ? '计划改期' : '替换计划' }}
         </div>
-        <van-field
-          v-if="commandSheet.mode === 'reschedule'"
-          v-model="commandSheet.plannedAt"
-          label="新时间"
-          type="datetime-local"
-          required
-        />
-        <van-field
-          v-else
-          v-model="commandSheet.reason"
-          label="取消原因"
-          type="textarea"
-          rows="3"
-          autosize
-          required
-          placeholder="说明为什么不再执行"
-        />
+        <van-field v-model="commandSheet.plannedAt" label="新时间" type="datetime-local" required />
+        <template v-if="commandSheet.mode === 'replace'">
+          <van-field v-model="commandSheet.content" label="新内容" required />
+          <van-field
+            v-model="commandSheet.reason"
+            label="替换原因"
+            type="textarea"
+            rows="3"
+            autosize
+            required
+          />
+        </template>
         <div class="command-sheet__actions">
           <van-button block @click="commandSheet.visible = false">返回</van-button>
           <van-button
             block
-            :type="commandSheet.mode === 'cancel' ? 'danger' : 'primary'"
+            type="primary"
             :loading="commandSheet.saving"
             @click="submitActionCommand"
           >
-            {{ commandSheet.mode === 'cancel' ? '确认取消' : '确认改期' }}
+            {{ commandSheet.mode === 'replace' ? '确认替换' : '确认改期' }}
           </van-button>
         </div>
       </div>
@@ -115,21 +148,23 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
-  cancelSalesPlan,
   getWeekView,
+  replaceSalesPlan,
   rescheduleSalesPlan,
   useQuery,
   type SalesPlan,
   type SalesPlanKind,
+  type WeekBusinessRecord,
+  type WeekComplaintRecord,
 } from '@crm/domain'
 
 const router = useRouter()
-type ActionCommand = 'execute' | 'reschedule' | 'cancel'
+type ActionCommand = 'execute' | 'reschedule' | 'replace'
 
 const actionOptions: { name: string; value: ActionCommand; color?: string }[] = [
   { name: '填写执行结果', value: 'execute' },
   { name: '改期', value: 'reschedule' },
-  { name: '取消计划', value: 'cancel', color: '#ee0a24' },
+  { name: '替换计划', value: 'replace' },
 ]
 const today = new Date()
 const todayStr = fmt(today)
@@ -161,14 +196,26 @@ interface DayVM {
   weekday: string
   monthDay: string
   isToday: boolean
-  actions: SalesPlan[]
+  plans: SalesPlan[]
+  businessRecords: WeekBusinessRecord[]
+  complaintRecords: WeekComplaintRecord[]
 }
 
 const days = computed<DayVM[]>(() => {
   const actionMap = new Map<string, SalesPlan[]>()
-  for (const action of view.value?.actions ?? []) {
+  const businessMap = new Map<string, WeekBusinessRecord[]>()
+  const complaintMap = new Map<string, WeekComplaintRecord[]>()
+  for (const action of view.value?.plans ?? []) {
     const date = fmt(new Date(action.plannedAt))
     actionMap.set(date, [...(actionMap.get(date) ?? []), action])
+  }
+  for (const record of view.value?.businessRecords ?? []) {
+    const date = fmt(new Date(record.occurredAt))
+    businessMap.set(date, [...(businessMap.get(date) ?? []), record])
+  }
+  for (const record of view.value?.complaintRecords ?? []) {
+    const date = fmt(new Date(record.occurredAt))
+    complaintMap.set(date, [...(complaintMap.get(date) ?? []), record])
   }
   const result: DayVM[] = []
   for (let i = 0; i < 7; i++) {
@@ -180,7 +227,9 @@ const days = computed<DayVM[]>(() => {
       weekday: '周' + '一二三四五六日'[(dateValue.getDay() + 6) % 7],
       monthDay: `${dateValue.getMonth() + 1}/${dateValue.getDate()}`,
       isToday: date === todayStr,
-      actions: actionMap.get(date) ?? [],
+      plans: actionMap.get(date) ?? [],
+      businessRecords: businessMap.get(date) ?? [],
+      complaintRecords: complaintMap.get(date) ?? [],
     })
   }
   return result
@@ -198,8 +247,9 @@ const showActionSheet = ref(false)
 const selectedAction = ref<SalesPlan>()
 const commandSheet = reactive({
   visible: false,
-  mode: 'reschedule' as 'reschedule' | 'cancel',
+  mode: 'reschedule' as 'reschedule' | 'replace',
   plannedAt: '',
+  content: '',
   reason: '',
   saving: false,
 })
@@ -218,6 +268,7 @@ function selectActionCommand(option: { value: ActionCommand }) {
   }
   commandSheet.mode = option.value
   commandSheet.plannedAt = localInput(action.plannedAt)
+  commandSheet.content = action.content
   commandSheet.reason = ''
   commandSheet.visible = true
 }
@@ -227,8 +278,11 @@ async function submitActionCommand() {
   if (!action) return
   if (commandSheet.mode === 'reschedule' && !commandSheet.plannedAt)
     return showToast('请选择新的计划时间')
-  if (commandSheet.mode === 'cancel' && !commandSheet.reason.trim())
-    return showToast('请填写取消原因')
+  if (
+    commandSheet.mode === 'replace' &&
+    (!commandSheet.content.trim() || !commandSheet.reason.trim())
+  )
+    return showToast('请填写新内容和替换原因')
   commandSheet.saving = true
   try {
     if (commandSheet.mode === 'reschedule') {
@@ -239,8 +293,14 @@ async function submitActionCommand() {
       )
       showToast('计划已改期')
     } else {
-      await cancelSalesPlan(action.id, action.version, commandSheet.reason.trim())
-      showToast('计划已取消')
+      await replaceSalesPlan(
+        action.id,
+        action.version,
+        new Date(commandSheet.plannedAt).toISOString(),
+        commandSheet.content.trim(),
+        commandSheet.reason.trim(),
+      )
+      showToast('计划已替换')
     }
     commandSheet.visible = false
     await reload()
@@ -273,8 +333,16 @@ function planLabel(kind: SalesPlanKind): string {
   }[kind]
 }
 
-function goQuickAdd(day: DayVM) {
-  void router.push({ path: '/quick-add', query: { date: day.date } })
+function goQuickAdd(day: DayVM, mode: 'plan' | 'record') {
+  void router.push({ path: '/quick-add', query: { date: day.date, mode } })
+}
+
+function recordLabel(type: WeekBusinessRecord['type']) {
+  return {
+    customer_visit: '客户拜访',
+    opportunity_follow_up: '商机跟进',
+    opportunity_quote: '报价记录',
+  }[type]
 }
 
 function fmt(date: Date): string {
@@ -368,6 +436,41 @@ function formatTime(value: string): string {
 }
 .action-row--overdue {
   color: var(--crm-color-danger);
+}
+.action-row--completed {
+  filter: grayscale(1);
+  opacity: 0.58;
+}
+.action-row--cancelled {
+  opacity: 0.42;
+  text-decoration: line-through;
+}
+.day-card__section {
+  margin-top: 6px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.record-row {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border-left: 3px solid var(--crm-color-success);
+  background: var(--crm-color-bg-page);
+  font-size: var(--crm-font-size-sm);
+}
+.record-row--complaint {
+  border-left-color: var(--crm-color-danger);
+}
+.record-row small {
+  color: var(--crm-color-text-secondary);
+}
+.day-card__add {
+  display: flex;
+  justify-content: space-around;
+  padding-top: var(--crm-spacing-sm);
+  color: var(--crm-color-primary);
+  font-size: var(--crm-font-size-sm);
 }
 .action-row__source {
   display: inline-block;

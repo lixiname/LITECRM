@@ -42,7 +42,16 @@
           </div>
 
           <div class="week-view__body">
-            <div v-for="action in day.actions" :key="action.id" class="week-view__item">
+            <div class="week-view__section-title">计划</div>
+            <div
+              v-for="action in day.plans"
+              :key="action.id"
+              class="week-view__item"
+              :class="{
+                'week-view__item--completed': action.status === 'completed',
+                'week-view__item--cancelled': action.status === 'cancelled',
+              }"
+            >
               <div class="week-view__item-head">
                 <span>{{ planLabel(action.planKind) }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
@@ -50,9 +59,49 @@
               <strong class="week-view__customer">{{ action.customerName }}</strong>
               <small v-if="action.opportunityName">{{ action.opportunityName }}</small>
               <div :title="action.content">{{ action.content }}</div>
-              <FollowUpActionMenu :action="action" @command="handleActionCommand" />
+              <small v-if="action.status === 'completed'" class="week-view__state">已执行</small>
+              <small v-else-if="action.status === 'cancelled'" class="week-view__state">
+                {{ action.cancelReason }}
+              </small>
+              <FollowUpActionMenu
+                v-if="action.status === 'pending'"
+                :action="action"
+                @command="handleActionCommand"
+              />
             </div>
-            <div class="week-view__add" @click="onBlankClick(day)">＋ 安排计划</div>
+            <div v-if="day.plans.length === 0" class="week-view__empty">暂无计划</div>
+
+            <div class="week-view__section-title">业务记录</div>
+            <div v-for="record in day.businessRecords" :key="record.id" class="week-view__record">
+              <div class="week-view__item-head">
+                <span>{{ recordLabel(record.type) }}</span
+                ><small>{{ timeOnly(record.occurredAt) }}</small>
+              </div>
+              <strong class="week-view__customer">{{ record.customerName }}</strong>
+              <small v-if="record.opportunityName">{{ record.opportunityName }}</small>
+              <div>{{ record.summary }}</div>
+            </div>
+            <div v-if="day.businessRecords.length === 0" class="week-view__empty">暂无业务记录</div>
+
+            <div class="week-view__section-title">客诉</div>
+            <div
+              v-for="record in day.complaintRecords"
+              :key="record.id"
+              class="week-view__record week-view__record--complaint"
+            >
+              <div class="week-view__item-head">
+                <span>{{ record.type === 'complaint_registered' ? '客诉登记' : '客诉跟进' }}</span>
+                <small>{{ timeOnly(record.occurredAt) }}</small>
+              </div>
+              <strong class="week-view__customer">{{ record.customerName }}</strong>
+              <div>{{ record.summary }}</div>
+            </div>
+            <div v-if="day.complaintRecords.length === 0" class="week-view__empty">暂无客诉</div>
+
+            <div class="week-view__add">
+              <span @click="onBlankClick(day)">＋ 安排计划</span>
+              <span @click="openRecordDialog(day)">＋ 记录实际</span>
+            </div>
           </div>
         </div>
       </div>
@@ -115,31 +164,76 @@
 
     <el-dialog
       v-model="actionDialog.visible"
-      :title="actionDialog.mode === 'reschedule' ? '计划改期' : '取消计划'"
+      :title="actionDialog.mode === 'reschedule' ? '计划改期' : '替换计划'"
       width="420px"
     >
       <el-form label-width="80px">
         <el-form-item v-if="actionDialog.mode === 'reschedule'" label="新时间" required>
           <el-input v-model="actionDialog.plannedAt" type="datetime-local" />
         </el-form-item>
-        <el-form-item v-else label="取消原因" required>
-          <el-input
-            v-model="actionDialog.reason"
-            type="textarea"
-            :rows="3"
-            placeholder="说明为什么不再执行这项计划"
-          />
-        </el-form-item>
+        <template v-else>
+          <el-form-item label="新时间" required>
+            <el-input v-model="actionDialog.plannedAt" type="datetime-local" />
+          </el-form-item>
+          <el-form-item label="新内容" required>
+            <el-input v-model="actionDialog.content" maxlength="150" />
+          </el-form-item>
+          <el-form-item label="替换原因" required>
+            <el-input
+              v-model="actionDialog.reason"
+              type="textarea"
+              :rows="3"
+              placeholder="说明为什么改成另一项安排"
+            />
+          </el-form-item>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="actionDialog.visible = false">返回</el-button>
-        <el-button
-          :type="actionDialog.mode === 'cancel' ? 'danger' : 'primary'"
-          :loading="actionDialog.saving"
-          @click="submitActionCommand"
-        >
-          {{ actionDialog.mode === 'cancel' ? '确认取消' : '确认改期' }}
+        <el-button type="primary" :loading="actionDialog.saving" @click="submitActionCommand">
+          {{ actionDialog.mode === 'replace' ? '确认替换' : '确认改期' }}
         </el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="recordDialog.visible" title="记录当日实际" width="520px">
+      <el-form label-width="90px">
+        <el-form-item label="记录类型" required>
+          <el-radio-group v-model="recordDialog.type">
+            <el-radio value="customer_visit">客户拜访</el-radio>
+            <el-radio value="opportunity_follow_up">商机跟进</el-radio>
+            <el-radio value="opportunity_quote">报价记录</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="客户" required>
+          <el-select
+            v-model="recordDialog.customerId"
+            filterable
+            style="width: 100%"
+            @change="loadRecordOpportunities"
+          >
+            <el-option
+              v-for="customer in customerOptions"
+              :key="customer.id"
+              :label="customer.name"
+              :value="customer.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="recordDialog.type !== 'customer_visit'" label="商机" required>
+          <el-select v-model="recordDialog.opportunityId" style="width: 100%">
+            <el-option
+              v-for="opportunity in recordOpportunityOptions"
+              :key="opportunity.id"
+              :label="opportunity.name"
+              :value="opportunity.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="recordDialog.visible = false">返回</el-button>
+        <el-button type="primary" @click="continueRecord">继续填写</el-button>
       </template>
     </el-dialog>
   </div>
@@ -153,20 +247,22 @@ import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
 import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import {
-  cancelSalesPlan,
   createSalesPlan,
   getWeekView,
   listCustomers,
   listOpportunities,
+  replaceSalesPlan,
   rescheduleSalesPlan,
   useQuery,
   type CustomerItem,
   type Opportunity,
   type SalesPlan,
   type SalesPlanKind,
+  type WeekBusinessRecord,
+  type WeekComplaintRecord,
 } from '@crm/domain'
 
-type ActionCommand = 'execute' | 'reschedule' | 'cancel'
+type ActionCommand = 'execute' | 'reschedule' | 'replace'
 
 const router = useRouter()
 
@@ -200,14 +296,26 @@ interface DayVM {
   weekday: string
   monthDay: string
   isToday: boolean
-  actions: SalesPlan[]
+  plans: SalesPlan[]
+  businessRecords: WeekBusinessRecord[]
+  complaintRecords: WeekComplaintRecord[]
 }
 
 const days = computed<DayVM[]>(() => {
   const actionMap = new Map<string, SalesPlan[]>()
-  for (const action of view.value?.actions ?? []) {
+  const businessMap = new Map<string, WeekBusinessRecord[]>()
+  const complaintMap = new Map<string, WeekComplaintRecord[]>()
+  for (const action of view.value?.plans ?? []) {
     const date = fmt(new Date(action.plannedAt))
     actionMap.set(date, [...(actionMap.get(date) ?? []), action])
+  }
+  for (const record of view.value?.businessRecords ?? []) {
+    const date = fmt(new Date(record.occurredAt))
+    businessMap.set(date, [...(businessMap.get(date) ?? []), record])
+  }
+  for (const record of view.value?.complaintRecords ?? []) {
+    const date = fmt(new Date(record.occurredAt))
+    complaintMap.set(date, [...(complaintMap.get(date) ?? []), record])
   }
   const result: DayVM[] = []
   for (let index = 0; index < 7; index++) {
@@ -219,7 +327,9 @@ const days = computed<DayVM[]>(() => {
       weekday: '周' + '一二三四五六日'[(dateValue.getDay() + 6) % 7],
       monthDay: `${dateValue.getMonth() + 1}/${dateValue.getDate()}`,
       isToday: date === todayStr,
-      actions: actionMap.get(date) ?? [],
+      plans: actionMap.get(date) ?? [],
+      businessRecords: businessMap.get(date) ?? [],
+      complaintRecords: complaintMap.get(date) ?? [],
     })
   }
   return result
@@ -235,8 +345,9 @@ function goToday() {
 const selectedAction = ref<SalesPlan>()
 const actionDialog = reactive({
   visible: false,
-  mode: 'reschedule' as 'reschedule' | 'cancel',
+  mode: 'reschedule' as 'reschedule' | 'replace',
   plannedAt: '',
+  content: '',
   reason: '',
   saving: false,
 })
@@ -249,6 +360,7 @@ function handleActionCommand(command: ActionCommand, action: SalesPlan) {
   selectedAction.value = action
   actionDialog.mode = command
   actionDialog.plannedAt = localInput(action.plannedAt)
+  actionDialog.content = action.content
   actionDialog.reason = ''
   actionDialog.visible = true
 }
@@ -258,8 +370,11 @@ async function submitActionCommand() {
   if (!action) return
   if (actionDialog.mode === 'reschedule' && !actionDialog.plannedAt)
     return ElMessage.warning('请选择新的计划时间')
-  if (actionDialog.mode === 'cancel' && !actionDialog.reason.trim())
-    return ElMessage.warning('请填写取消原因')
+  if (
+    actionDialog.mode === 'replace' &&
+    (!actionDialog.content.trim() || !actionDialog.reason.trim())
+  )
+    return ElMessage.warning('请填写新计划内容和替换原因')
   actionDialog.saving = true
   try {
     if (actionDialog.mode === 'reschedule') {
@@ -270,8 +385,14 @@ async function submitActionCommand() {
       )
       ElMessage.success('计划已改期')
     } else {
-      await cancelSalesPlan(action.id, action.version, actionDialog.reason.trim())
-      ElMessage.success('计划已取消')
+      await replaceSalesPlan(
+        action.id,
+        action.version,
+        new Date(actionDialog.plannedAt).toISOString(),
+        actionDialog.content.trim(),
+        actionDialog.reason.trim(),
+      )
+      ElMessage.success('计划已替换，跟进链保持连续')
     }
     actionDialog.visible = false
     await reload()
@@ -301,6 +422,7 @@ const dialogDate = ref('')
 const saving = ref(false)
 const customerOptions = ref<CustomerItem[]>([])
 const opportunityOptions = ref<Opportunity[]>([])
+const recordOpportunityOptions = ref<Opportunity[]>([])
 const planForm = reactive({
   planKind: 'customer_visit' as SalesPlanKind,
   customerId: '',
@@ -308,6 +430,54 @@ const planForm = reactive({
   plannedAt: '',
   content: '',
 })
+
+const recordDialog = reactive({
+  visible: false,
+  date: '',
+  type: 'customer_visit' as 'customer_visit' | 'opportunity_follow_up' | 'opportunity_quote',
+  customerId: '',
+  opportunityId: '',
+})
+
+async function openRecordDialog(day: DayVM) {
+  recordDialog.date = day.date
+  recordDialog.type = 'customer_visit'
+  recordDialog.customerId = ''
+  recordDialog.opportunityId = ''
+  if (!customerOptions.value.length) {
+    const page = await listCustomers({ status: 'active', page: 1, pageSize: 50 })
+    customerOptions.value = page.items
+  }
+  recordDialog.visible = true
+}
+
+async function loadRecordOpportunities() {
+  recordDialog.opportunityId = ''
+  if (!recordDialog.customerId) return
+  const page = await listOpportunities({
+    customerId: recordDialog.customerId,
+    page: 1,
+    pageSize: 50,
+  })
+  recordOpportunityOptions.value = page.items.filter(
+    (item) => item.stage === 'intent' || item.stage === 'following',
+  )
+}
+
+function continueRecord() {
+  if (!recordDialog.customerId) return ElMessage.warning('请选择客户')
+  if (recordDialog.type === 'customer_visit') {
+    recordDialog.visible = false
+    void router.push(`/customers/${recordDialog.customerId}?record=visit&date=${recordDialog.date}`)
+    return
+  }
+  if (!recordDialog.opportunityId) return ElMessage.warning('请选择商机')
+  recordDialog.visible = false
+  const record = recordDialog.type === 'opportunity_quote' ? 'quote' : 'follow-up'
+  void router.push(
+    `/opportunities/${recordDialog.opportunityId}?record=${record}&date=${recordDialog.date}`,
+  )
+}
 
 async function onBlankClick(day: DayVM) {
   dialogDate.value = day.date
@@ -375,6 +545,13 @@ function planLabel(kind: SalesPlanKind): string {
     complaint_follow_up: '客诉处理',
   }[kind]
 }
+function recordLabel(type: WeekBusinessRecord['type']): string {
+  return {
+    customer_visit: '客户拜访',
+    opportunity_follow_up: '商机跟进',
+    opportunity_quote: '报价记录',
+  }[type]
+}
 function fmt(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -435,6 +612,36 @@ function formatDateTime(value: string): string {
   font-size: var(--crm-font-size-sm);
   word-break: break-word;
 }
+.week-view__item--completed {
+  filter: grayscale(1);
+  opacity: 0.62;
+  background: var(--crm-color-bg-page);
+}
+.week-view__item--cancelled {
+  opacity: 0.45;
+  background: var(--crm-color-bg-page);
+  text-decoration: line-through;
+}
+.week-view__record {
+  padding: 6px;
+  border-left: 3px solid var(--crm-color-success);
+  background: var(--crm-color-bg-page);
+  font-size: var(--crm-font-size-sm);
+}
+.week-view__record--complaint {
+  border-left-color: var(--crm-color-danger);
+}
+.week-view__section-title {
+  margin-top: 4px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.week-view__empty,
+.week-view__state {
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+}
 .week-view__item-head {
   display: flex;
   justify-content: space-between;
@@ -452,5 +659,7 @@ function formatDateTime(value: string): string {
   text-align: center;
   color: var(--crm-color-text-secondary);
   cursor: pointer;
+  display: flex;
+  justify-content: space-around;
 }
 </style>

@@ -1,6 +1,15 @@
 <template>
   <div class="quick-add">
-    <van-nav-bar title="安排销售计划" left-arrow @click-left="router.back()" />
+    <van-nav-bar
+      :title="mode === 'plan' ? '安排销售计划' : '记录当日实际'"
+      left-arrow
+      @click-left="router.back()"
+    />
+
+    <van-tabs v-model:active="mode">
+      <van-tab title="安排计划" name="plan" />
+      <van-tab title="记录实际" name="record" />
+    </van-tabs>
 
     <!-- 日期快捷（§3.2 补录刚需） -->
     <div class="quick-add__date">
@@ -27,10 +36,15 @@
     </div>
 
     <!-- 类型面板（§4.1 超兔式：意图直接） -->
-    <van-cell-group inset title="计划做什么">
-      <van-cell title="安排客户拜访" icon="guide-o" is-link @click="pickType('customer_visit')" />
+    <van-cell-group inset :title="mode === 'plan' ? '计划做什么' : '实际做了什么'">
       <van-cell
-        title="安排商机跟进"
+        :title="mode === 'plan' ? '安排客户拜访' : '记录客户拜访'"
+        icon="guide-o"
+        is-link
+        @click="pickType('customer_visit')"
+      />
+      <van-cell
+        :title="mode === 'plan' ? '安排商机跟进' : '记录商机跟进'"
         icon="chart-trending-o"
         is-link
         @click="pickType('opportunity_follow_up')"
@@ -55,7 +69,7 @@
       </div>
     </template>
 
-    <van-form v-if="selectedCustomer" class="quick-add__form" @submit="submitPlan">
+    <van-form v-if="selectedCustomer" class="quick-add__form" @submit="continueAction">
       <van-cell-group inset :title="selectedCustomer.name">
         <van-field
           v-if="type === 'opportunity_follow_up'"
@@ -66,8 +80,15 @@
           placeholder="选择仍在推进的商机"
           @click="showOpportunityPicker = true"
         />
-        <van-field v-model="plannedAt" label="计划时间" type="datetime-local" required />
         <van-field
+          v-if="mode === 'plan'"
+          v-model="plannedAt"
+          label="计划时间"
+          type="datetime-local"
+          required
+        />
+        <van-field
+          v-if="mode === 'plan'"
           v-model="content"
           label="计划内容"
           type="textarea"
@@ -77,9 +98,9 @@
         />
       </van-cell-group>
       <div class="quick-add__submit">
-        <van-button block round type="primary" native-type="submit" :loading="saving"
-          >保存计划</van-button
-        >
+        <van-button block round type="primary" native-type="submit" :loading="saving">{{
+          mode === 'plan' ? '保存计划' : '继续填写实际情况'
+        }}</van-button>
       </div>
     </van-form>
 
@@ -118,6 +139,7 @@ const tomorrow = fmt(new Date(Date.now() + 86400000))
 
 // 日期：优先路由 query（周览空 card 传入），默认今天
 const date = ref<string>((route.query.date as string) || today)
+const mode = ref<'plan' | 'record'>((route.query.mode as 'plan' | 'record') || 'plan')
 const type = ref<SalesPlanKind | null>(null)
 const keyword = ref('')
 const customers = ref<CustomerItem[]>([])
@@ -172,10 +194,25 @@ function pickOpportunity({ selectedOptions }: { selectedOptions: { value: string
   showOpportunityPicker.value = false
 }
 
-async function submitPlan() {
-  if (!type.value || !selectedCustomer.value || !plannedAt.value || !content.value.trim()) return
+async function continueAction() {
+  if (!type.value || !selectedCustomer.value) return
   if (type.value === 'opportunity_follow_up' && !opportunityId.value)
     return showToast('请选择要跟进的商机')
+  if (mode.value === 'record') {
+    if (type.value === 'customer_visit') {
+      await router.push({
+        path: `/customers/${selectedCustomer.value.id}/visit/new`,
+        query: { date: date.value },
+      })
+    } else {
+      await router.push({
+        path: `/opportunities/${opportunityId.value}/follow-up`,
+        query: { date: date.value },
+      })
+    }
+    return
+  }
+  if (!plannedAt.value || !content.value.trim()) return showToast('请填写计划时间和内容')
   saving.value = true
   try {
     await createSalesPlan({
