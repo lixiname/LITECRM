@@ -2,7 +2,11 @@
   <el-dialog v-model="visible" title="新建商机" width="720px" destroy-on-close>
     <el-form label-position="top" class="opportunity-form">
       <el-form-item label="客户" required class="opportunity-form__wide">
-        <el-input v-if="customerId" :model-value="customerName || '当前客户'" disabled />
+        <el-input
+          v-if="contextCustomerId"
+          :model-value="contextCustomerName || '当前客户'"
+          disabled
+        />
         <el-select
           v-else
           v-model="form.customerId"
@@ -169,6 +173,8 @@ type SelectOption = { value: string; label: string }
 
 const visible = ref(false)
 const saving = ref(false)
+const contextCustomerId = ref('')
+const contextCustomerName = ref('')
 const customerLoading = ref(false)
 const customerOptions = ref<CustomerItem[]>([])
 const sourceOptions = ref<SelectOption[]>([])
@@ -211,7 +217,7 @@ onMounted(async () => {
 })
 
 async function searchCustomers(keyword = '') {
-  if (props.customerId) return
+  if (contextCustomerId.value) return
   customerLoading.value = true
   try {
     const page = await listCustomers({ keyword: keyword.trim(), page: 1, pageSize: 20 })
@@ -223,9 +229,11 @@ async function searchCustomers(keyword = '') {
   }
 }
 
-function open() {
+function open(options?: { customerId?: string; customerName?: string; discoveredDate?: string }) {
+  contextCustomerId.value = options?.customerId ?? props.customerId ?? ''
+  contextCustomerName.value = options?.customerName ?? props.customerName ?? ''
   Object.assign(form, {
-    customerId: props.customerId ?? '',
+    customerId: contextCustomerId.value,
     name: '',
     source: '',
     productLines: [],
@@ -236,17 +244,17 @@ function open() {
     initialQuoteDocumentRef: '',
     approximate: true,
     estimateNote: '',
-    discoveredDate: today(),
+    discoveredDate: options?.discoveredDate ?? today(),
     expectedCloseDate: '',
     firstActionContent: '',
     firstActionAt: localDateTime(tomorrowAtNine()),
   })
   visible.value = true
-  if (!props.customerId) void searchCustomers()
+  if (!contextCustomerId.value) void searchCustomers()
 }
 
 async function submit() {
-  const customerId = props.customerId ?? form.customerId
+  const customerId = contextCustomerId.value || form.customerId
   if (
     !customerId ||
     !form.name.trim() ||

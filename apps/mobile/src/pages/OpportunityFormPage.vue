@@ -140,9 +140,9 @@ const form = reactive({
   firstActionContent: '',
   firstActionAt: '',
 })
-// 周览/记一笔预填日期（query.date → 第一步行动时间）
+// 从周视图进入时，所选日期表示需求发现日；第一步行动仍由销售明确安排。
 const qDate = route.query.date as string | undefined
-if (qDate) form.firstActionAt = `${qDate}T09:00`
+if (qDate) form.discoveredDate = qDate
 const sourceLabel = ref('')
 const showSource = ref(false)
 const showAmountBasis = ref(false)

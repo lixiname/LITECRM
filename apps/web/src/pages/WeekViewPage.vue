@@ -60,7 +60,9 @@
                     <el-dropdown-item disabled>安排待办</el-dropdown-item>
                     <el-dropdown-item command="plan">客户拜访 / 商机跟进计划</el-dropdown-item>
                     <el-dropdown-item disabled divided>记录已发生</el-dropdown-item>
-                    <el-dropdown-item command="record">拜访 / 跟进 / 报价</el-dropdown-item>
+                    <el-dropdown-item command="record"
+                      >新商机 / 拜访 / 跟进 / 报价</el-dropdown-item
+                    >
                     <el-dropdown-item command="complaint" divided>登记新客诉</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -139,7 +141,6 @@
                 <span>当天还没有安排或记录</span>
                 <small>可安排待办，也可直接记录已经发生的业务</small>
               </div>
-
             </div>
           </div>
         </div>
@@ -184,9 +185,9 @@
             />
           </el-select>
         </el-form-item>
-          <el-form-item label="计划日期" required>
-            <el-input v-model="planForm.plannedAt" type="date" />
-          </el-form-item>
+        <el-form-item label="计划日期" required>
+          <el-input v-model="planForm.plannedAt" type="date" />
+        </el-form-item>
         <el-form-item label="计划内容" required>
           <el-input
             v-model="planForm.content"
@@ -239,6 +240,7 @@
       <el-form label-width="90px">
         <el-form-item label="记录类型" required>
           <el-radio-group v-model="recordDialog.type">
+            <el-radio value="opportunity_created">新建商机</el-radio>
             <el-radio value="customer_visit">客户拜访</el-radio>
             <el-radio value="opportunity_follow_up">商机跟进</el-radio>
             <el-radio value="opportunity_quote">报价记录</el-radio>
@@ -283,6 +285,8 @@
         <el-button type="primary" @click="continueRecord">继续填写</el-button>
       </template>
     </el-dialog>
+
+    <OpportunityCreateDialog ref="opportunityCreateDialog" @created="openCreatedOpportunity" />
   </div>
 </template>
 
@@ -293,6 +297,7 @@ import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
 import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
+import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
 import {
   createSalesPlan,
   getWeekView,
@@ -323,6 +328,7 @@ type ActualRecordVM = {
 }
 
 const router = useRouter()
+const opportunityCreateDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
 
 const today = new Date()
 const todayStr = fmt(today)
@@ -494,7 +500,11 @@ const recordDialog = reactive({
   visible: false,
   date: '',
   type: 'customer_visit' as
-    'customer_visit' | 'opportunity_follow_up' | 'opportunity_quote' | 'complaint_registered',
+    | 'opportunity_created'
+    | 'customer_visit'
+    | 'opportunity_follow_up'
+    | 'opportunity_quote'
+    | 'complaint_registered',
   customerId: '',
   opportunityId: '',
 })
@@ -514,6 +524,16 @@ async function loadRecordOpportunities() {
 
 function continueRecord() {
   if (!recordDialog.customerId) return ElMessage.warning('请选择客户')
+  if (recordDialog.type === 'opportunity_created') {
+    const customer = customerOptions.value.find((item) => item.id === recordDialog.customerId)
+    recordDialog.visible = false
+    opportunityCreateDialog.value?.open({
+      customerId: recordDialog.customerId,
+      customerName: customer?.name,
+      discoveredDate: recordDialog.date,
+    })
+    return
+  }
   if (recordDialog.type === 'customer_visit' || recordDialog.type === 'complaint_registered') {
     recordDialog.visible = false
     const record = recordDialog.type === 'customer_visit' ? 'visit' : 'complaint'
@@ -528,6 +548,10 @@ function continueRecord() {
   void router.push(
     `/opportunities/${recordDialog.opportunityId}?record=${record}&date=${recordDialog.date}`,
   )
+}
+
+function openCreatedOpportunity(opportunityId: string) {
+  void router.push(`/opportunities/${opportunityId}`)
 }
 
 function handleAddCommand(command: AddCommand, day: DayVM) {
@@ -621,6 +645,7 @@ function planLabel(kind: SalesPlanKind): string {
 }
 function recordLabel(type: ActualRecordType): string {
   return {
+    opportunity_created: '发现商机',
     customer_visit: '客户拜访',
     opportunity_follow_up: '商机跟进',
     opportunity_quote: '报价记录',

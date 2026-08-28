@@ -16,10 +16,22 @@
           <el-tag v-else type="success" effect="plain">无逾期</el-tag>
         </div>
         <div class="team-panel__numbers">
-          <span><b>{{ member.actualRecordCount }}</b><small>实际记录</small></span>
-          <span><b>{{ member.pendingCount }}</b><small>本期待办</small></span>
-          <span><b>{{ member.quotes }}</b><small>报价</small></span>
-          <span><b>{{ member.visits }}</b><small>拜访</small></span>
+          <span
+            ><b>{{ member.actualRecordCount }}</b
+            ><small>实际记录</small></span
+          >
+          <span
+            ><b>{{ member.pendingCount }}</b
+            ><small>本期待办</small></span
+          >
+          <span
+            ><b>{{ member.quotes }}</b
+            ><small>报价</small></span
+          >
+          <span
+            ><b>{{ member.visits }}</b
+            ><small>拜访</small></span
+          >
         </div>
         <div class="team-panel__mix">
           跟进 {{ member.opportunityFollowUps }} · 客诉处理 {{ member.complaintRecords }} · 报价额
@@ -27,7 +39,9 @@
         </div>
         <div v-if="member.topOverdue.length" class="team-panel__overdue">
           <small>最早逾期</small>
-          <span>{{ member.topOverdue[0]?.customerName }} · {{ member.topOverdue[0]?.content }}</span>
+          <span
+            >{{ member.topOverdue[0]?.customerName }} · {{ member.topOverdue[0]?.content }}</span
+          >
         </div>
         <div class="team-panel__open">查看期间内容 →</div>
       </button>
@@ -56,7 +70,13 @@
               <h4>待执行与已结束计划</h4>
               <div v-for="plan in day.plans" :key="plan.id" class="team-panel__line">
                 <el-tag :type="plan.status === 'pending' ? 'primary' : 'info'" size="small">
-                  {{ plan.status === 'pending' ? '待执行' : plan.status === 'completed' ? '已完成' : '已取消' }}
+                  {{
+                    plan.status === 'pending'
+                      ? '待执行'
+                      : plan.status === 'completed'
+                        ? '已完成'
+                        : '已取消'
+                  }}
                 </el-tag>
                 <span>{{ plan.customerName }} · {{ plan.content }}</span>
               </div>
@@ -64,7 +84,11 @@
             </div>
             <div>
               <h4>已发生</h4>
-              <div v-for="record in day.records" :key="`${record.type}-${record.id}`" class="team-panel__line">
+              <div
+                v-for="record in day.records"
+                :key="`${record.type}-${record.id}`"
+                class="team-panel__line"
+              >
                 <el-tag type="success" size="small">{{ recordLabel(record.type) }}</el-tag>
                 <span>{{ record.customerName }} · {{ record.summary }}</span>
               </div>
@@ -94,17 +118,29 @@ const week = ref<ActionWeekView>()
 const drawerVisible = ref(false)
 const weekLoading = ref(false)
 
-type ActualRecord = ActionWeekView['businessRecords'][number] | ActionWeekView['complaintRecords'][number]
+type ActualRecord =
+  ActionWeekView['businessRecords'][number] | ActionWeekView['complaintRecords'][number]
 const days = computed(() => {
-  const result: { date: string; label: string; plans: ActionWeekView['plans']; records: ActualRecord[] }[] = []
+  const result: {
+    date: string
+    label: string
+    plans: ActionWeekView['plans']
+    records: ActualRecord[]
+  }[] = []
   const cursor = new Date(`${props.filters.start}T00:00:00`)
   const end = new Date(`${props.filters.end}T00:00:00`)
   while (cursor <= end && result.length < 31) {
     const date = localDate(cursor)
     result.push({
       date,
-      label: cursor.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' }),
-      plans: (week.value?.plans ?? []).filter((item) => localDate(new Date(item.plannedAt)) === date),
+      label: cursor.toLocaleDateString('zh-CN', {
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+      }),
+      plans: (week.value?.plans ?? []).filter(
+        (item) => localDate(new Date(item.plannedAt)) === date,
+      ),
       records: [...(week.value?.businessRecords ?? []), ...(week.value?.complaintRecords ?? [])]
         .filter((item) => localDate(new Date(item.occurredAt)) === date)
         .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()),
@@ -137,6 +173,7 @@ function money(value: number): string {
 }
 function recordLabel(type: ActualRecord['type']): string {
   return {
+    opportunity_created: '发现商机',
     customer_visit: '拜访',
     opportunity_follow_up: '商机跟进',
     opportunity_quote: '报价',

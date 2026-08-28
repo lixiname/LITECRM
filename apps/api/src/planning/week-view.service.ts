@@ -26,85 +26,121 @@ export class WeekViewService {
     const inRange = (column: AnyColumn) =>
       sql`(${column} at time zone 'Asia/Shanghai')::date between ${start} and ${end}`
 
-    const [planView, visits, followUps, quotes, registeredComplaints, complaintUpdates] =
-      await Promise.all([
-        this.plansService.week(user, start, end, ownerId),
-        db
-          .select({
-            id: visitRecords.id,
-            occurredAt: visitRecords.occurredAt,
-            customerId: visitRecords.customerId,
-            customerName: customers.name,
-            businessSituation: visitRecords.businessSituation,
-            sourcePlanId: visitRecords.sourcePlanId,
-          })
-          .from(visitRecords)
-          .innerJoin(customers, eq(visitRecords.customerId, customers.id))
-          .where(and(eq(visitRecords.ownerId, ownerId), inRange(visitRecords.occurredAt))),
-        db
-          .select({
-            id: opportunityFollowUps.id,
-            occurredAt: opportunityFollowUps.occurredAt,
-            customerId: opportunities.customerId,
-            customerName: customers.name,
-            opportunityId: opportunities.id,
-            opportunityName: opportunities.name,
-            conclusion: opportunityFollowUps.conclusion,
-            sourcePlanId: opportunityFollowUps.sourcePlanId,
-          })
-          .from(opportunityFollowUps)
-          .innerJoin(opportunities, eq(opportunityFollowUps.opportunityId, opportunities.id))
-          .innerJoin(customers, eq(opportunities.customerId, customers.id))
-          .where(
-            and(eq(opportunityFollowUps.actorId, ownerId), inRange(opportunityFollowUps.occurredAt)),
+    const [
+      planView,
+      createdOpportunities,
+      visits,
+      followUps,
+      quotes,
+      registeredComplaints,
+      complaintUpdates,
+    ] = await Promise.all([
+      this.plansService.week(user, start, end, ownerId),
+      db
+        .select({
+          id: opportunities.id,
+          discoveredDate: opportunities.discoveredDate,
+          customerId: opportunities.customerId,
+          customerName: customers.name,
+          opportunityName: opportunities.name,
+        })
+        .from(opportunities)
+        .innerJoin(customers, eq(opportunities.customerId, customers.id))
+        .where(
+          and(
+            eq(opportunities.ownerId, ownerId),
+            sql`${opportunities.discoveredDate} between ${start} and ${end}`,
           ),
-        db
-          .select({
-            id: opportunityQuotes.id,
-            occurredAt: opportunityQuotes.quotedAt,
-            customerId: opportunities.customerId,
-            customerName: customers.name,
-            opportunityId: opportunities.id,
-            opportunityName: opportunities.name,
-            amount: opportunityQuotes.amount,
-            kind: opportunityQuotes.kind,
-            sourcePlanId: opportunityQuotes.sourcePlanId,
-          })
-          .from(opportunityQuotes)
-          .innerJoin(opportunities, eq(opportunityQuotes.opportunityId, opportunities.id))
-          .innerJoin(customers, eq(opportunities.customerId, customers.id))
-          .where(and(eq(opportunityQuotes.actorId, ownerId), inRange(opportunityQuotes.quotedAt))),
-        db
-          .select({
-            id: complaints.id,
-            occurredAt: complaints.occurredAt,
-            customerId: complaints.customerId,
-            customerName: customers.name,
-            description: complaints.description,
-          })
-          .from(complaints)
-          .innerJoin(customers, eq(complaints.customerId, customers.id))
-          .where(and(eq(complaints.ownerId, ownerId), inRange(complaints.occurredAt))),
-        db
-          .select({
-            id: complaintFollowUps.id,
-            occurredAt: complaintFollowUps.occurredAt,
-            customerId: complaints.customerId,
-            customerName: customers.name,
-            complaintId: complaints.id,
-            content: complaintFollowUps.content,
-            sourcePlanId: complaintFollowUps.sourcePlanId,
-          })
-          .from(complaintFollowUps)
-          .innerJoin(complaints, eq(complaintFollowUps.complaintId, complaints.id))
-          .innerJoin(customers, eq(complaints.customerId, customers.id))
-          .where(and(eq(complaintFollowUps.ownerId, ownerId), inRange(complaintFollowUps.occurredAt))),
-      ])
+        ),
+      db
+        .select({
+          id: visitRecords.id,
+          occurredAt: visitRecords.occurredAt,
+          customerId: visitRecords.customerId,
+          customerName: customers.name,
+          businessSituation: visitRecords.businessSituation,
+          sourcePlanId: visitRecords.sourcePlanId,
+        })
+        .from(visitRecords)
+        .innerJoin(customers, eq(visitRecords.customerId, customers.id))
+        .where(and(eq(visitRecords.ownerId, ownerId), inRange(visitRecords.occurredAt))),
+      db
+        .select({
+          id: opportunityFollowUps.id,
+          occurredAt: opportunityFollowUps.occurredAt,
+          customerId: opportunities.customerId,
+          customerName: customers.name,
+          opportunityId: opportunities.id,
+          opportunityName: opportunities.name,
+          conclusion: opportunityFollowUps.conclusion,
+          sourcePlanId: opportunityFollowUps.sourcePlanId,
+        })
+        .from(opportunityFollowUps)
+        .innerJoin(opportunities, eq(opportunityFollowUps.opportunityId, opportunities.id))
+        .innerJoin(customers, eq(opportunities.customerId, customers.id))
+        .where(
+          and(eq(opportunityFollowUps.actorId, ownerId), inRange(opportunityFollowUps.occurredAt)),
+        ),
+      db
+        .select({
+          id: opportunityQuotes.id,
+          occurredAt: opportunityQuotes.quotedAt,
+          customerId: opportunities.customerId,
+          customerName: customers.name,
+          opportunityId: opportunities.id,
+          opportunityName: opportunities.name,
+          amount: opportunityQuotes.amount,
+          kind: opportunityQuotes.kind,
+          sourcePlanId: opportunityQuotes.sourcePlanId,
+        })
+        .from(opportunityQuotes)
+        .innerJoin(opportunities, eq(opportunityQuotes.opportunityId, opportunities.id))
+        .innerJoin(customers, eq(opportunities.customerId, customers.id))
+        .where(and(eq(opportunityQuotes.actorId, ownerId), inRange(opportunityQuotes.quotedAt))),
+      db
+        .select({
+          id: complaints.id,
+          occurredAt: complaints.occurredAt,
+          customerId: complaints.customerId,
+          customerName: customers.name,
+          description: complaints.description,
+        })
+        .from(complaints)
+        .innerJoin(customers, eq(complaints.customerId, customers.id))
+        .where(and(eq(complaints.ownerId, ownerId), inRange(complaints.occurredAt))),
+      db
+        .select({
+          id: complaintFollowUps.id,
+          occurredAt: complaintFollowUps.occurredAt,
+          customerId: complaints.customerId,
+          customerName: customers.name,
+          complaintId: complaints.id,
+          content: complaintFollowUps.content,
+          sourcePlanId: complaintFollowUps.sourcePlanId,
+        })
+        .from(complaintFollowUps)
+        .innerJoin(complaints, eq(complaintFollowUps.complaintId, complaints.id))
+        .innerJoin(customers, eq(complaints.customerId, customers.id))
+        .where(
+          and(eq(complaintFollowUps.ownerId, ownerId), inRange(complaintFollowUps.occurredAt)),
+        ),
+    ])
 
     return {
       ownerId,
       ...planView,
       businessRecords: [
+        ...createdOpportunities.map((item) => ({
+          id: item.id,
+          type: 'opportunity_created' as const,
+          occurredAt: new Date(`${item.discoveredDate!}T12:00:00+08:00`),
+          customerId: item.customerId,
+          customerName: item.customerName,
+          opportunityId: item.id,
+          opportunityName: item.opportunityName,
+          summary: `发现新需求：${item.opportunityName}`,
+          sourcePlanId: null,
+        })),
         ...visits.map((item) => ({
           id: item.id,
           type: 'customer_visit' as const,

@@ -378,6 +378,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         productLines: ['pump', 'filtration_system'],
         initialAmountBasis: 'formal_quote',
         initialAmount: 360000,
+        discoveredDate: '2026-08-27',
         initialQuotedAt: '2026-08-27T10:00:00+08:00',
         initialQuoteNo: 'Q-INITIAL-001',
         firstActionContent: '确认客户对报价单的反馈',
@@ -412,6 +413,16 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
     expect(actions).toHaveLength(1)
     expect(actions[0].originType).toBe('opportunity_quote')
     expect(actions[0].sourceId).toBe(quotes[0].id)
+
+    const week = await request(app.getHttpServer())
+      .get('/api/week-view?start=2026-08-24&end=2026-08-30')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(week.status).toBe(200)
+    expect(
+      week.body.businessRecords
+        .filter((item: { opportunityId: string }) => item.opportunityId === result.body.id)
+        .map((item: { type: string }) => item.type),
+    ).toEqual(expect.arrayContaining(['opportunity_created', 'opportunity_quote']))
   })
 
   it('客诉登记→确认解决（§8.6 两态闭环）', async () => {

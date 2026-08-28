@@ -11,7 +11,7 @@ export interface ActionWeekView {
 
 export interface WeekBusinessRecord {
   id: string
-  type: 'customer_visit' | 'opportunity_follow_up' | 'opportunity_quote'
+  type: 'opportunity_created' | 'customer_visit' | 'opportunity_follow_up' | 'opportunity_quote'
   occurredAt: string
   customerId: string
   customerName: string

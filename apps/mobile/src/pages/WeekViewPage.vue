@@ -235,6 +235,7 @@ function planLabel(kind: SalesPlanKind): string {
 }
 function recordLabel(type: MobileActualRecord['type']): string {
   return {
+    opportunity_created: '发现商机',
     customer_visit: '客户拜访',
     opportunity_follow_up: '商机跟进',
     opportunity_quote: '报价记录',

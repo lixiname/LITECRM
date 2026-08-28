@@ -27,18 +27,25 @@
     </div>
 
     <!-- 类型面板（移动端聚焦实际） -->
-    <van-cell-group inset title="记录什么">
+    <van-cell-group inset title="新增或记录">
       <van-cell
-        title="记录客户拜访"
-        icon="guide-o"
+        title="新建商机"
+        icon="add-square"
         is-link
-        @click="pickType('customer_visit')"
+        @click="pickType('opportunity_created')"
       />
+      <van-cell title="记录客户拜访" icon="guide-o" is-link @click="pickType('customer_visit')" />
       <van-cell
         title="记录商机跟进"
         icon="chart-trending-o"
         is-link
         @click="pickType('opportunity_follow_up')"
+      />
+      <van-cell
+        title="记录报价"
+        icon="balance-list-o"
+        is-link
+        @click="pickType('opportunity_quote')"
       />
       <van-cell
         title="登记客诉"
@@ -66,10 +73,10 @@
       </div>
     </template>
 
-    <van-form v-if="selectedCustomer" class="quick-add__form" @submit="continueAction">
+    <van-form v-if="selectedCustomer" class="quick-add__form">
       <van-cell-group inset :title="selectedCustomer.name">
         <van-field
-          v-if="type === 'opportunity_follow_up'"
+          v-if="type === 'opportunity_follow_up' || type === 'opportunity_quote'"
           v-model="opportunityLabel"
           label="商机"
           readonly
@@ -79,9 +86,9 @@
         />
       </van-cell-group>
       <div class="quick-add__submit">
-        <van-button block round type="primary" native-type="submit" :loading="saving">{{
-          '继续填写'
-        }}</van-button>
+        <van-button block round type="primary" :loading="saving" @click="continueAction">
+          继续填写
+        </van-button>
       </div>
     </van-form>
 
@@ -99,14 +106,14 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import {
-  listCustomers,
-  listOpportunities,
-  type CustomerItem,
-  type Opportunity,
-} from '@crm/domain'
+import { listCustomers, listOpportunities, type CustomerItem, type Opportunity } from '@crm/domain'
 
-type QuickRecordType = 'customer_visit' | 'opportunity_follow_up' | 'complaint_registered'
+type QuickRecordType =
+  | 'opportunity_created'
+  | 'customer_visit'
+  | 'opportunity_follow_up'
+  | 'opportunity_quote'
+  | 'complaint_registered'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,7 +166,7 @@ async function load() {
 async function selectCustomer(customer: CustomerItem) {
   selectedCustomer.value = customer
   opportunityId.value = ''
-  if (type.value === 'opportunity_follow_up') {
+  if (type.value === 'opportunity_follow_up' || type.value === 'opportunity_quote') {
     const page = await listOpportunities({ customerId: customer.id, page: 1, pageSize: 50 })
     opportunities.value = page.items.filter(
       (item) => item.stage === 'intent' || item.stage === 'following',
@@ -174,12 +181,20 @@ function pickOpportunity({ selectedOptions }: { selectedOptions: { value: string
 
 async function continueAction() {
   if (!type.value || !selectedCustomer.value) return
-  if (type.value === 'opportunity_follow_up' && !opportunityId.value) {
+  if (
+    (type.value === 'opportunity_follow_up' || type.value === 'opportunity_quote') &&
+    !opportunityId.value
+  ) {
     return showToast('请选择要跟进的商机')
   }
   saving.value = true
   try {
-    if (type.value === 'customer_visit') {
+    if (type.value === 'opportunity_created') {
+      await router.push({
+        path: `/customers/${selectedCustomer.value.id}/opportunity/new`,
+        query: { date: date.value },
+      })
+    } else if (type.value === 'customer_visit') {
       await router.push({
         path: `/customers/${selectedCustomer.value.id}/visit/new`,
         query: { date: date.value },
@@ -192,7 +207,10 @@ async function continueAction() {
     } else {
       await router.push({
         path: `/opportunities/${opportunityId.value}/follow-up`,
-        query: { date: date.value },
+        query: {
+          date: date.value,
+          mode: type.value === 'opportunity_quote' ? 'quote' : 'follow_up',
+        },
       })
     }
   } catch (error) {
@@ -204,6 +222,11 @@ async function continueAction() {
 </script>
 
 <style scoped>
+.quick-add {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding-bottom: 88px;
+}
 .quick-add__form,
 .quick-add__submit {
   margin-top: var(--crm-spacing-md);

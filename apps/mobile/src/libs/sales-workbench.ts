@@ -64,7 +64,11 @@ export function salesPlanExecutionRoute(plan: SalesPlan): string {
 }
 
 export function actualRecordRoute(record: MobileActualRecord): string {
-  if (record.type === 'opportunity_follow_up' || record.type === 'opportunity_quote') {
+  if (
+    record.type === 'opportunity_created' ||
+    record.type === 'opportunity_follow_up' ||
+    record.type === 'opportunity_quote'
+  ) {
     return `/opportunities/${record.opportunityId}`
   }
   if (record.type === 'complaint_registered' || record.type === 'complaint_follow_up') {
