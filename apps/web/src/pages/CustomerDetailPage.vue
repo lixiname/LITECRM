@@ -20,7 +20,16 @@
           <el-button v-if="auth.hasAbility('customer.transfer')" @click="showTransfer = true">
             移交
           </el-button>
-          <el-button v-if="canRelease" type="danger" plain @click="showRelease = true">
+          <el-tooltip
+            v-if="canRelease && releaseBlocked"
+            :content="releaseBlockReason"
+            placement="bottom"
+          >
+            <span>
+              <el-button type="danger" plain disabled>客户状态</el-button>
+            </span>
+          </el-tooltip>
+          <el-button v-else-if="canRelease" type="danger" plain @click="showRelease = true">
             客户状态
           </el-button>
           <el-button
@@ -280,6 +289,26 @@ const canClaim = computed(
 const canRelease = computed(
   () => detail.value?.status === 'active' && (isOwner.value || isManager.value),
 )
+const openOpportunityCount = computed(
+  () =>
+    detail.value?.opportunities?.filter(
+      (item) => item.stage === 'intent' || item.stage === 'following',
+    ).length ?? 0,
+)
+const unresolvedComplaintCount = computed(
+  () => detail.value?.complaints?.filter((item) => item.status === 'registered').length ?? 0,
+)
+const releaseBlocked = computed(
+  () => openOpportunityCount.value > 0 || unresolvedComplaintCount.value > 0,
+)
+const releaseBlockReason = computed(() => {
+  const blockers: string[] = []
+  if (openOpportunityCount.value > 0) blockers.push(`${openOpportunityCount.value} 个开放商机`)
+  if (unresolvedComplaintCount.value > 0) {
+    blockers.push(`${unresolvedComplaintCount.value} 个未解决客诉`)
+  }
+  return `暂不能变更客户状态：存在${blockers.join('、')}，请先处理或移交客户`
+})
 const canMarkInvalid = computed(() => isManager.value)
 const canRestore = computed(() => detail.value?.status === 'invalid' && isManager.value)
 const canEdit = computed(() =>
