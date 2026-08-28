@@ -55,7 +55,7 @@ export class OpportunitiesController {
   }
 
   @Post(':id/quotes')
-  @ApiOkResponse({ description: '追加口头或正式报价；不会自动成交' })
+  @ApiOkResponse({ description: '追加口头或正式报价，自动替代当前有效报价；不会自动成交' })
   addQuote(
     @Param('id') id: string,
     @Body() dto: CreateOpportunityQuoteDto,

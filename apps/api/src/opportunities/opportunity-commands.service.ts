@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { AuthUser } from '../auth/auth.service'
 import { CatalogService } from '../catalog/catalog.service'
 import { db } from '../common/db/db'
@@ -102,23 +102,26 @@ export class OpportunityCommandsService {
     this.assertNextPlanDecision(dto)
 
     return db.transaction(async (tx) => {
-      if (dto.supersedesQuoteId) {
-        const [superseded] = await tx
+      // 同一商机的报价必须串行更新，防止并发请求产生两条有效报价。
+      await tx.execute(
+        sql`select 1 from ${opportunities} where ${opportunities.id} = ${id} for update`,
+      )
+
+      const [currentQuote] = await tx
+        .select({ id: opportunityQuotes.id })
+        .from(opportunityQuotes)
+        .where(and(eq(opportunityQuotes.opportunityId, id), eq(opportunityQuotes.status, 'active')))
+        .orderBy(desc(opportunityQuotes.createdAt))
+        .limit(1)
+      if (currentQuote) {
+        await tx
           .update(opportunityQuotes)
           .set({
             status: 'superseded',
             updatedAt: new Date(),
             version: sql`${opportunityQuotes.version} + 1`,
           })
-          .where(
-            and(
-              eq(opportunityQuotes.id, dto.supersedesQuoteId),
-              eq(opportunityQuotes.opportunityId, id),
-              eq(opportunityQuotes.status, 'active'),
-            ),
-          )
-          .returning({ id: opportunityQuotes.id })
-        if (!superseded) throw new ConflictException('被替代报价不存在、已失效或不属于该商机')
+          .where(eq(opportunityQuotes.id, currentQuote.id))
       }
 
       const occurredAt = new Date(dto.quotedAt)
@@ -131,7 +134,7 @@ export class OpportunityCommandsService {
           quotedAt: occurredAt,
           amount: String(dto.amount),
           quoteNo: dto.quoteNo?.trim() || null,
-          supersedesQuoteId: dto.supersedesQuoteId ?? null,
+          supersedesQuoteId: currentQuote?.id ?? null,
           sourcePlanId: dto.sourcePlanId ?? null,
           note: dto.note?.trim() || null,
           documentRef: dto.documentRef?.trim() || null,
@@ -189,20 +192,16 @@ export class OpportunityCommandsService {
 
     try {
       return await db.transaction(async (tx) => {
-        if (dto.acceptedQuoteId) {
-          const [quote] = await tx
-            .select({ id: opportunityQuotes.id })
-            .from(opportunityQuotes)
-            .where(
-              and(
-                eq(opportunityQuotes.id, dto.acceptedQuoteId),
-                eq(opportunityQuotes.opportunityId, id),
-                eq(opportunityQuotes.status, 'active'),
-              ),
-            )
-            .limit(1)
-          if (!quote) throw new ConflictException('接受的报价不存在、已失效或不属于该商机')
-        }
+        await tx.execute(
+          sql`select 1 from ${opportunities} where ${opportunities.id} = ${id} for update`,
+        )
+        const [currentQuote] = await tx
+          .select({ id: opportunityQuotes.id })
+          .from(opportunityQuotes)
+          .where(
+            and(eq(opportunityQuotes.opportunityId, id), eq(opportunityQuotes.status, 'active')),
+          )
+          .limit(1)
 
         const occurredAt = new Date(dto.occurredAt)
         const [updated] = await tx
@@ -235,7 +234,7 @@ export class OpportunityCommandsService {
             tradeType: dto.tradeType ?? null,
             note: dto.note ?? null,
             sourceOpportunityId: id,
-            sourceQuoteId: dto.acceptedQuoteId ?? null,
+            sourceQuoteId: currentQuote?.id ?? null,
           })
           .returning()
         await this.actionsService.cancelPendingForOpportunity(tx, id, '商机已确认成交')

@@ -3193,10 +3193,6 @@
             "type": "string",
             "description": "正式报价单号"
           },
-          "supersedesQuoteId": {
-            "type": "string",
-            "description": "明确替代的旧报价"
-          },
           "sourcePlanId": {
             "type": "string",
             "description": "本次报价履行的来源计划"
@@ -3237,10 +3233,6 @@
           "amount": {
             "type": "number",
             "description": "成交金额"
-          },
-          "acceptedQuoteId": {
-            "type": "string",
-            "description": "客户接受的报价"
           },
           "productLine": {
             "type": "string"

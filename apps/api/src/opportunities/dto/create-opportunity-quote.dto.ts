@@ -37,11 +37,6 @@ export class CreateOpportunityQuoteDto {
   @IsString()
   quoteNo?: string
 
-  @ApiPropertyOptional({ description: '明确替代的旧报价' })
-  @IsOptional()
-  @IsUUID()
-  supersedesQuoteId?: string
-
   @ApiPropertyOptional({ description: '本次报价履行的来源计划' })
   @IsOptional()
   @IsUUID()

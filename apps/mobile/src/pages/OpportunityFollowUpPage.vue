@@ -63,13 +63,10 @@
             label="报价单号"
             placeholder="选填"
           />
-          <van-field
-            v-model="supersedesLabel"
-            label="改价自"
-            readonly
-            is-link
-            placeholder="独立方案，不替代"
-            @click="showSupersedes = true"
+          <van-cell
+            v-if="currentQuote"
+            title="当前有效报价"
+            :label="`${currentQuote.kind === 'formal' ? '正式' : '口头'} · ¥${Number(currentQuote.amount).toLocaleString()}；保存后自动替代`"
           />
           <van-field v-model="quoteNote" label="报价说明" placeholder="如：调整配置后重新报价" />
           <van-field
@@ -101,13 +98,6 @@
         </van-button>
       </div>
     </van-form>
-    <van-popup v-model:show="showSupersedes" position="bottom" round>
-      <van-picker
-        :columns="supersedesColumns"
-        @confirm="pickSupersedes"
-        @cancel="showSupersedes = false"
-      />
-    </van-popup>
     <van-popup v-model:show="showMethod" position="bottom" round>
       <van-picker :columns="methodColumns" @confirm="pickMethod" @cancel="showMethod = false" />
     </van-popup>
@@ -158,9 +148,6 @@ const amount = ref('')
 const quoteNo = ref('')
 const quoteNote = ref('')
 const documentRef = ref('')
-const supersedesQuoteId = ref('')
-const supersedesLabel = ref('')
-const showSupersedes = ref(false)
 const methodColumns = OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS.map((item) => ({
   text: item.label,
   value: item.value,
@@ -169,15 +156,9 @@ const quoteKindColumns = OPPORTUNITY_QUOTE_KIND_OPTIONS.map((item) => ({
   text: item.label,
   value: item.value,
 }))
-const supersedesColumns = computed(() => [
-  { text: '独立方案，不替代', value: '' },
-  ...(opportunity.value?.quotes ?? [])
-    .filter((quote) => quote.status === 'active')
-    .map((quote) => ({
-      text: `${quote.kind === 'formal' ? '正式' : '口头'} · ¥${Number(quote.amount).toLocaleString()}`,
-      value: quote.id,
-    })),
-])
+const currentQuote = computed(() =>
+  opportunity.value?.quotes.find((quote) => quote.status === 'active'),
+)
 const nextAt = ref(tomorrowAtNine())
 const nextContent = ref('')
 const saving = ref(false)
@@ -231,7 +212,6 @@ async function submit() {
         quotedAt: new Date(quotedAt.value).toISOString(),
         amount: Number(amount.value),
         quoteNo: quoteNo.value.trim() || undefined,
-        supersedesQuoteId: supersedesQuoteId.value || undefined,
         note: quoteNote.value.trim() || undefined,
         documentRef:
           quoteKind.value === 'formal' ? documentRef.value.trim() || undefined : undefined,
@@ -249,15 +229,6 @@ async function submit() {
   } finally {
     saving.value = false
   }
-}
-function pickSupersedes({
-  selectedOptions,
-}: {
-  selectedOptions: { text: string; value: string }[]
-}) {
-  supersedesQuoteId.value = selectedOptions[0].value
-  supersedesLabel.value = selectedOptions[0].value ? selectedOptions[0].text : ''
-  showSupersedes.value = false
 }
 function pickMethod({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
   method.value = selectedOptions[0].value

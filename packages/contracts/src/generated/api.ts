@@ -1442,8 +1442,6 @@ export interface components {
             amount: number;
             /** @description 正式报价单号 */
             quoteNo?: string;
-            /** @description 明确替代的旧报价 */
-            supersedesQuoteId?: string;
             /** @description 本次报价履行的来源计划 */
             sourcePlanId?: string;
             /** @description 临时报价时保留当前未完成计划，不另建下一计划 */
@@ -1462,8 +1460,6 @@ export interface components {
             occurredAt: string;
             /** @description 成交金额 */
             amount: number;
-            /** @description 客户接受的报价 */
-            acceptedQuoteId?: string;
             productLine?: string;
             /** @description 交易性质（字典：trade_type） */
             tradeType?: string;

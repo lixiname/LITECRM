@@ -160,6 +160,9 @@ export const opportunityQuotes = pgTable(
     ),
     check('opportunity_quotes_amount_check', sql`${table.amount} >= 0`),
     index('opportunity_quotes_opp_quoted_idx').on(table.opportunityId, table.quotedAt),
+    uniqueIndex('opportunity_quotes_one_active_uq')
+      .on(table.opportunityId)
+      .where(sql`${table.status} = 'active'`),
     foreignKey({ columns: [table.supersedesQuoteId], foreignColumns: [table.id] }),
     uniqueIndex('opportunity_quotes_source_plan_uq').on(table.sourcePlanId),
   ],

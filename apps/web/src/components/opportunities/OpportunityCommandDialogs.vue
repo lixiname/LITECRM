@@ -65,6 +65,13 @@
       :closable="false"
       :title="`已有计划：${formatTime(opportunity.actions[0].plannedAt)} · ${opportunity.actions[0].content}`"
     />
+    <el-alert
+      v-if="currentQuote"
+      class="opportunity-dialog__plan"
+      type="warning"
+      :closable="false"
+      :title="`当前有效报价：${quoteKindLabel(currentQuote.kind)} · ${amountText(currentQuote.amount)} · ${formatTime(currentQuote.quotedAt)}；保存后将自动替代该版本。`"
+    />
     <el-form label-width="100px">
       <el-form-item v-if="!sourcePlan && opportunity.actions[0]" label="与原计划">
         <el-radio-group v-model="planHandling">
@@ -87,20 +94,6 @@
       <el-form-item v-if="quoteForm.kind === 'formal'" label="报价单号"
         ><el-input v-model="quoteForm.quoteNo"
       /></el-form-item>
-      <el-form-item label="改价自">
-        <el-select
-          v-model="quoteForm.supersedesQuoteId"
-          clearable
-          placeholder="新方案，不替代旧报价"
-        >
-          <el-option
-            v-for="quote in activeQuotes"
-            :key="quote.id"
-            :label="`${quoteKindLabel(quote.kind)} · ${amountText(quote.amount)} · ${formatTime(quote.quotedAt)}`"
-            :value="quote.id"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item v-if="quoteForm.kind === 'formal'" label="文件引用">
         <el-input v-model="quoteForm.documentRef" placeholder="可选链接或文件编号" />
       </el-form-item>
@@ -121,6 +114,16 @@
   </el-dialog>
 
   <el-dialog v-model="showWin" title="确认客户已下单" width="480px">
+    <el-alert
+      class="opportunity-dialog__plan"
+      type="info"
+      :closable="false"
+      :title="
+        currentQuote
+          ? `成交将自动关联当前有效报价：${quoteKindLabel(currentQuote.kind)} · ${amountText(currentQuote.amount)}`
+          : '当前没有有效报价，成交记录将不关联报价。'
+      "
+    />
     <el-form label-width="100px">
       <el-form-item label="下单时间" required
         ><el-input v-model="winForm.occurredAt" type="datetime-local"
@@ -128,16 +131,6 @@
       <el-form-item label="成交金额" required
         ><el-input v-model.number="winForm.amount" type="number"
       /></el-form-item>
-      <el-form-item label="接受报价">
-        <el-select v-model="winForm.acceptedQuoteId" clearable placeholder="未关联报价">
-          <el-option
-            v-for="quote in activeQuotes"
-            :key="quote.id"
-            :label="`${quoteKindLabel(quote.kind)} · ${amountText(quote.amount)}`"
-            :value="quote.id"
-          />
-        </el-select>
-      </el-form-item>
     </el-form>
     <el-alert
       type="info"
@@ -203,7 +196,6 @@ const quoteForm = reactive({
   quotedAt: localInput(new Date()),
   amount: undefined as number | undefined,
   quoteNo: '',
-  supersedesQuoteId: '',
   documentRef: '',
   note: '',
   nextActionContent: '确认客户对报价的反馈',
@@ -212,12 +204,12 @@ const quoteForm = reactive({
 const winForm = reactive({
   occurredAt: localInput(new Date()),
   amount: undefined as number | undefined,
-  acceptedQuoteId: '',
 })
 const closeForm = reactive({ result: 'lost' as 'lost' | 'demand_disappeared', reason: '' })
 const activeQuotes = computed(() =>
   props.opportunity.quotes.filter((quote) => quote.status === 'active'),
 )
+const currentQuote = computed(() => activeQuotes.value[0])
 
 function openFollow(plan?: SalesPlan, occurredDate?: string) {
   sourcePlan.value = plan
@@ -233,8 +225,7 @@ function openQuote(plan?: SalesPlan) {
   showQuote.value = true
 }
 function openWin() {
-  const quote = activeQuotes.value[0]
-  winForm.acceptedQuoteId = quote?.id ?? ''
+  const quote = currentQuote.value
   winForm.amount = quote ? Number(quote.amount) : undefined
   showWin.value = true
 }
@@ -309,7 +300,6 @@ async function handleQuote() {
         quotedAt: new Date(quoteForm.quotedAt).toISOString(),
         amount: quoteForm.amount!,
         quoteNo: quoteForm.quoteNo.trim() || undefined,
-        supersedesQuoteId: quoteForm.supersedesQuoteId || undefined,
         documentRef:
           quoteForm.kind === 'formal' ? quoteForm.documentRef.trim() || undefined : undefined,
         note: quoteForm.note.trim() || undefined,
@@ -336,7 +326,6 @@ async function handleWin() {
         version: props.opportunity.version,
         occurredAt: new Date(winForm.occurredAt).toISOString(),
         amount: winForm.amount!,
-        acceptedQuoteId: winForm.acceptedQuoteId || undefined,
       }),
     '成交已确认',
   )

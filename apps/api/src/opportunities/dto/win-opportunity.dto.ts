@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsInt, IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator'
+import { IsInt, IsISO8601, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 export class WinOpportunityDto {
   @ApiProperty({ minimum: 1 })
@@ -15,11 +15,6 @@ export class WinOpportunityDto {
   @IsNumber()
   @Min(0)
   amount!: number
-
-  @ApiPropertyOptional({ description: '客户接受的报价' })
-  @IsOptional()
-  @IsUUID()
-  acceptedQuoteId?: string
 
   @ApiPropertyOptional()
   @IsOptional()

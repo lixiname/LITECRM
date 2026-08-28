@@ -164,7 +164,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       )
       .limit(1)
 
-    // 5. 口头报价、正式报价均独立留痕；每次报价都接续一个客户反馈行动
+    // 5. 报价逐版留痕；新报价自动替代当前有效报价，并接续客户反馈行动
     const oralQuote = await request(app.getHttpServer())
       .post(`/api/opportunities/${oppId}/quotes`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
@@ -191,18 +191,32 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         quotedAt: '2026-09-02T10:00:00+08:00',
         amount: 620000,
         quoteNo: 'Q-M3-001',
-        supersedesQuoteId: oralQuote.body.id,
         sourcePlanId: afterOral.body.actions[0].id,
         nextActionContent: '确认客户对正式报价的反馈',
         nextActionAt: '2026-09-05T09:00:00+08:00',
       })
     expect(formalQuote.status).toBe(201)
+    expect(formalQuote.body.supersedesQuoteId).toBe(oralQuote.body.id)
 
     // 6. 只有明确下单命令才生成 Deal；报价本身不成交
     const afterQuote = await request(app.getHttpServer())
       .get(`/api/opportunities/${oppId}`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
     expect(afterQuote.body.deal).toBeNull()
+    try {
+      await db.insert(opportunityQuotes).values({
+        opportunityId: oppId,
+        actorId: afterQuote.body.ownerId,
+        kind: 'oral',
+        quotedAt: new Date('2026-09-02T11:00:00+08:00'),
+        amount: '610000',
+      })
+      expect.fail('数据库应拒绝同一商机的第二条有效报价')
+    } catch (error) {
+      expect((error as { cause?: { constraint?: string } }).cause?.constraint).toBe(
+        'opportunity_quotes_one_active_uq',
+      )
+    }
     const won = await request(app.getHttpServer())
       .post(`/api/opportunities/${oppId}/win`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
@@ -210,7 +224,6 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         version: afterQuote.body.version,
         occurredAt: '2026-09-03T10:00:00+08:00',
         amount: 620000,
-        acceptedQuoteId: formalQuote.body.id,
       })
     expect(won.status).toBe(201)
     expect(won.body.opportunity.stage).toBe('won')
@@ -234,6 +247,8 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .where(eq(opportunityQuotes.opportunityId, oppId))
     expect(quotes).toHaveLength(2)
     expect(quotes.find((quote) => quote.id === oralQuote.body.id)?.status).toBe('superseded')
+    expect(quotes.find((quote) => quote.id === formalQuote.body.id)?.status).toBe('active')
+    expect(quotes.filter((quote) => quote.status === 'active')).toHaveLength(1)
     const pendingAfterWin = await db
       .select()
       .from(followUpActions)
@@ -385,10 +400,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         .select()
         .from(opportunityProductLines)
         .where(eq(opportunityProductLines.opportunityId, result.body.id)),
-      db
-        .select()
-        .from(followUpActions)
-        .where(eq(followUpActions.opportunityId, result.body.id)),
+      db.select().from(followUpActions).where(eq(followUpActions.opportunityId, result.body.id)),
     ])
     expect(quotes).toHaveLength(1)
     expect(quotes[0].kind).toBe('formal')

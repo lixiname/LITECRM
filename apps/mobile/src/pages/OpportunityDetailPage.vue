@@ -99,16 +99,16 @@
           :scrollable="false"
           text="只有此确认动作才会生成成交记录；报价本身不代表成交。"
         />
+        <van-cell
+          title="关联报价"
+          :label="
+            currentQuote
+              ? `自动关联当前有效报价：${currentQuote.kind === 'formal' ? '正式' : '口头'} · ${money(currentQuote.amount)}`
+              : '当前没有有效报价，成交记录将不关联报价'
+          "
+        />
         <van-field v-model="winSheet.occurredAt" label="下单时间" type="datetime-local" required />
         <van-field v-model="winSheet.amount" label="成交金额" type="number" required />
-        <van-field
-          v-model="acceptedQuoteLabel"
-          label="接受报价"
-          readonly
-          is-link
-          placeholder="未关联报价"
-          @click="showQuotePicker = true"
-        />
         <van-field v-model="winSheet.note" label="备注" placeholder="可选" />
         <van-button block round type="success" native-type="submit" :loading="acting">
           确认成交
@@ -139,14 +139,6 @@
           确认结案
         </van-button>
       </van-form>
-    </van-popup>
-
-    <van-popup v-model:show="showQuotePicker" position="bottom" round>
-      <van-picker
-        :columns="quoteColumns"
-        @confirm="pickAcceptedQuote"
-        @cancel="showQuotePicker = false"
-      />
     </van-popup>
   </div>
 </template>
@@ -179,12 +171,10 @@ const {
   reload,
 } = useQuery(`opportunity:detail:${opportunityId}`, () => getOpportunity(opportunityId))
 const acting = ref(false)
-const showQuotePicker = ref(false)
 const winSheet = reactive({
   visible: false,
   occurredAt: localInput(new Date()),
   amount: '',
-  acceptedQuoteId: '',
   note: '',
 })
 const closeSheet = reactive({
@@ -197,18 +187,8 @@ const isOpen = computed(
   () => opportunity.value?.stage === 'intent' || opportunity.value?.stage === 'following',
 )
 const canOperate = computed(() => isOpen.value && auth.hasAbility('customer.write'))
-const activeQuotes = computed(() =>
-  (opportunity.value?.quotes ?? []).filter((quote) => quote.status === 'active'),
-)
-const quoteColumns = computed(() => [
-  { text: '不关联报价', value: '' },
-  ...activeQuotes.value.map((quote) => ({
-    text: `${quote.kind === 'formal' ? '正式' : '口头'} · ${money(quote.amount)}`,
-    value: quote.id,
-  })),
-])
-const acceptedQuoteLabel = computed(
-  () => quoteColumns.value.find((item) => item.value === winSheet.acceptedQuoteId)?.text ?? '',
+const currentQuote = computed(() =>
+  opportunity.value?.quotes.find((quote) => quote.status === 'active'),
 )
 
 function openRecord(mode: 'follow_up' | 'quote') {
@@ -220,9 +200,8 @@ function openRecord(mode: 'follow_up' | 'quote') {
 }
 
 function openWin() {
-  const quote = activeQuotes.value[0]
+  const quote = currentQuote.value
   winSheet.occurredAt = localInput(new Date())
-  winSheet.acceptedQuoteId = quote?.id ?? ''
   winSheet.amount = quote?.amount ?? opportunity.value?.referenceAmount ?? ''
   winSheet.note = ''
   winSheet.visible = true
@@ -253,7 +232,6 @@ async function submitWin() {
       version: opportunity.value.version,
       occurredAt: new Date(winSheet.occurredAt).toISOString(),
       amount: Number(winSheet.amount),
-      acceptedQuoteId: winSheet.acceptedQuoteId || undefined,
       note: winSheet.note.trim() || undefined,
     })
     showToast('成交已确认')
@@ -296,11 +274,6 @@ async function submitClose() {
   } finally {
     acting.value = false
   }
-}
-
-function pickAcceptedQuote({ selectedOptions }: { selectedOptions: { value: string }[] }) {
-  winSheet.acceptedQuoteId = selectedOptions[0].value
-  showQuotePicker.value = false
 }
 
 function stageLabel(stage: OpportunityStage): string {

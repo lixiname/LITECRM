@@ -50,7 +50,9 @@
         </el-descriptions-item>
         >
         <el-descriptions-item label="来源">{{ sourceLabel(opp.source) }}</el-descriptions-item>
-        <el-descriptions-item label="产品线">{{ productLineLabel(opp.productLines) }}</el-descriptions-item>
+        <el-descriptions-item label="产品线">{{
+          productLineLabel(opp.productLines)
+        }}</el-descriptions-item>
         <el-descriptions-item label="金额说明">{{ opp.estimateNote || '-' }}</el-descriptions-item>
         <el-descriptions-item label="需求发现日">{{
           dateText(opp.discoveredDate)
@@ -98,7 +100,7 @@
           }}</template></el-table-column
         >
         <el-table-column prop="quoteNo" label="报价单号" />
-        <el-table-column label="调整关系" min-width="150">
+        <el-table-column label="上一版本" min-width="150">
           <template #default="{ row }">{{ supersedesText(row.supersedesQuoteId) }}</template>
         </el-table-column>
         <el-table-column prop="note" label="说明" min-width="160" />
@@ -210,7 +212,9 @@ function sourceLabel(source: string): string {
 function productLineLabel(productLines: string[]): string {
   if (!productLines.length) return '-'
   return productLines
-    .map((value) => productLineOptions.value?.find((option) => option.name === value)?.label ?? value)
+    .map(
+      (value) => productLineOptions.value?.find((option) => option.name === value)?.label ?? value,
+    )
     .join('、')
 }
 function formatTime(value: string | undefined | null): string {
@@ -236,11 +240,11 @@ function eventText(event: { type: string; payload: unknown }): string {
   return payload.quoteId ? '新增报价记录' : '更新商机'
 }
 function supersedesText(quoteId: string | null): string {
-  if (!quoteId) return '独立方案 / 首次报价'
+  if (!quoteId) return '首次报价'
   const previous = opp.value?.quotes.find((quote) => quote.id === quoteId)
   return previous
-    ? `替代 ${opportunityQuoteKindLabel(previous.kind)} ${opportunityAmountText(previous.amount)}`
-    : '替代历史报价'
+    ? `${opportunityQuoteKindLabel(previous.kind)} ${opportunityAmountText(previous.amount)}`
+    : '历史报价'
 }
 function eventStageLabel(stage: string | undefined): string {
   return opportunityStageLabel(stage)
