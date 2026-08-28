@@ -39,6 +39,8 @@ pnpm dev:mobile   # 移动端 http://localhost:5174
 pnpm dev:api      # API http://localhost:3001/api
 ```
 
+Windows 上如果后端热更新进程因进程树权限报 `taskkill ... Access denied` 并退出，可暂时使用 `pnpm --filter @crm/api start` 启动不带热更新的开发服务；代码变更后手动重启该进程即可。这个入口只规避本地热更新进程管理问题，不改变 API 编译或运行方式。
+
 ### 新环境数据库与 CI 约束
 
 - 后端测试依赖真实 PostgreSQL 表结构。新机器、空数据库和 GitHub Actions 都必须先执行迁移，再运行 `pnpm test`；否则出现 `relation "users" does not exist` 一类错误，含义是数据库尚未初始化，不是测试造数失败。

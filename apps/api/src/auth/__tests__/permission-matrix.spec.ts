@@ -115,6 +115,21 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
         .set('Authorization', `Bearer ${admin.accessToken}`)
       expect(res.status).toBe(200)
     })
+
+    it('费用填报沿用 customer.write：销售可访问，业助只读角色被拒绝', async () => {
+      const sales = await login('sales1', 'Crm@123456')
+      const assistant = await login('assistant', 'Crm@123456')
+
+      const salesRes = await request(app.getHttpServer())
+        .get('/api/expenses')
+        .set('Authorization', `Bearer ${sales.accessToken}`)
+      const assistantRes = await request(app.getHttpServer())
+        .get('/api/expenses')
+        .set('Authorization', `Bearer ${assistant.accessToken}`)
+
+      expect(salesRes.status).toBe(200)
+      expect(assistantRes.status).toBe(403)
+    })
   })
 
   describe('组织树数据范围（§6.1：self/team/full）', () => {

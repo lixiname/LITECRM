@@ -166,6 +166,14 @@ export const VISIT_METHOD_OPTIONS: { value: VisitMethod; label: string }[] = [
   { value: 'other', label: '其他' },
 ]
 
+export const OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS: { value: string; label: string }[] = [
+  { value: 'phone', label: '电话' },
+  { value: 'wechat', label: '微信' },
+  { value: 'offline_visit', label: '现场拜访' },
+  { value: 'email', label: '邮件' },
+  { value: 'other', label: '其他' },
+]
+
 export const OPPORTUNITY_STAGE_OPTIONS: { value: OpportunityStage; label: string }[] = [
   { value: 'intent', label: '意向' },
   { value: 'following', label: '跟进中' },

@@ -27,7 +27,16 @@
       <el-form-item label="本次结论" required
         ><el-input v-model="followForm.conclusion"
       /></el-form-item>
-      <el-form-item label="沟通方式"><el-input v-model="followForm.method" /></el-form-item>
+      <el-form-item label="沟通方式">
+        <el-select v-model="followForm.method" clearable placeholder="选择沟通方式">
+          <el-option
+            v-for="option in OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item v-if="planHandling !== 'keep'" label="下一计划" required
         ><el-input v-model="followForm.nextActionContent"
       /></el-form-item>
@@ -79,7 +88,11 @@
         ><el-input v-model="quoteForm.quoteNo"
       /></el-form-item>
       <el-form-item label="改价自">
-        <el-select v-model="quoteForm.supersedesQuoteId" clearable placeholder="新方案，不替代旧报价">
+        <el-select
+          v-model="quoteForm.supersedesQuoteId"
+          clearable
+          placeholder="新方案，不替代旧报价"
+        >
           <el-option
             v-for="quote in activeQuotes"
             :key="quote.id"
@@ -162,6 +175,7 @@ import {
   addOpportunityFollowUp,
   addOpportunityQuote,
   closeOpportunity,
+  OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
   winOpportunity,
   type OpportunityDetail,
   type OpportunityQuote,

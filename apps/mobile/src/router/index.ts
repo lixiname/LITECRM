@@ -1,5 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@crm/domain'
+import { useAuthStore, type Ability } from '@crm/domain'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    guestOnly?: boolean
+    requiresAbility?: Ability
+  }
+}
 
 // 路由：登录页 + 首页（M1 打通）；业务路由随模块推进（规格 §5）
 const router = createRouter({
@@ -27,13 +35,13 @@ const router = createRouter({
       path: '/quick-add',
       name: 'quick-add',
       component: () => import('@/pages/QuickAddPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
     },
     {
       path: '/expenses',
       name: 'expenses',
       component: () => import('@/pages/ExpensesPage.vue'),
-      meta: { requiresAuth: true },
+      meta: { requiresAuth: true, requiresAbility: 'customer.write' },
     },
     {
       path: '/customers/:id',
@@ -66,6 +74,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAbility: 'customer.write' },
     },
     {
+      path: '/opportunities/:id',
+      name: 'opportunity-detail',
+      component: () => import('@/pages/OpportunityDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/complaints/:id',
       name: 'complaint-detail',
       component: () => import('@/pages/ComplaintDetailPage.vue'),
@@ -91,6 +105,7 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'login' }
   if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'home' }
+  if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility)) return { name: 'home' }
   return true
 })
 

@@ -3,13 +3,16 @@ import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
+import { PermissionsGuard } from '../access/permissions.guard'
+import { RequirePermission } from '../access/require-permission.decorator'
 import { ExpensesService } from './expenses.service'
 import { CreateExpenseDto } from './dto/create-expense.dto'
 
 // 每日费用（§8.8：轻量统计；customer.write 填报）
 @ApiTags('expenses')
 @Controller('expenses')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermission('customer.write')
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 

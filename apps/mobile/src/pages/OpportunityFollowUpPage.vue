@@ -35,13 +35,34 @@
           <van-radio name="keep">临时记录，保留原计划</van-radio>
         </van-radio-group>
         <template v-if="mode === 'follow_up'">
+          <van-field v-model="occurredAt" label="跟进时间" type="datetime-local" required />
           <van-field v-model="conclusion" label="本次结论" type="textarea" rows="2" required />
-          <van-field v-model="method" label="跟进方式" placeholder="电话、微信、现场拜访等" />
+          <van-field
+            v-model="methodLabel"
+            label="跟进方式"
+            readonly
+            is-link
+            placeholder="选择沟通方式"
+            @click="showMethod = true"
+          />
         </template>
         <template v-else>
-          <van-field v-model="quoteKind" label="报价类型" placeholder="oral / formal" required />
+          <van-field
+            v-model="quoteKindLabel"
+            label="报价类型"
+            readonly
+            is-link
+            required
+            @click="showQuoteKind = true"
+          />
+          <van-field v-model="quotedAt" label="报价时间" type="datetime-local" required />
           <van-field v-model="amount" label="报价金额" type="number" required />
-          <van-field v-model="quoteNo" label="报价单号" placeholder="正式报价时选填" />
+          <van-field
+            v-if="quoteKind === 'formal'"
+            v-model="quoteNo"
+            label="报价单号"
+            placeholder="选填"
+          />
           <van-field
             v-model="supersedesLabel"
             label="改价自"
@@ -51,6 +72,12 @@
             @click="showSupersedes = true"
           />
           <van-field v-model="quoteNote" label="报价说明" placeholder="如：调整配置后重新报价" />
+          <van-field
+            v-if="quoteKind === 'formal'"
+            v-model="documentRef"
+            label="报价文件"
+            placeholder="可选链接或文件编号"
+          />
         </template>
         <van-field
           v-if="planHandling !== 'keep'"
@@ -69,9 +96,9 @@
         />
       </van-cell-group>
       <div class="submit">
-        <van-button block round type="primary" native-type="submit" :loading="saving"
-          >保存并安排下一次</van-button
-        >
+        <van-button block round type="primary" native-type="submit" :loading="saving">
+          {{ planHandling === 'keep' ? '保存本次记录' : '保存并安排下一次' }}
+        </van-button>
       </div>
     </van-form>
     <van-popup v-model:show="showSupersedes" position="bottom" round>
@@ -79,6 +106,16 @@
         :columns="supersedesColumns"
         @confirm="pickSupersedes"
         @cancel="showSupersedes = false"
+      />
+    </van-popup>
+    <van-popup v-model:show="showMethod" position="bottom" round>
+      <van-picker :columns="methodColumns" @confirm="pickMethod" @cancel="showMethod = false" />
+    </van-popup>
+    <van-popup v-model:show="showQuoteKind" position="bottom" round>
+      <van-picker
+        :columns="quoteKindColumns"
+        @confirm="pickQuoteKind"
+        @cancel="showQuoteKind = false"
       />
     </van-popup>
   </div>
@@ -93,6 +130,8 @@ import {
   addOpportunityQuote,
   getOpportunity,
   getSalesPlan,
+  OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
+  OPPORTUNITY_QUOTE_KIND_OPTIONS,
   type OpportunityDetail,
   type SalesPlan,
 } from '@crm/domain'
@@ -106,15 +145,30 @@ const plan = ref<SalesPlan>()
 const existingPlan = ref<SalesPlan>()
 const planHandling = ref<'execute' | 'keep' | 'new'>('new')
 const mode = ref<'follow_up' | 'quote'>('follow_up')
+const occurredAt = ref(localInput(new Date()))
 const conclusion = ref('')
 const method = ref('')
+const methodLabel = ref('')
+const showMethod = ref(false)
 const quoteKind = ref<'oral' | 'formal'>('oral')
+const quoteKindLabel = ref('口头报价')
+const showQuoteKind = ref(false)
+const quotedAt = ref(localInput(new Date()))
 const amount = ref('')
 const quoteNo = ref('')
 const quoteNote = ref('')
+const documentRef = ref('')
 const supersedesQuoteId = ref('')
 const supersedesLabel = ref('')
 const showSupersedes = ref(false)
+const methodColumns = OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS.map((item) => ({
+  text: item.label,
+  value: item.value,
+}))
+const quoteKindColumns = OPPORTUNITY_QUOTE_KIND_OPTIONS.map((item) => ({
+  text: item.label,
+  value: item.value,
+}))
 const supersedesColumns = computed(() => [
   { text: '独立方案，不替代', value: '' },
   ...(opportunity.value?.quotes ?? [])
@@ -138,6 +192,12 @@ onMounted(async () => {
     plan.value = sourcePlan
     existingPlan.value = detail.actions[0]
     planHandling.value = sourcePlan ? 'execute' : existingPlan.value ? 'execute' : 'new'
+    mode.value = route.query.mode === 'quote' ? 'quote' : 'follow_up'
+    const date = route.query.date as string | undefined
+    if (date) {
+      occurredAt.value = `${date}T09:00`
+      quotedAt.value = `${date}T09:00`
+    }
   } catch (error) {
     showToast(error instanceof Error ? error.message : '加载失败')
   }
@@ -155,6 +215,7 @@ async function submit() {
       await addOpportunityFollowUp(opportunityId, {
         version: opportunity.value.version,
         conclusion: conclusion.value.trim(),
+        occurredAt: new Date(occurredAt.value).toISOString(),
         method: method.value.trim() || undefined,
         sourcePlanId: linkedPlan?.id,
         keepExistingPlan: planHandling.value === 'keep' || undefined,
@@ -167,11 +228,13 @@ async function submit() {
       await addOpportunityQuote(opportunityId, {
         version: opportunity.value.version,
         kind: quoteKind.value,
-        quotedAt: new Date().toISOString(),
+        quotedAt: new Date(quotedAt.value).toISOString(),
         amount: Number(amount.value),
         quoteNo: quoteNo.value.trim() || undefined,
         supersedesQuoteId: supersedesQuoteId.value || undefined,
         note: quoteNote.value.trim() || undefined,
+        documentRef:
+          quoteKind.value === 'formal' ? documentRef.value.trim() || undefined : undefined,
         sourcePlanId: linkedPlan?.id,
         keepExistingPlan: planHandling.value === 'keep' || undefined,
         nextActionAt:
@@ -187,10 +250,28 @@ async function submit() {
     saving.value = false
   }
 }
-function pickSupersedes({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
+function pickSupersedes({
+  selectedOptions,
+}: {
+  selectedOptions: { text: string; value: string }[]
+}) {
   supersedesQuoteId.value = selectedOptions[0].value
   supersedesLabel.value = selectedOptions[0].value ? selectedOptions[0].text : ''
   showSupersedes.value = false
+}
+function pickMethod({ selectedOptions }: { selectedOptions: { text: string; value: string }[] }) {
+  method.value = selectedOptions[0].value
+  methodLabel.value = selectedOptions[0].text
+  showMethod.value = false
+}
+function pickQuoteKind({
+  selectedOptions,
+}: {
+  selectedOptions: { text: string; value: 'oral' | 'formal' }[]
+}) {
+  quoteKind.value = selectedOptions[0].value
+  quoteKindLabel.value = selectedOptions[0].text
+  showQuoteKind.value = false
 }
 function tomorrowAtNine() {
   const date = new Date()
@@ -200,6 +281,9 @@ function tomorrowAtNine() {
 }
 function formatTime(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
+}
+function localInput(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 </script>
 

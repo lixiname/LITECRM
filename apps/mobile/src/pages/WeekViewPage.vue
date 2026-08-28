@@ -1,7 +1,6 @@
 <template>
   <div class="week-view">
     <van-nav-bar :title="weekLabel" />
-
     <div class="week-view__nav">
       <van-icon name="arrow-left" size="18" @click="shiftWeek(-1)" />
       <span class="week-view__thisweek" @click="goToday">本周</span>
@@ -9,96 +8,99 @@
     </div>
 
     <van-loading v-if="loading" class="week-view__loading" size="24" />
-
     <van-empty v-else-if="error" :description="error">
       <van-button size="small" type="primary" @click="reload">重新加载</van-button>
     </van-empty>
 
     <template v-else>
       <section v-if="view?.overdue.length" class="overdue-panel">
-        <div class="overdue-panel__title">更早未完成 · {{ view.overdue.length }}</div>
-        <div v-for="action in view.overdue" :key="action.id" class="action-row action-row--overdue">
+        <div class="overdue-panel__title">逾期待执行 · {{ view.overdue.length }}</div>
+        <div v-for="action in view.overdue" :key="action.id" class="plan-row plan-row--overdue">
           <div>
-            <span class="action-row__source">{{ planLabel(action.planKind) }}</span>
+            <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
             <strong>{{ action.customerName }}</strong>
             <span>{{ action.content }}</span>
             <small>{{ formatTime(action.plannedAt) }}</small>
           </div>
-          <van-button size="mini" plain type="primary" @click="openActionSheet(action)">
-            处理
+          <van-button v-if="canWrite" size="mini" type="primary" @click="openActionSheet(action)">
+            去执行
           </van-button>
         </div>
       </section>
 
       <div class="week-view__days">
-        <div
+        <article
           v-for="day in days"
           :key="day.date"
           class="day-card"
           :class="{ 'day-card--today': day.isToday }"
         >
-          <div class="day-card__head">
-            <span class="day-card__weekday">{{ day.weekday }}</span>
-            <span class="day-card__date" :class="{ 'day-card__date--today': day.isToday }">
-              {{ day.monthDay }}
-            </span>
-          </div>
+          <header class="day-card__head">
+            <div>
+              <strong>{{ day.weekday }}</strong>
+              <van-tag v-if="day.isToday" plain type="primary">今天</van-tag>
+            </div>
+            <span>{{ day.monthDay }}</span>
+          </header>
 
-          <div class="day-card__body">
-            <div class="day-card__section">计划</div>
-            <div
-              v-for="action in day.plans"
-              :key="action.id"
-              class="action-row"
-              :class="{
-                'action-row--completed': action.status === 'completed',
-                'action-row--cancelled': action.status === 'cancelled',
-              }"
-            >
+          <section v-if="day.pendingPlans.length" class="day-card__section">
+            <div class="day-card__section-title">
+              <span>待执行</span><small>{{ day.pendingPlans.length }}</small>
+            </div>
+            <div v-for="action in day.pendingPlans" :key="action.id" class="plan-row">
               <div>
-                <span class="action-row__source">{{ planLabel(action.planKind) }}</span>
+                <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
                 <strong>{{ action.customerName }}</strong>
                 <span>{{ action.content }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
               <van-button
-                v-if="action.status === 'pending'"
+                v-if="canWrite"
                 size="mini"
-                plain
                 type="primary"
                 @click="openActionSheet(action)"
               >
-                处理
+                去执行
               </van-button>
             </div>
-            <div v-if="day.plans.length === 0" class="day-card__empty">暂无计划</div>
-            <div class="day-card__section">业务记录</div>
-            <div v-for="record in day.businessRecords" :key="record.id" class="record-row">
-              <strong>{{ record.customerName }}</strong>
-              <span>{{ recordLabel(record.type) }} · {{ record.summary }}</span>
-              <small>{{ timeOnly(record.occurredAt) }}</small>
+          </section>
+
+          <section v-if="day.actualRecords.length" class="day-card__section">
+            <div class="day-card__section-title">
+              <span>已发生</span><small>{{ day.actualRecords.length }}</small>
             </div>
-            <div v-if="day.businessRecords.length === 0" class="day-card__empty">暂无业务记录</div>
-            <div class="day-card__section">客诉</div>
-            <div
-              v-for="record in day.complaintRecords"
-              :key="record.id"
-              class="record-row record-row--complaint"
-              @click="router.push(`/complaints/${record.complaintId}`)"
+            <button
+              v-for="record in day.actualRecords"
+              :key="`${record.type}-${record.id}`"
+              type="button"
+              class="record-row"
+              :class="{ 'record-row--complaint': record.type.startsWith('complaint_') }"
+              @click="router.push(actualRecordRoute(record))"
             >
+              <div class="record-row__head">
+                <span>{{ recordLabel(record.type) }}</span>
+                <small>{{ timeOnly(record.occurredAt) }}</small>
+              </div>
               <strong>{{ record.customerName }}</strong>
-              <span
-                >{{ record.type === 'complaint_registered' ? '客诉登记' : '客诉跟进' }} ·
-                {{ record.summary }}</span
-              >
-              <small>{{ timeOnly(record.occurredAt) }}</small>
+              <span>{{ record.summary }}</span>
+              <small>{{ record.sourcePlanId ? '来自计划' : '直接记录' }}</small>
+            </button>
+          </section>
+
+          <details v-if="day.closedPlans.length" class="day-card__closed">
+            <summary>已结束计划 {{ day.closedPlans.length }}</summary>
+            <div v-for="action in day.closedPlans" :key="action.id" class="closed-row">
+              <span>{{ timeOnly(action.plannedAt) }} · {{ planLabel(action.planKind) }}</span>
+              <strong>{{ action.customerName }}</strong>
+              <small>{{ action.status === 'completed' ? '已执行' : action.cancelReason }}</small>
             </div>
-            <div v-if="day.complaintRecords.length === 0" class="day-card__empty">暂无客诉</div>
-            <div class="day-card__add">
-              <span @click="goQuickAdd(day)">+ 记录实际</span>
-            </div>
+          </details>
+
+          <div v-if="!day.hasContent" class="day-card__empty">当天还没有安排或记录</div>
+          <div v-if="canWrite" class="day-card__add" @click="goQuickAdd(day.date)">
+            ＋ 记录当日实际
           </div>
-        </div>
+        </article>
       </div>
     </template>
 
@@ -109,19 +111,13 @@
       close-on-click-action
       @select="selectActionCommand"
     />
-
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
-        <div class="command-sheet__title">计划改期</div>
+        <h3>计划改期</h3>
         <van-field v-model="commandSheet.plannedAt" label="新日期" type="date" required />
         <div class="command-sheet__actions">
           <van-button block @click="commandSheet.visible = false">返回</van-button>
-          <van-button
-            block
-            type="primary"
-            :loading="commandSheet.saving"
-            @click="submitActionCommand"
-          >
+          <van-button block type="primary" :loading="commandSheet.saving" @click="submitReschedule">
             确认改期
           </van-button>
         </div>
@@ -137,162 +133,99 @@ import { showToast } from 'vant'
 import {
   getWeekView,
   rescheduleSalesPlan,
+  useAuthStore,
   useQuery,
   type SalesPlan,
   type SalesPlanKind,
-  type WeekBusinessRecord,
-  type WeekComplaintRecord,
 } from '@crm/domain'
+import {
+  actualRecordRoute,
+  buildMobileWeekDays,
+  localDate,
+  salesPlanExecutionRoute,
+  type MobileActualRecord,
+} from '../libs/sales-workbench'
 
-const router = useRouter()
 type ActionCommand = 'execute' | 'reschedule'
-
-const actionOptions: { name: string; value: ActionCommand; color?: string }[] = [
+const router = useRouter()
+const auth = useAuthStore()
+const canWrite = computed(() => auth.hasAbility('customer.write'))
+const actionOptions: { name: string; value: ActionCommand }[] = [
   { name: '填写执行结果', value: 'execute' },
   { name: '改期', value: 'reschedule' },
 ]
 const today = new Date()
-const todayStr = fmt(today)
+const todayText = localDate(today)
 const weekOffset = ref(0)
-
 const range = computed(() => {
-  const dow = (today.getDay() + 6) % 7
   const monday = new Date(today)
-  monday.setDate(today.getDate() - dow + weekOffset.value * 7)
+  const day = monday.getDay() || 7
+  monday.setDate(today.getDate() - day + 1 + weekOffset.value * 7)
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
-  return { monday: fmt(monday), sunday: fmt(sunday) }
+  return { monday: localDate(monday), sunday: localDate(sunday) }
 })
 const weekLabel = computed(() => {
-  const d = new Date(`${range.value.monday}T00:00:00`)
-  return `${d.getMonth() + 1}月${d.getDate()}日 周`
+  const start = new Date(`${range.value.monday}T00:00:00`)
+  const end = new Date(`${range.value.sunday}T00:00:00`)
+  return `${start.getMonth() + 1}/${start.getDate()} — ${end.getMonth() + 1}/${end.getDate()}`
 })
-
 const {
   data: view,
   loading,
   error,
   reload,
-} = useQuery('week-view', () => getWeekView(range.value.monday, range.value.sunday))
+} = useQuery('mobile:week-view', () => getWeekView(range.value.monday, range.value.sunday))
+const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, view.value))
+
 watch(weekOffset, () => void reload())
-
-interface DayVM {
-  date: string
-  weekday: string
-  monthDay: string
-  isToday: boolean
-  plans: SalesPlan[]
-  businessRecords: WeekBusinessRecord[]
-  complaintRecords: WeekComplaintRecord[]
-}
-
-const days = computed<DayVM[]>(() => {
-  const actionMap = new Map<string, SalesPlan[]>()
-  const businessMap = new Map<string, WeekBusinessRecord[]>()
-  const complaintMap = new Map<string, WeekComplaintRecord[]>()
-  for (const action of view.value?.plans ?? []) {
-    const date = fmt(new Date(action.plannedAt))
-    actionMap.set(date, [...(actionMap.get(date) ?? []), action])
-  }
-  for (const record of view.value?.businessRecords ?? []) {
-    const date = fmt(new Date(record.occurredAt))
-    businessMap.set(date, [...(businessMap.get(date) ?? []), record])
-  }
-  for (const record of view.value?.complaintRecords ?? []) {
-    const date = fmt(new Date(record.occurredAt))
-    complaintMap.set(date, [...(complaintMap.get(date) ?? []), record])
-  }
-  const result: DayVM[] = []
-  for (let i = 0; i < 7; i++) {
-    const dateValue = new Date(`${range.value.monday}T00:00:00`)
-    dateValue.setDate(dateValue.getDate() + i)
-    const date = fmt(dateValue)
-    result.push({
-      date,
-      weekday: '周' + '一二三四五六日'[(dateValue.getDay() + 6) % 7],
-      monthDay: `${dateValue.getMonth() + 1}/${dateValue.getDate()}`,
-      isToday: date === todayStr,
-      plans: actionMap.get(date) ?? [],
-      businessRecords: businessMap.get(date) ?? [],
-      complaintRecords: complaintMap.get(date) ?? [],
-    })
-  }
-  return result
-})
-
-function shiftWeek(offset: number) {
-  weekOffset.value += offset
-}
-
-function goToday() {
-  weekOffset.value = 0
-}
 
 const showActionSheet = ref(false)
 const selectedAction = ref<SalesPlan>()
-const commandSheet = reactive({
-  visible: false,
-  plannedAt: '',
-  saving: false,
-})
+const commandSheet = reactive({ visible: false, plannedAt: '', saving: false })
 
+function shiftWeek(value: number) {
+  weekOffset.value += value
+}
+function goToday() {
+  weekOffset.value = 0
+}
 function openActionSheet(action: SalesPlan) {
   selectedAction.value = action
   showActionSheet.value = true
 }
-
 function selectActionCommand(option: { value: ActionCommand }) {
   const action = selectedAction.value
   if (!action) return
   if (option.value === 'execute') {
-    void router.push(executionRoute(action))
+    void router.push(salesPlanExecutionRoute(action))
     return
   }
-  commandSheet.plannedAt = localInput(action.plannedAt)
+  commandSheet.plannedAt = localDate(new Date(action.plannedAt))
   commandSheet.visible = true
 }
-
-async function submitActionCommand() {
+async function submitReschedule() {
   const action = selectedAction.value
-  if (!action) return
-  if (!commandSheet.plannedAt) return showToast('请选择新的计划时间')
+  if (!action || !commandSheet.plannedAt) return showToast('请选择新的计划日期')
   commandSheet.saving = true
   try {
     await rescheduleSalesPlan(
       action.id,
       action.version,
-      toPlannedAtISOString(commandSheet.plannedAt),
+      new Date(`${commandSheet.plannedAt}T00:00:00`).toISOString(),
     )
     showToast('计划已改期')
     commandSheet.visible = false
     await reload()
-  } catch (error) {
-    showToast(error instanceof Error ? error.message : '操作失败')
+  } catch (commandError) {
+    showToast(commandError instanceof Error ? commandError.message : '改期失败')
   } finally {
     commandSheet.saving = false
   }
 }
-
-function executionRoute(plan: SalesPlan) {
-  if (plan.planKind === 'opportunity_follow_up')
-    return `/opportunities/${plan.opportunityId}/follow-up?planId=${plan.id}`
-  if (plan.planKind === 'complaint_follow_up')
-    return `/complaints/${plan.complaintId}/follow-up?planId=${plan.id}`
-  return `/customers/${plan.customerId}/visit/new?planId=${plan.id}`
+function goQuickAdd(date: string) {
+  void router.push({ path: '/quick-add', query: { date } })
 }
-
-function localInput(value: string): string {
-  const date = new Date(value)
-  const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
-}
-function toPlannedAtISOString(value: string): string {
-  const parts = value.split('-').map(Number)
-  const date = new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0)
-  const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString()
-}
-
 function planLabel(kind: SalesPlanKind): string {
   return {
     customer_visit: '客户拜访',
@@ -300,27 +233,18 @@ function planLabel(kind: SalesPlanKind): string {
     complaint_follow_up: '客诉处理',
   }[kind]
 }
-
-function goQuickAdd(day: DayVM) {
-  void router.push({ path: '/quick-add', query: { date: day.date } })
-}
-
-function recordLabel(type: WeekBusinessRecord['type']) {
+function recordLabel(type: MobileActualRecord['type']): string {
   return {
     customer_visit: '客户拜访',
     opportunity_follow_up: '商机跟进',
     opportunity_quote: '报价记录',
+    complaint_registered: '客诉登记',
+    complaint_follow_up: '客诉处理',
   }[type]
 }
-
-function fmt(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
 function timeOnly(value: string): string {
   return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
-
 function formatTime(value: string): string {
   return new Date(value).toLocaleString('zh-CN', {
     month: 'numeric',
@@ -332,140 +256,146 @@ function formatTime(value: string): string {
 </script>
 
 <style scoped>
-.week-view__nav {
+.week-view__nav,
+.day-card__head,
+.day-card__section-title,
+.record-row__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--crm-spacing-sm) var(--crm-spacing-lg);
-  background: var(--crm-color-bg-card);
-  border-bottom: 1px solid var(--crm-color-border);
+  gap: var(--crm-spacing-sm);
 }
-.week-view__thisweek {
+.week-view__nav {
+  padding: var(--crm-spacing-sm) var(--crm-spacing-lg);
+  border-bottom: 1px solid var(--crm-color-border);
+  background: var(--crm-color-bg-card);
+}
+.week-view__thisweek,
+.day-card__add {
   color: var(--crm-color-primary);
   font-weight: 600;
 }
 .week-view__loading {
+  display: block;
   margin: var(--crm-spacing-xl) auto;
 }
 .overdue-panel {
   margin: var(--crm-spacing-sm);
-  padding: var(--crm-spacing-sm) var(--crm-spacing-md);
+  padding: var(--crm-spacing-md);
   border: 1px solid var(--crm-color-danger);
   border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-card);
+  background: #fff1f0;
 }
 .overdue-panel__title {
-  margin-bottom: var(--crm-spacing-xs);
+  margin-bottom: var(--crm-spacing-sm);
   color: var(--crm-color-danger);
-  font-weight: 600;
+  font-weight: 700;
 }
 .week-view__days {
-  padding: var(--crm-spacing-sm);
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: var(--crm-spacing-sm);
+  padding: var(--crm-spacing-sm);
 }
 .day-card {
-  background: var(--crm-color-bg-card);
-  border-radius: var(--crm-radius-md);
+  overflow: hidden;
   border: 1px solid var(--crm-color-border);
-  padding: var(--crm-spacing-sm) var(--crm-spacing-md);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-card);
 }
 .day-card--today {
   border-color: var(--crm-color-primary);
 }
+.day-card__head,
+.day-card__section,
+.day-card__closed,
+.day-card__empty,
+.day-card__add {
+  padding: var(--crm-spacing-sm) var(--crm-spacing-md);
+}
 .day-card__head {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: var(--crm-spacing-sm);
+  border-bottom: 1px solid var(--crm-color-border);
+  background: var(--crm-color-bg-page);
 }
-.day-card__weekday {
-  font-weight: 600;
-}
-.day-card__date {
-  color: var(--crm-color-text-secondary);
-}
-.day-card__date--today {
-  color: var(--crm-color-primary);
-  font-weight: 600;
-}
-.day-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--crm-spacing-xs);
-}
-.action-row {
+.day-card__head > div {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--crm-spacing-sm);
-  padding: 4px 0;
-  font-size: var(--crm-font-size-sm);
+  gap: var(--crm-spacing-xs);
 }
-.action-row--overdue {
-  color: var(--crm-color-danger);
+.day-card__section + .day-card__section {
+  border-top: 1px solid var(--crm-color-border);
 }
-.action-row--completed {
-  filter: grayscale(1);
-  opacity: 0.58;
-}
-.action-row--cancelled {
-  opacity: 0.42;
-  text-decoration: line-through;
-}
-.day-card__section {
-  margin-top: 6px;
+.day-card__section-title {
+  margin-bottom: var(--crm-spacing-xs);
   color: var(--crm-color-text-secondary);
-  font-size: 12px;
+  font-size: var(--crm-font-size-sm);
   font-weight: 600;
 }
+.plan-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--crm-spacing-sm);
+  align-items: center;
+  padding: var(--crm-spacing-sm) 0;
+}
+.plan-row + .plan-row,
+.record-row + .record-row {
+  border-top: 1px dashed var(--crm-color-border);
+}
+.plan-row > div,
 .record-row {
-  display: flex;
-  flex-direction: column;
-  padding: 6px 8px;
-  border-left: 3px solid var(--crm-color-success);
-  background: var(--crm-color-bg-page);
-  font-size: var(--crm-font-size-sm);
+  display: grid;
+  gap: 3px;
 }
-.record-row--complaint {
-  border-left-color: var(--crm-color-danger);
+.plan-row--overdue {
+  color: var(--crm-color-danger);
 }
-.record-row small {
-  color: var(--crm-color-text-secondary);
-}
-.day-card__add {
-  display: flex;
-  justify-content: space-around;
-  padding-top: var(--crm-spacing-sm);
-  color: var(--crm-color-primary);
-  font-size: var(--crm-font-size-sm);
-}
-.action-row__source {
-  display: inline-block;
-  margin-right: 6px;
+.plan-row__kind {
+  width: fit-content;
   padding: 1px 6px;
   border-radius: 4px;
   color: #fff;
   background: var(--crm-color-primary);
   font-size: 12px;
 }
-.action-row small {
-  display: block;
-  margin-top: 2px;
-  color: var(--crm-color-text-secondary);
-}
+.plan-row small,
+.record-row small,
+.closed-row small,
 .day-card__empty {
   color: var(--crm-color-text-secondary);
-  font-size: var(--crm-font-size-sm);
+}
+.record-row {
+  width: 100%;
+  padding: var(--crm-spacing-sm);
+  border: 0;
+  border-left: 3px solid var(--crm-color-success);
+  background: var(--crm-color-bg-page);
+  color: inherit;
+  text-align: left;
+}
+.record-row--complaint {
+  border-left-color: var(--crm-color-danger);
+}
+.day-card__closed {
+  border-top: 1px solid var(--crm-color-border);
+  color: var(--crm-color-text-secondary);
+}
+.closed-row {
+  display: grid;
+  gap: 2px;
   padding: var(--crm-spacing-xs) 0;
+  filter: grayscale(1);
+  opacity: 0.62;
+}
+.day-card__add {
+  border-top: 1px solid var(--crm-color-border);
+  text-align: center;
 }
 .command-sheet {
   padding: var(--crm-spacing-lg);
 }
-.command-sheet__title {
-  margin-bottom: var(--crm-spacing-md);
+.command-sheet h3 {
+  margin-top: 0;
   text-align: center;
-  font-weight: 600;
 }
 .command-sheet__actions {
   display: grid;

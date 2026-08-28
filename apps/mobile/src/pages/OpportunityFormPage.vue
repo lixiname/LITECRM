@@ -33,6 +33,11 @@
           placeholder="元"
           :rules="[{ required: true, message: '请填写初始金额' }]"
         />
+        <van-switch-cell
+          v-if="form.initialAmountBasis === 'estimate'"
+          v-model="form.approximate"
+          title="当前为约估金额"
+        />
         <van-field
           v-if="form.initialAmountBasis !== 'estimate'"
           v-model="form.initialQuotedAt"
@@ -46,6 +51,21 @@
           label="报价单号"
           placeholder="可选"
         />
+        <van-field
+          v-if="form.initialAmountBasis === 'formal_quote'"
+          v-model="form.initialQuoteDocumentRef"
+          label="报价文件"
+          placeholder="可选链接或文件编号"
+        />
+        <van-field
+          v-model="form.estimateNote"
+          label="金额说明"
+          type="textarea"
+          rows="2"
+          placeholder="如：按初步配置估算，待确认材质和流量"
+        />
+        <van-field v-model="form.discoveredDate" label="需求发现日" type="date" />
+        <van-field v-model="form.expectedCloseDate" label="预计成交日" type="date" />
         <van-field label="产品线">
           <template #input>
             <van-checkbox-group v-model="form.productLines" direction="horizontal">
@@ -110,8 +130,13 @@ const form = reactive({
   productLines: [] as string[],
   initialAmountBasis: 'estimate' as 'estimate' | 'oral_quote' | 'formal_quote',
   initialAmount: undefined as number | undefined,
+  approximate: true,
+  estimateNote: '',
+  discoveredDate: localDate(new Date()),
+  expectedCloseDate: '',
   initialQuotedAt: localInput(new Date()),
   initialQuoteNo: '',
+  initialQuoteDocumentRef: '',
   firstActionContent: '',
   firstActionAt: '',
 })
@@ -163,6 +188,13 @@ function onPickAmountBasis({
   showAmountBasis.value = false
 }
 async function handleSubmit() {
+  if (
+    form.expectedCloseDate &&
+    form.discoveredDate &&
+    form.expectedCloseDate < form.discoveredDate
+  ) {
+    return showToast('预计成交日不能早于需求发现日')
+  }
   saving.value = true
   try {
     await createOpportunity({
@@ -172,12 +204,20 @@ async function handleSubmit() {
       productLines: form.productLines,
       initialAmountBasis: form.initialAmountBasis,
       initialAmount: form.initialAmount!,
+      approximate: form.initialAmountBasis === 'estimate' ? form.approximate : undefined,
+      estimateNote: form.estimateNote.trim() || undefined,
+      discoveredDate: form.discoveredDate || undefined,
+      expectedCloseDate: form.expectedCloseDate || undefined,
       initialQuotedAt:
         form.initialAmountBasis === 'estimate'
           ? undefined
           : new Date(form.initialQuotedAt).toISOString(),
       initialQuoteNo:
         form.initialAmountBasis === 'formal_quote' ? form.initialQuoteNo || undefined : undefined,
+      initialQuoteDocumentRef:
+        form.initialAmountBasis === 'formal_quote'
+          ? form.initialQuoteDocumentRef.trim() || undefined
+          : undefined,
       firstActionContent: form.firstActionContent,
       firstActionAt: new Date(form.firstActionAt).toISOString(),
     })
@@ -192,6 +232,10 @@ async function handleSubmit() {
 
 function localInput(date: Date): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
+
+function localDate(date: Date): string {
+  return localInput(date).slice(0, 10)
 }
 </script>
 

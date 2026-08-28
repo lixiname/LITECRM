@@ -33,7 +33,12 @@
         v-for="complaint in detail.complaints"
         :key="complaint.id"
         :title="complaint.description"
-        :label="complaint.currentAction?.content ?? (complaint.status === 'resolved' ? complaint.resolution ?? '已解决' : '暂无下一处理行动')"
+        :label="
+          complaint.currentAction?.content ??
+          (complaint.status === 'resolved'
+            ? (complaint.resolution ?? '已解决')
+            : '暂无下一处理行动')
+        "
         is-link
         @click="router.push(`/complaints/${complaint.id}`)"
       >
@@ -55,8 +60,8 @@
         v-for="opportunity in detail?.opportunities ?? []"
         :key="opportunity.id"
         :title="opportunity.name"
-        :is-link="isOpenOpportunity(opportunity)"
-        @click="openOpportunity(opportunity)"
+        is-link
+        @click="router.push(`/opportunities/${opportunity.id}`)"
       >
         <template #label>
           <div class="customer-detail__line">
@@ -151,7 +156,6 @@ import {
   OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS,
   type Opportunity,
   type CustomerStatus,
-  type CustomerOpportunitySummary,
   type OpportunityInitialAmountBasis,
 } from '@crm/domain'
 
@@ -190,7 +194,9 @@ function moneyText(amount?: string | null): string {
 }
 
 function amountBasisLabel(basis: OpportunityInitialAmountBasis): string {
-  return OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS.find((item) => item.value === basis)?.label ?? basis
+  return (
+    OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS.find((item) => item.value === basis)?.label ?? basis
+  )
 }
 
 function timeText(v: string): string {
@@ -203,18 +209,6 @@ function dimensionLabel(dimension: string, value?: string | null): string {
     industries.value?.find((item) => item.dimension === dimension && item.name === value)?.label ??
     value
   )
-}
-
-function isOpenOpportunity(opportunity: CustomerOpportunitySummary): boolean {
-  return opportunity.stage === 'intent' || opportunity.stage === 'following'
-}
-
-function openOpportunity(opportunity: CustomerOpportunitySummary) {
-  if (!isOpenOpportunity(opportunity)) return
-  router.push({
-    path: `/opportunities/${opportunity.id}/follow-up`,
-    query: opportunity.currentAction?.id ? { planId: opportunity.currentAction.id } : undefined,
-  })
 }
 
 function openVisit() {
