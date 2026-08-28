@@ -324,6 +324,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_restore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/{id}/contacts": {
         parameters: {
             query?: never;
@@ -1254,6 +1270,12 @@ export interface components {
             /** @description 释放原因（审计） */
             reason: string;
         };
+        RestoreCustomerDto: {
+            /** @description 恢复后的负责人 ID */
+            toOwnerId: string;
+            /** @description 恢复原因 */
+            reason: string;
+        };
         /**
          * @description 业务计划类型
          * @enum {string}
@@ -2152,6 +2174,30 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 公海认领（分级名额校验，owner→本人） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreCustomerDto"];
+            };
+        };
+        responses: {
+            /** @description 恢复无效客户并重新指定负责人 */
             200: {
                 headers: {
                     [name: string]: unknown;

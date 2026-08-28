@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customers, visitRecords } from '../common/db/schema'
@@ -25,6 +30,7 @@ export class VisitsService {
     if (!dto.keepExistingPlan && (!dto.nextActionAt || !dto.nextActionContent?.trim()))
       throw new BadRequestException('请安排下次拜访，或明确保留当前计划')
     const customer = await this.findCustomer(dto.customerId, actor)
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可登记拜访')
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
@@ -85,12 +91,16 @@ export class VisitsService {
       .orderBy(desc(visitRecords.occurredAt))
   }
 
-  private async findCustomer(id: string, actor: AuthUser) {
-    const visibleIds = await this.accessService.getVisibleUserIds(actor)
+  private async findCustomer(id: string, _actor: AuthUser) {
     const [customer] = await db
-      .select({ id: customers.id, name: customers.name, ownerId: customers.ownerId })
+      .select({
+        id: customers.id,
+        name: customers.name,
+        ownerId: customers.ownerId,
+        status: customers.status,
+      })
       .from(customers)
-      .where(and(eq(customers.id, id), inArray(customers.ownerId, visibleIds)))
+      .where(eq(customers.id, id))
       .limit(1)
     if (!customer) throw new NotFoundException('客户不存在')
     return customer

@@ -4,15 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { complaints, customerTransfers, customers } from '../common/db/schema'
+import {
+  complaints,
+  customerTransfers,
+  customers,
+  opportunities,
+  salesRegions,
+  users,
+} from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
 import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { TransferCustomerDto } from './dto/transfer-customer.dto'
 import type { ReleaseCustomerDto } from './dto/release-customer.dto'
+import type { RestoreCustomerDto } from './dto/restore-customer.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
 
 /**
@@ -64,7 +72,24 @@ export class OwnershipService {
   // 主动释放（§8.3）：owner 本人发起；pool=公海 / invalid=无效；未解决客诉拦截
   async release(customerId: string, dto: ReleaseCustomerDto, actor: AuthUser) {
     const customer = await this.findOwned(customerId, actor)
-    await this.assertIsOwner(customer, actor)
+    await this.assertCanContribute(customer, actor)
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可释放')
+    if (dto.target === 'invalid' && actor.role === 'sales') {
+      throw new ForbiddenException('标记无效需由区域负责人或管理员处理')
+    }
+    const [openOpportunity] = await db
+      .select({ id: opportunities.id })
+      .from(opportunities)
+      .where(
+        and(
+          eq(opportunities.customerId, customer.id),
+          inArray(opportunities.stage, ['intent', 'following']),
+        ),
+      )
+      .limit(1)
+    if (openOpportunity) {
+      throw new ConflictException('客户存在开放商机，请先结案商机或移交客户')
+    }
     // §8.3 客诉拦截：未解决客诉 → 禁止释放（先解决/转交）
     const [openComplaint] = await db
       .select({ id: complaints.id })
@@ -93,10 +118,10 @@ export class OwnershipService {
         operatedById: actor.id,
         reason: dto.reason,
       })
-      await this.actionsService.cancelPendingForCustomer(
+      await this.actionsService.cancelPendingCustomerVisits(
         tx,
         customer.id,
-        `客户已释放：${dto.reason}`,
+        dto.target === 'pool' ? '客户已放入公海' : '客户已标记无效',
       )
       return updated
     })
@@ -110,6 +135,7 @@ export class OwnershipService {
       .where(and(eq(customers.id, customerId), eq(customers.status, 'public')))
       .limit(1)
     if (!customer) throw new NotFoundException('公海客户不存在')
+    await this.assertRegionAccessible(customer.salesRegionId, actor)
 
     return db.transaction(async (tx) => {
       await this.assigneeService.assertAssignable(tx, actor.id)
@@ -143,6 +169,57 @@ export class OwnershipService {
     })
   }
 
+  // 无效档案恢复：仅区域负责人/管理员；重新指定负责人并重新占用客户等级名额。
+  async restore(customerId: string, dto: RestoreCustomerDto, actor: AuthUser) {
+    if (actor.role !== 'executive' && actor.role !== 'admin') {
+      throw new ForbiddenException('仅区域负责人或管理员可恢复无效客户')
+    }
+    const [customer] = await db
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, customerId), eq(customers.status, 'invalid')))
+      .limit(1)
+    if (!customer) throw new NotFoundException('无效客户不存在')
+    await this.assertRegionAccessible(customer.salesRegionId, actor)
+
+    if (actor.role === 'executive') {
+      const visibleIds = await this.accessService.getVisibleUserIds(actor)
+      if (!visibleIds.includes(dto.toOwnerId))
+        throw new ForbiddenException('只能恢复给本团队负责人')
+    }
+
+    return db.transaction(async (tx) => {
+      await this.assigneeService.assertAssignable(tx, dto.toOwnerId)
+      await this.assertAssigneeRegion(tx, customer.salesRegionId, dto.toOwnerId)
+      await this.gradeQuotaService.assertSlotAvailable(tx, dto.toOwnerId, customer.grade)
+      const [updated] = await tx
+        .update(customers)
+        .set({
+          ownerId: dto.toOwnerId,
+          status: 'active',
+          updatedAt: new Date(),
+          version: sql`${customers.version} + 1`,
+        })
+        .where(
+          and(
+            eq(customers.id, customer.id),
+            eq(customers.version, customer.version),
+            eq(customers.status, 'invalid'),
+          ),
+        )
+        .returning({ id: customers.id, status: customers.status, ownerId: customers.ownerId })
+      if (!updated) throw new ConflictException('客户状态已变化，请刷新后重试')
+      await tx.insert(customerTransfers).values({
+        customerId: customer.id,
+        fromOwnerId: null,
+        toOwnerId: dto.toOwnerId,
+        operatedById: actor.id,
+        reason: `恢复无效客户：${dto.reason.trim()}`,
+      })
+      return updated
+    })
+  }
+
   // ===== 内部工具 =====
 
   // 查询有归属的客户（owner 在数据范围可见集）
@@ -166,10 +243,38 @@ export class OwnershipService {
     throw new ForbiddenException('无权维护该客户')
   }
 
-  // 释放必须本人是 owner（§8.3）
-  private async assertIsOwner(customer: typeof customers.$inferSelect, actor: AuthUser) {
-    if (customer.ownerId !== actor.id && actor.role !== 'admin') {
-      throw new ForbiddenException('仅负责人本人可释放客户')
+  private async assertRegionAccessible(salesRegionId: string | null, actor: AuthUser) {
+    if (actor.role === 'admin' || !salesRegionId) return
+    if (actor.role !== 'sales' && actor.role !== 'executive') {
+      throw new ForbiddenException('无权访问该客户池')
     }
+    const [match] = await db
+      .select({ id: salesRegions.id })
+      .from(users)
+      .innerJoin(
+        salesRegions,
+        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
+      )
+      .where(and(eq(users.id, actor.id), eq(salesRegions.id, salesRegionId)))
+      .limit(1)
+    if (!match) throw new ForbiddenException('该客户不在你的销售区域')
+  }
+
+  private async assertAssigneeRegion(
+    client: Parameters<CustomerAssigneeService['assertAssignable']>[0],
+    salesRegionId: string | null,
+    assigneeId: string,
+  ) {
+    if (!salesRegionId) return
+    const [match] = await client
+      .select({ id: users.id })
+      .from(users)
+      .innerJoin(
+        salesRegions,
+        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
+      )
+      .where(and(eq(users.id, assigneeId), eq(salesRegions.id, salesRegionId)))
+      .limit(1)
+    if (!match) throw new ConflictException('负责人所属区域与客户销售区域不一致')
   }
 }

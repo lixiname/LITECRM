@@ -82,6 +82,14 @@ export function claimCustomer(
   return apiPost(`/customers/${id}/claim`)
 }
 
+/** 恢复无效客户：区域负责人/管理员重新指定负责人。 */
+export function restoreCustomer(
+  id: string,
+  dto: { toOwnerId: string; reason: string },
+): Promise<{ id: string; status: string; ownerId: string }> {
+  return apiPost(`/customers/${id}/restore`, dto)
+}
+
 // ===== 联系人（§7.2）=====
 
 export function addContact(customerId: string, dto: CreateContactInput): Promise<Contact> {

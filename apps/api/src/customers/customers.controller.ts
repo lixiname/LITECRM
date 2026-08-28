@@ -14,6 +14,7 @@ import { CreateContactDto } from './dto/contact.dto'
 import { DedupCheckDto } from './dto/dedup-check.dto'
 import { TransferCustomerDto } from './dto/transfer-customer.dto'
 import { ReleaseCustomerDto } from './dto/release-customer.dto'
+import { RestoreCustomerDto } from './dto/restore-customer.dto'
 import { AssigneeOptionDto } from './dto/assignee-option.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
 
@@ -98,8 +99,18 @@ export class CustomersController {
 
   @Post(':id/claim')
   @ApiOkResponse({ description: '公海认领（分级名额校验，owner→本人）' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.write')
   claim(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.ownershipService.claim(id, user)
+  }
+
+  @Post(':id/restore')
+  @ApiOkResponse({ description: '恢复无效客户并重新指定负责人' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.transfer')
+  restore(@Param('id') id: string, @Body() dto: RestoreCustomerDto, @CurrentUser() user: AuthUser) {
+    return this.ownershipService.restore(id, dto, user)
   }
 
   // ===== 联系人（§7.2）=====

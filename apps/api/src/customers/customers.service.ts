@@ -5,7 +5,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, desc, eq, getTableColumns, inArray, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { db, type DbClient } from '../common/db/db'
 import {
   complaintFollowUps,
@@ -95,6 +106,7 @@ export class CustomersService {
       normalizedKey: customers.normalizedKey,
       city: customers.city,
       address: customers.address,
+      status: sql<'active' | 'public' | 'invalid'>`${customers.status}`,
       trigramSimilarity: sql<number>`similarity(${customers.normalizedKey}, ${key})`,
     }
 
@@ -103,10 +115,7 @@ export class CustomersService {
       .select(cols)
       .from(customers)
       .where(
-        and(
-          sql`${customers.status} != 'invalid'`,
-          sql`(${customers.normalizedKey} % ${key} OR left(${customers.normalizedKey}, 1) = ${key.charAt(0)})`,
-        ),
+        sql`(${customers.normalizedKey} % ${key} OR left(${customers.normalizedKey}, 1) = ${key.charAt(0)})`,
       )
       .limit(10)
 
@@ -201,10 +210,8 @@ export class CustomersService {
 
   // 检索（§7.3）：数据范围过滤 + 五级排序 + 分页
   async findAll(query: CustomerQueryDto, actor: AuthUser) {
-    const visibleIds = await this.accessService.getVisibleUserIds(actor)
-    const conditions: SQL[] = [inArray(customers.ownerId, visibleIds)]
-
-    if (query.status) conditions.push(eq(customers.status, query.status))
+    const requestedStatus = query.status ?? 'active'
+    const conditions: SQL[] = [await this.listVisibilityCondition(requestedStatus, actor)]
     if (query.grade) conditions.push(eq(customers.grade, query.grade))
     if (query.city) conditions.push(eq(customers.city, query.city))
     if (query.industry) conditions.push(eq(customers.industry, query.industry))
@@ -435,9 +442,8 @@ export class CustomersService {
     const opportunitiesWithContext = opportunitiesRows.map((row) => {
       const currentAction = actionRows.find((action) => action.opportunityId === row.id) ?? null
       const latestQuote =
-        quoteRows.find(
-          (quote) => quote.opportunityId === row.id && quote.status === 'active',
-        ) ?? null
+        quoteRows.find((quote) => quote.opportunityId === row.id && quote.status === 'active') ??
+        null
       const latestFollowUp =
         opportunityFollowUpRows.find((followUp) => followUp.opportunityId === row.id) ?? null
       return {
@@ -728,23 +734,77 @@ export class CustomersService {
 
   // 数据范围可见性（§7.3：详情/维护前校验）
   private async findVisible(id: string, actor: AuthUser) {
-    const visibleIds = await this.accessService.getVisibleUserIds(actor)
-    const [customer] = await db
-      .select()
-      .from(customers)
-      .where(and(eq(customers.id, id), inArray(customers.ownerId, visibleIds)))
-      .limit(1)
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id)).limit(1)
     if (!customer) throw new NotFoundException('客户不存在')
+    if (customer.status === 'active') {
+      const visibleIds = await this.accessService.getVisibleUserIds(actor)
+      if (!customer.ownerId || !visibleIds.includes(customer.ownerId)) {
+        throw new NotFoundException('客户不存在')
+      }
+    } else if (customer.status === 'public') {
+      if (!(await this.canAccessPool(customer.salesRegionId, actor))) {
+        throw new NotFoundException('客户不存在')
+      }
+    } else if (!(await this.canAccessInvalid(customer.salesRegionId, actor))) {
+      throw new NotFoundException('客户不存在')
+    }
     return customer
   }
 
   // 可维护权限（§8.3）：owner / 管理链 / admin
   private async assertCanContribute(customer: typeof customers.$inferSelect, actor: AuthUser) {
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可维护资料')
     if (customer.ownerId === actor.id) return
     if (actor.role === 'admin') return
     const isManager = await this.accessService.isManagerOf(actor.id, customer.ownerId)
     if (isManager) return
     throw new ForbiddenException('无权维护该客户')
+  }
+
+  private async listVisibilityCondition(status: 'active' | 'public' | 'invalid', actor: AuthUser) {
+    if (status === 'active') {
+      const visibleIds = await this.accessService.getVisibleUserIds(actor)
+      return and(eq(customers.status, 'active'), inArray(customers.ownerId, visibleIds))!
+    }
+    const regionId = await this.resolveActorSalesRegionId(actor.id)
+    const regionScope = regionId
+      ? or(eq(customers.salesRegionId, regionId), isNull(customers.salesRegionId))!
+      : isNull(customers.salesRegionId)
+    if (status === 'public') {
+      if (actor.role === 'admin') return eq(customers.status, 'public')
+      if (actor.role !== 'sales' && actor.role !== 'executive') return sql`false`
+      return and(eq(customers.status, 'public'), regionScope)!
+    }
+    if (actor.role === 'admin') return eq(customers.status, 'invalid')
+    if (actor.role !== 'executive') return sql`false`
+    return and(eq(customers.status, 'invalid'), regionScope)!
+  }
+
+  private async canAccessPool(salesRegionId: string | null, actor: AuthUser) {
+    if (actor.role === 'admin') return true
+    if (actor.role !== 'sales' && actor.role !== 'executive') return false
+    if (!salesRegionId) return true
+    return (await this.resolveActorSalesRegionId(actor.id)) === salesRegionId
+  }
+
+  private async canAccessInvalid(salesRegionId: string | null, actor: AuthUser) {
+    if (actor.role === 'admin') return true
+    if (actor.role !== 'executive') return false
+    if (!salesRegionId) return true
+    return (await this.resolveActorSalesRegionId(actor.id)) === salesRegionId
+  }
+
+  private async resolveActorSalesRegionId(actorId: string): Promise<string | null> {
+    const [row] = await db
+      .select({ salesRegionId: salesRegions.id })
+      .from(users)
+      .leftJoin(
+        salesRegions,
+        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
+      )
+      .where(eq(users.id, actorId))
+      .limit(1)
+    return row?.salesRegionId ?? null
   }
 
   private async lockCustomerContacts(tx: DbClient, customerId: string) {

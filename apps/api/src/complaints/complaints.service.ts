@@ -33,6 +33,7 @@ export class ComplaintsService {
   async create(dto: CreateComplaintDto, actor: AuthUser) {
     await this.catalogService.assertDimensionValue('complaint_type', dto.type)
     const customer = await this.findCustomer(dto.customerId, actor)
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可登记客诉')
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
@@ -182,8 +183,7 @@ export class ComplaintsService {
         .limit(pageSize)
         .offset((page - 1) * pageSize),
     ])
-    if (rows.length === 0)
-      return { items: [], total: totalRows[0]?.count ?? 0, page, pageSize }
+    if (rows.length === 0) return { items: [], total: totalRows[0]?.count ?? 0, page, pageSize }
     const actions = await db
       .select()
       .from(followUpActions)
@@ -223,8 +223,7 @@ export class ComplaintsService {
       .select({ id: users.id, displayName: users.displayName })
       .from(users)
       .where(inArray(users.id, actorIds))
-    const actorName = (id: string) =>
-      actorRows.find((item) => item.id === id)?.displayName ?? null
+    const actorName = (id: string) => actorRows.find((item) => item.id === id)?.displayName ?? null
     const timeline = [
       ...(complaint.status === 'resolved' && complaint.resolvedAt
         ? [
@@ -278,12 +277,11 @@ export class ComplaintsService {
     return { ...complaint, followUps, actions, timeline }
   }
 
-  private async findCustomer(id: string, actor: AuthUser) {
-    const visibleIds = await this.accessService.getVisibleUserIds(actor)
+  private async findCustomer(id: string, _actor: AuthUser) {
     const [customer] = await db
-      .select({ id: customers.id, ownerId: customers.ownerId })
+      .select({ id: customers.id, ownerId: customers.ownerId, status: customers.status })
       .from(customers)
-      .where(and(eq(customers.id, id), inArray(customers.ownerId, visibleIds)))
+      .where(eq(customers.id, id))
       .limit(1)
     if (!customer) throw new NotFoundException('客户不存在')
     return customer

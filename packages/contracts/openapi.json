@@ -10,9 +10,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "App"
-        ]
+        "tags": ["App"]
       }
     },
     "/auth/login": {
@@ -41,9 +39,7 @@
             }
           }
         },
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/auth/refresh": {
@@ -72,9 +68,7 @@
             }
           }
         },
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/auth/change-password": {
@@ -96,9 +90,7 @@
             "description": "改密成功（全端 token 已失效）"
           }
         },
-        "tags": [
-          "Auth"
-        ]
+        "tags": ["Auth"]
       }
     },
     "/users": {
@@ -120,9 +112,7 @@
             }
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       },
       "post": {
         "operationId": "UsersController_create",
@@ -149,9 +139,7 @@
             }
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/users/{id}": {
@@ -179,9 +167,7 @@
             }
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       },
       "patch": {
         "operationId": "UsersController_update",
@@ -217,9 +203,7 @@
             }
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       },
       "delete": {
         "operationId": "UsersController_deactivate",
@@ -238,9 +222,7 @@
             "description": "停用成功"
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/users/{id}/reset-password": {
@@ -268,9 +250,7 @@
             }
           }
         },
-        "tags": [
-          "Users"
-        ]
+        "tags": ["Users"]
       }
     },
     "/catalog/{dimension}": {
@@ -291,9 +271,7 @@
             "description": "某维度全部选项（表单过滤停用项，历史值仍可展示）"
           }
         },
-        "tags": [
-          "catalog"
-        ]
+        "tags": ["catalog"]
       }
     },
     "/catalog": {
@@ -305,9 +283,7 @@
             "description": "全部字典项（含停用，admin 维护用）"
           }
         },
-        "tags": [
-          "catalog"
-        ]
+        "tags": ["catalog"]
       },
       "post": {
         "operationId": "CatalogController_create",
@@ -327,9 +303,7 @@
             "description": "新增字典项"
           }
         },
-        "tags": [
-          "catalog"
-        ]
+        "tags": ["catalog"]
       }
     },
     "/catalog/{id}": {
@@ -360,9 +334,7 @@
             "description": "更新字典项"
           }
         },
-        "tags": [
-          "catalog"
-        ]
+        "tags": ["catalog"]
       },
       "delete": {
         "operationId": "CatalogController_remove",
@@ -381,9 +353,7 @@
             "description": "停用字典项（软删）"
           }
         },
-        "tags": [
-          "catalog"
-        ]
+        "tags": ["catalog"]
       }
     },
     "/geography/provinces": {
@@ -405,9 +375,7 @@
             }
           }
         },
-        "tags": [
-          "geography"
-        ]
+        "tags": ["geography"]
       }
     },
     "/geography/provinces/{provinceCode}/cities": {
@@ -438,9 +406,7 @@
             }
           }
         },
-        "tags": [
-          "geography"
-        ]
+        "tags": ["geography"]
       }
     },
     "/geography/sales-regions": {
@@ -462,9 +428,7 @@
             }
           }
         },
-        "tags": [
-          "geography"
-        ]
+        "tags": ["geography"]
       }
     },
     "/customers": {
@@ -486,9 +450,7 @@
             "description": "建档成功"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       },
       "get": {
         "operationId": "CustomersController_findAll",
@@ -536,12 +498,7 @@
             "description": "客户等级筛选",
             "schema": {
               "type": "string",
-              "enum": [
-                "S",
-                "A",
-                "B",
-                "C"
-              ]
+              "enum": ["S", "A", "B", "C"]
             }
           },
           {
@@ -577,9 +534,7 @@
             "description": "客户列表（数据范围过滤 + 五级检索 + 分页）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/dedup-check": {
@@ -601,9 +556,7 @@
             "description": "疑似重复列表（置信度分级，§8.2 录入预检）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/assignees": {
@@ -625,9 +578,7 @@
             }
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/{id}": {
@@ -648,9 +599,7 @@
             "description": "客户详情（含联系人、商机摘要、历史成交、活动时间线）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       },
       "patch": {
         "operationId": "CustomersController_update",
@@ -679,9 +628,7 @@
             "description": "更新客户（owner/管理链/admin）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/{id}/transfer": {
@@ -712,9 +659,7 @@
             "description": "所有权转移（分级名额校验，写移交历史）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/{id}/release": {
@@ -745,9 +690,7 @@
             "description": "主动释放（pool=公海 / invalid=无效）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/{id}/claim": {
@@ -768,9 +711,38 @@
             "description": "公海认领（分级名额校验，owner→本人）"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
+      }
+    },
+    "/customers/{id}/restore": {
+      "post": {
+        "operationId": "CustomersController_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreCustomerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "恢复无效客户并重新指定负责人"
+          }
+        },
+        "tags": ["customers"]
       }
     },
     "/customers/{id}/contacts": {
@@ -801,9 +773,7 @@
             "description": "新增联系人"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/customers/contacts/{contactId}": {
@@ -834,9 +804,7 @@
             "description": "更新联系人"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       },
       "delete": {
         "operationId": "CustomersController_removeContact",
@@ -855,9 +823,7 @@
             "description": "删除联系人"
           }
         },
-        "tags": [
-          "customers"
-        ]
+        "tags": ["customers"]
       }
     },
     "/sales-plans": {
@@ -879,9 +845,7 @@
             "description": "手工安排客户拜访、商机跟进或客诉处理计划"
           }
         },
-        "tags": [
-          "sales-plans"
-        ]
+        "tags": ["sales-plans"]
       }
     },
     "/sales-plans/week": {
@@ -910,9 +874,7 @@
             "description": "范围内全部计划 + 更早逾期待办"
           }
         },
-        "tags": [
-          "sales-plans"
-        ]
+        "tags": ["sales-plans"]
       }
     },
     "/sales-plans/{id}": {
@@ -933,9 +895,7 @@
             "description": "读取一条可见销售计划"
           }
         },
-        "tags": [
-          "sales-plans"
-        ]
+        "tags": ["sales-plans"]
       }
     },
     "/sales-plans/{id}/reschedule": {
@@ -966,9 +926,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "sales-plans"
-        ]
+        "tags": ["sales-plans"]
       }
     },
     "/sales-plans/{id}/replace": {
@@ -999,9 +957,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "sales-plans"
-        ]
+        "tags": ["sales-plans"]
       }
     },
     "/claims/customer/{customerId}": {
@@ -1032,9 +988,7 @@
             "description": "发起接管申请"
           }
         },
-        "tags": [
-          "claims"
-        ]
+        "tags": ["claims"]
       }
     },
     "/claims": {
@@ -1056,9 +1010,7 @@
             }
           }
         },
-        "tags": [
-          "claims"
-        ]
+        "tags": ["claims"]
       }
     },
     "/claims/{id}/approve": {
@@ -1089,9 +1041,7 @@
             "description": "审批通过（归属变更 + 分级名额校验）"
           }
         },
-        "tags": [
-          "claims"
-        ]
+        "tags": ["claims"]
       }
     },
     "/claims/{id}/reject": {
@@ -1122,9 +1072,7 @@
             "description": "拒绝（意见必填）"
           }
         },
-        "tags": [
-          "claims"
-        ]
+        "tags": ["claims"]
       }
     },
     "/claims/{id}/withdraw": {
@@ -1145,9 +1093,7 @@
             "description": "撤回（仅申请人本人）"
           }
         },
-        "tags": [
-          "claims"
-        ]
+        "tags": ["claims"]
       }
     },
     "/visits": {
@@ -1169,9 +1115,7 @@
             "description": "登记拜访"
           }
         },
-        "tags": [
-          "visits"
-        ]
+        "tags": ["visits"]
       }
     },
     "/visits/customer/{customerId}": {
@@ -1192,9 +1136,7 @@
             "description": "客户拜访时间线"
           }
         },
-        "tags": [
-          "visits"
-        ]
+        "tags": ["visits"]
       }
     },
     "/opportunities": {
@@ -1216,9 +1158,7 @@
             "description": "新建商机；报价依据时同步生成首条报价"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       },
       "get": {
         "operationId": "OpportunitiesController_list",
@@ -1275,13 +1215,7 @@
             "description": "商机阶段",
             "schema": {
               "type": "string",
-              "enum": [
-                "intent",
-                "following",
-                "won",
-                "lost",
-                "demand_disappeared"
-              ]
+              "enum": ["intent", "following", "won", "lost", "demand_disappeared"]
             }
           },
           {
@@ -1353,9 +1287,7 @@
             "description": "商机列表（客户当前归属可见）"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/opportunities/{id}": {
@@ -1376,9 +1308,7 @@
             "description": "商机详情（含事件流与成交 Deal）"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/opportunities/{id}/follow-ups": {
@@ -1409,9 +1339,7 @@
             "description": "追加商机跟进并安排下一行动"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/opportunities/{id}/quotes": {
@@ -1442,9 +1370,7 @@
             "description": "追加口头或正式报价；不会自动成交"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/opportunities/{id}/win": {
@@ -1475,9 +1401,7 @@
             "description": "客户明确下单，生成唯一 Deal"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/opportunities/{id}/close": {
@@ -1508,9 +1432,7 @@
             "description": "结案（lost / demand_disappeared）"
           }
         },
-        "tags": [
-          "opportunities"
-        ]
+        "tags": ["opportunities"]
       }
     },
     "/complaints": {
@@ -1532,9 +1454,7 @@
             "description": "登记客诉"
           }
         },
-        "tags": [
-          "complaints"
-        ]
+        "tags": ["complaints"]
       },
       "get": {
         "operationId": "ComplaintsController_list",
@@ -1564,10 +1484,7 @@
             "description": "处理状态",
             "schema": {
               "type": "string",
-              "enum": [
-                "registered",
-                "resolved"
-              ]
+              "enum": ["registered", "resolved"]
             }
           },
           {
@@ -1603,9 +1520,7 @@
             "description": "客诉列表（客户当前归属可见）"
           }
         },
-        "tags": [
-          "complaints"
-        ]
+        "tags": ["complaints"]
       }
     },
     "/complaints/{id}": {
@@ -1626,9 +1541,7 @@
             "description": "客诉详情（含统一生命周期时间线）"
           }
         },
-        "tags": [
-          "complaints"
-        ]
+        "tags": ["complaints"]
       }
     },
     "/complaints/{id}/follow-up": {
@@ -1659,9 +1572,7 @@
             "description": "跟进 / 确认解决（终态禁止）"
           }
         },
-        "tags": [
-          "complaints"
-        ]
+        "tags": ["complaints"]
       }
     },
     "/business-weeks": {
@@ -1683,9 +1594,7 @@
             "description": "创建业务周（admin）"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       },
       "get": {
         "operationId": "PlanningController_listBusinessWeeks",
@@ -1695,9 +1604,7 @@
             "description": "业务周列表"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/plans": {
@@ -1718,9 +1625,7 @@
             "description": "我的周计划（含计划项）"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/plans/items-by-date": {
@@ -1742,9 +1647,7 @@
             "description": "按日期加计划项（周览点空白加计划，自动定位业务周）"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/plans/{id}/items": {
@@ -1775,9 +1678,7 @@
             "description": "加计划项"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/comments": {
@@ -1799,9 +1700,7 @@
             "description": "发布指导意见（上级对下属）"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/comments/unread": {
@@ -1813,9 +1712,7 @@
             "description": "我的未读意见"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/comments/{id}/read": {
@@ -1836,9 +1733,7 @@
             "description": "标记已读"
           }
         },
-        "tags": [
-          "planning"
-        ]
+        "tags": ["planning"]
       }
     },
     "/week-view": {
@@ -1876,9 +1771,7 @@
             "description": ""
           }
         },
-        "tags": [
-          "week-view"
-        ]
+        "tags": ["week-view"]
       }
     },
     "/expenses": {
@@ -1900,9 +1793,7 @@
             "description": "保存/更新当日费用（upsert）"
           }
         },
-        "tags": [
-          "expenses"
-        ]
+        "tags": ["expenses"]
       },
       "get": {
         "operationId": "ExpensesController_list",
@@ -1912,9 +1803,7 @@
             "description": "我的费用（可按月 YYYY-MM 筛选）"
           }
         },
-        "tags": [
-          "expenses"
-        ]
+        "tags": ["expenses"]
       }
     },
     "/expenses/{id}/submit": {
@@ -1935,9 +1824,7 @@
             "description": "提交（计入统计）"
           }
         },
-        "tags": [
-          "expenses"
-        ]
+        "tags": ["expenses"]
       }
     },
     "/expenses/{id}/void": {
@@ -1958,9 +1845,7 @@
             "description": "作废（剔除统计，留痕）"
           }
         },
-        "tags": [
-          "expenses"
-        ]
+        "tags": ["expenses"]
       }
     },
     "/reporting/members": {
@@ -1972,9 +1857,7 @@
             "description": "当前管理者组织树范围内可筛选人员"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     },
     "/reporting/overview": {
@@ -2032,9 +1915,7 @@
             "description": "管理概览：经营结果、过程风险、重点客户与费用摘要"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     },
     "/reporting/pipeline": {
@@ -2092,9 +1973,7 @@
             "description": "销售漏斗、当前报价池、期间转化与下辖人员拆分"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     },
     "/reporting/team": {
@@ -2152,9 +2031,7 @@
             "description": "团队期间实际活动、当前待办与逾期摘要"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     },
     "/reporting/key-customers": {
@@ -2212,9 +2089,7 @@
             "description": "S/A 客户风险关注清单及全部重要客户组合"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     },
     "/reporting/expenses": {
@@ -2272,9 +2147,7 @@
             "description": "团队已提交费用与未提交草稿摘要"
           }
         },
-        "tags": [
-          "reporting"
-        ]
+        "tags": ["reporting"]
       }
     }
   },
@@ -2300,19 +2173,11 @@
             "description": "密码"
           }
         },
-        "required": [
-          "username",
-          "password"
-        ]
+        "required": ["username", "password"]
       },
       "Role": {
         "type": "string",
-        "enum": [
-          "sales",
-          "executive",
-          "assistant",
-          "admin"
-        ],
+        "enum": ["sales", "executive", "assistant", "admin"],
         "description": "角色"
       },
       "AuthUserDto": {
@@ -2339,12 +2204,7 @@
             ]
           }
         },
-        "required": [
-          "id",
-          "username",
-          "displayName",
-          "role"
-        ]
+        "required": ["id", "username", "displayName", "role"]
       },
       "Ability": {
         "type": "string",
@@ -2361,11 +2221,7 @@
       },
       "DataScope": {
         "type": "string",
-        "enum": [
-          "self",
-          "team",
-          "full"
-        ],
+        "enum": ["self", "team", "full"],
         "description": "数据范围快照"
       },
       "LoginResponseDto": {
@@ -2403,13 +2259,7 @@
             ]
           }
         },
-        "required": [
-          "user",
-          "accessToken",
-          "refreshToken",
-          "capabilities",
-          "dataScope"
-        ]
+        "required": ["user", "accessToken", "refreshToken", "capabilities", "dataScope"]
       },
       "RefreshDto": {
         "type": "object",
@@ -2419,9 +2269,7 @@
             "description": "刷新令牌"
           }
         },
-        "required": [
-          "refreshToken"
-        ]
+        "required": ["refreshToken"]
       },
       "TokenPairDto": {
         "type": "object",
@@ -2435,10 +2283,7 @@
             "description": "新的刷新令牌（14d，滑动续期）"
           }
         },
-        "required": [
-          "accessToken",
-          "refreshToken"
-        ]
+        "required": ["accessToken", "refreshToken"]
       },
       "ChangePasswordDto": {
         "type": "object",
@@ -2452,10 +2297,7 @@
             "description": "新密码（至少 8 位）"
           }
         },
-        "required": [
-          "oldPassword",
-          "newPassword"
-        ]
+        "required": ["oldPassword", "newPassword"]
       },
       "UserDto": {
         "type": "object",
@@ -2505,14 +2347,7 @@
             "description": "创建时间"
           }
         },
-        "required": [
-          "id",
-          "username",
-          "displayName",
-          "role",
-          "isActive",
-          "createdAt"
-        ]
+        "required": ["id", "username", "displayName", "role", "isActive", "createdAt"]
       },
       "CreateUserDto": {
         "type": "object",
@@ -2550,12 +2385,7 @@
             "description": "区域"
           }
         },
-        "required": [
-          "username",
-          "password",
-          "displayName",
-          "role"
-        ]
+        "required": ["username", "password", "displayName", "role"]
       },
       "UpdateUserDto": {
         "type": "object",
@@ -2630,11 +2460,7 @@
             "description": "排序权重"
           }
         },
-        "required": [
-          "dimension",
-          "name",
-          "label"
-        ]
+        "required": ["dimension", "name", "label"]
       },
       "UpdateDimensionOptionDto": {
         "type": "object",
@@ -2666,10 +2492,7 @@
           },
           "level": {
             "type": "string",
-            "enum": [
-              "province",
-              "city"
-            ]
+            "enum": ["province", "city"]
           },
           "parentCode": {
             "type": "string",
@@ -2677,11 +2500,7 @@
             "example": "320000"
           }
         },
-        "required": [
-          "code",
-          "name",
-          "level"
-        ]
+        "required": ["code", "name", "level"]
       },
       "SalesRegionDto": {
         "type": "object",
@@ -2698,20 +2517,11 @@
             "example": "江苏"
           }
         },
-        "required": [
-          "id",
-          "code",
-          "name"
-        ]
+        "required": ["id", "code", "name"]
       },
       "CustomerGrade": {
         "type": "string",
-        "enum": [
-          "S",
-          "A",
-          "B",
-          "C"
-        ],
+        "enum": ["S", "A", "B", "C"],
         "description": "客户等级 S/A/B/C"
       },
       "CreateContactDto": {
@@ -2830,10 +2640,7 @@
             }
           }
         },
-        "required": [
-          "name",
-          "contacts"
-        ]
+        "required": ["name", "contacts"]
       },
       "DedupCheckDto": {
         "type": "object",
@@ -2851,17 +2658,11 @@
             "description": "地址（地址通道，去量词后精确比对）"
           }
         },
-        "required": [
-          "name"
-        ]
+        "required": ["name"]
       },
       "CustomerStatus": {
         "type": "string",
-        "enum": [
-          "active",
-          "invalid",
-          "public"
-        ]
+        "enum": ["active", "invalid", "public"]
       },
       "AssigneeOptionDto": {
         "type": "object",
@@ -2888,11 +2689,7 @@
             "description": "所属区域"
           }
         },
-        "required": [
-          "id",
-          "displayName",
-          "role"
-        ]
+        "required": ["id", "displayName", "role"]
       },
       "UpdateCustomerDto": {
         "type": "object",
@@ -2991,9 +2788,7 @@
             "nullable": true
           }
         },
-        "required": [
-          "version"
-        ]
+        "required": ["version"]
       },
       "TransferCustomerDto": {
         "type": "object",
@@ -3007,10 +2802,7 @@
             "description": "移交原因（审计）"
           }
         },
-        "required": [
-          "toOwnerId",
-          "reason"
-        ]
+        "required": ["toOwnerId", "reason"]
       },
       "ReleaseCustomerDto": {
         "type": "object",
@@ -3018,28 +2810,32 @@
           "target": {
             "type": "string",
             "description": "去向：pool=公海（他人可认领）/ invalid=无效（记录保留）",
-            "enum": [
-              "pool",
-              "invalid"
-            ]
+            "enum": ["pool", "invalid"]
           },
           "reason": {
             "type": "string",
             "description": "释放原因（审计）"
           }
         },
-        "required": [
-          "target",
-          "reason"
-        ]
+        "required": ["target", "reason"]
+      },
+      "RestoreCustomerDto": {
+        "type": "object",
+        "properties": {
+          "toOwnerId": {
+            "type": "string",
+            "description": "恢复后的负责人 ID"
+          },
+          "reason": {
+            "type": "string",
+            "description": "恢复原因"
+          }
+        },
+        "required": ["toOwnerId", "reason"]
       },
       "SalesPlanKind": {
         "type": "string",
-        "enum": [
-          "customer_visit",
-          "opportunity_follow_up",
-          "complaint_follow_up"
-        ],
+        "enum": ["customer_visit", "opportunity_follow_up", "complaint_follow_up"],
         "description": "业务计划类型"
       },
       "CreateSalesPlanDto": {
@@ -3074,12 +2870,7 @@
             "description": "客诉处理计划关联的客诉"
           }
         },
-        "required": [
-          "planKind",
-          "plannedAt",
-          "content",
-          "customerId"
-        ]
+        "required": ["planKind", "plannedAt", "content", "customerId"]
       },
       "RescheduleSalesPlanDto": {
         "type": "object",
@@ -3093,10 +2884,7 @@
             "description": "新的计划执行时间"
           }
         },
-        "required": [
-          "version",
-          "plannedAt"
-        ]
+        "required": ["version", "plannedAt"]
       },
       "ReplaceSalesPlanDto": {
         "type": "object",
@@ -3118,12 +2906,7 @@
             "description": "替换原因"
           }
         },
-        "required": [
-          "version",
-          "plannedAt",
-          "content",
-          "reason"
-        ]
+        "required": ["version", "plannedAt", "content", "reason"]
       },
       "CreateClaimDto": {
         "type": "object",
@@ -3133,18 +2916,11 @@
             "description": "接管理由"
           }
         },
-        "required": [
-          "reason"
-        ]
+        "required": ["reason"]
       },
       "ClaimStatus": {
         "type": "string",
-        "enum": [
-          "pending",
-          "approved",
-          "rejected",
-          "withdrawn"
-        ],
+        "enum": ["pending", "approved", "rejected", "withdrawn"],
         "description": "状态"
       },
       "ClaimRequestDto": {
@@ -3192,14 +2968,7 @@
             "description": "创建时间"
           }
         },
-        "required": [
-          "id",
-          "customerId",
-          "applicantId",
-          "reason",
-          "status",
-          "createdAt"
-        ]
+        "required": ["id", "customerId", "applicantId", "reason", "status", "createdAt"]
       },
       "ReviewClaimDto": {
         "type": "object",
@@ -3212,11 +2981,7 @@
       },
       "VisitMethod": {
         "type": "string",
-        "enum": [
-          "offline_visit",
-          "remote",
-          "other"
-        ],
+        "enum": ["offline_visit", "remote", "other"],
         "description": "拜访方式"
       },
       "CreateVisitDto": {
@@ -3272,19 +3037,11 @@
             "description": "下次拜访计划内容；不保留现有计划时必填"
           }
         },
-        "required": [
-          "customerId",
-          "occurredAt",
-          "method"
-        ]
+        "required": ["customerId", "occurredAt", "method"]
       },
       "OpportunityInitialAmountBasis": {
         "type": "string",
-        "enum": [
-          "estimate",
-          "oral_quote",
-          "formal_quote"
-        ],
+        "enum": ["estimate", "oral_quote", "formal_quote"],
         "description": "初始金额依据：预估、口头报价或正式报价"
       },
       "CreateOpportunityDto": {
@@ -3404,17 +3161,11 @@
             "description": "下一行动计划时间；不保留现有计划时必填"
           }
         },
-        "required": [
-          "version",
-          "conclusion"
-        ]
+        "required": ["version", "conclusion"]
       },
       "OpportunityQuoteKind": {
         "type": "string",
-        "enum": [
-          "oral",
-          "formal"
-        ]
+        "enum": ["oral", "formal"]
       },
       "CreateOpportunityQuoteDto": {
         "type": "object",
@@ -3470,12 +3221,7 @@
             "description": "可选文件引用；不要求上传"
           }
         },
-        "required": [
-          "version",
-          "kind",
-          "quotedAt",
-          "amount"
-        ]
+        "required": ["version", "kind", "quotedAt", "amount"]
       },
       "WinOpportunityDto": {
         "type": "object",
@@ -3507,11 +3253,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "version",
-          "occurredAt",
-          "amount"
-        ]
+        "required": ["version", "occurredAt", "amount"]
       },
       "CloseOpportunityDto": {
         "type": "object",
@@ -3523,21 +3265,14 @@
           "result": {
             "type": "string",
             "description": "结案结果",
-            "enum": [
-              "lost",
-              "demand_disappeared"
-            ]
+            "enum": ["lost", "demand_disappeared"]
           },
           "reason": {
             "type": "string",
             "description": "结案说明"
           }
         },
-        "required": [
-          "version",
-          "result",
-          "reason"
-        ]
+        "required": ["version", "result", "reason"]
       },
       "CreateComplaintDto": {
         "type": "object",
@@ -3579,18 +3314,12 @@
       },
       "FollowUpOutcome": {
         "type": "string",
-        "enum": [
-          "followed_up",
-          "resolved"
-        ],
+        "enum": ["followed_up", "resolved"],
         "description": "跟进结果"
       },
       "ComplaintStatus": {
         "type": "string",
-        "enum": [
-          "registered",
-          "resolved"
-        ],
+        "enum": ["registered", "resolved"],
         "description": "客诉状态（类型声明）"
       },
       "FollowUpComplaintDto": {
@@ -3637,11 +3366,7 @@
             ]
           }
         },
-        "required": [
-          "version",
-          "content",
-          "outcome"
-        ]
+        "required": ["version", "content", "outcome"]
       },
       "CreateBusinessWeekDto": {
         "type": "object",
@@ -3663,11 +3388,7 @@
             "description": "是否启用"
           }
         },
-        "required": [
-          "name",
-          "weekStart",
-          "weekEnd"
-        ]
+        "required": ["name", "weekStart", "weekEnd"]
       },
       "CreatePlanItemDto": {
         "type": "object",
@@ -3701,20 +3422,11 @@
             "description": "备注"
           }
         },
-        "required": [
-          "plannedAt",
-          "planKind",
-          "customerId",
-          "content"
-        ]
+        "required": ["plannedAt", "planKind", "customerId", "content"]
       },
       "CommentTargetType": {
         "type": "string",
-        "enum": [
-          "weekly_plan",
-          "follow_up_action",
-          "visit"
-        ],
+        "enum": ["weekly_plan", "follow_up_action", "visit"],
         "description": "目标类型"
       },
       "CreateCommentDto": {
@@ -3741,12 +3453,7 @@
             "description": "意见内容"
           }
         },
-        "required": [
-          "targetType",
-          "targetId",
-          "ownerId",
-          "content"
-        ]
+        "required": ["targetType", "targetId", "ownerId", "content"]
       },
       "CreateExpenseDto": {
         "type": "object",
@@ -3780,9 +3487,7 @@
             "description": "备注"
           }
         },
-        "required": [
-          "expenseDate"
-        ]
+        "required": ["expenseDate"]
       }
     }
   }

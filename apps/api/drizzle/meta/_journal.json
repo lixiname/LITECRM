@@ -78,6 +78,13 @@
       "when": 1788001000000,
       "tag": "0010_calm_santa_claus",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788002000000,
+      "tag": "0011_customer_lifecycle",
+      "breakpoints": true
     }
   ]
 }

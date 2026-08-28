@@ -127,6 +127,7 @@ export interface DedupHit {
   candidateCity: string | null
   confidence: DedupConfidence
   reasons: string[]
+  customerStatus?: CustomerStatus
 }
 
 export interface ClaimListItem {

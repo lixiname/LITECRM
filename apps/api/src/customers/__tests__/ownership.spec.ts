@@ -10,6 +10,8 @@ import {
   customerGradeChanges,
   customerTransfers,
   customers,
+  followUpActions,
+  opportunities,
   userCustomerGradeQuotaOverrides,
 } from '../../common/db/schema'
 
@@ -76,6 +78,27 @@ describe('归属治理与客户分级名额（§8.3）', () => {
   }
 
   async function cleanupCustomers() {
+    await db.execute(
+      sql`DELETE FROM follow_up_actions WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
+    )
+    await db.execute(
+      sql`DELETE FROM opportunity_events WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
+    )
+    await db.execute(
+      sql`DELETE FROM opportunity_product_lines WHERE opportunity_id IN (SELECT id FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%'))`,
+    )
+    await db.execute(
+      sql`DELETE FROM opportunity_follow_ups WHERE opportunity_id IN (SELECT id FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%'))`,
+    )
+    await db.execute(
+      sql`DELETE FROM opportunity_quotes WHERE opportunity_id IN (SELECT id FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%'))`,
+    )
+    await db.execute(
+      sql`DELETE FROM deals WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
+    )
+    await db.execute(
+      sql`DELETE FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
+    )
     await db.execute(
       sql`DELETE FROM customer_grade_changes WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'SMOKE_%')`,
     )
@@ -211,6 +234,52 @@ describe('归属治理与客户分级名额（§8.3）', () => {
       expect(row.ownerId).toBeNull()
     })
 
+    it('释放时自动取消普通拜访计划，并写入明确的系统原因', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const customer = await createCustomer(sales1.accessToken, 'SMOKE_计划取消')
+      const [plan] = await db
+        .insert(followUpActions)
+        .values({
+          ownerId: await getUserId('sales1'),
+          customerId: customer.id,
+          planKind: 'customer_visit',
+          originType: 'manual',
+          plannedAt: new Date(Date.now() + 86_400_000),
+          content: '下次上门拜访',
+        })
+        .returning()
+
+      const released = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/release`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ target: 'pool', reason: '暂不由本人维护' })
+      expect(released.status).toBe(201)
+
+      const [cancelled] = await db
+        .select()
+        .from(followUpActions)
+        .where(eq(followUpActions.id, plan.id))
+      expect(cancelled).toMatchObject({ status: 'cancelled', cancelReason: '客户已放入公海' })
+    })
+
+    it('存在开放商机时禁止释放客户', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const customer = await createCustomer(sales1.accessToken, 'SMOKE_开放商机拦截')
+      await db.insert(opportunities).values({
+        customerId: customer.id,
+        ownerId: await getUserId('sales1'),
+        name: '仍在推进的需求',
+        source: 'self_visit',
+      })
+
+      const released = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/release`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ target: 'pool', reason: '错误释放' })
+      expect(released.status).toBe(409)
+      expect(released.body.message).toContain('开放商机')
+    })
+
     it('非 owner 释放 → 404（资源不可见）', async () => {
       const sales1 = await login('sales1', 'Crm@123456')
       const customer = await createCustomer(sales1.accessToken, 'SMOKE_释放越权')
@@ -231,6 +300,27 @@ describe('归属治理与客户分级名额（§8.3）', () => {
         .set('Authorization', `Bearer ${sales1.accessToken}`)
         .send({ target: 'pool', reason: '释放' })
 
+      const pool = await request(app.getHttpServer())
+        .get('/api/customers?status=public')
+        .set('Authorization', `Bearer ${sales2.accessToken}`)
+      expect(pool.status).toBe(200)
+      expect(pool.body.items).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: customer.id, status: 'public' })]),
+      )
+
+      const cannotVisitBeforeClaim = await request(app.getHttpServer())
+        .post('/api/visits')
+        .set('Authorization', `Bearer ${sales2.accessToken}`)
+        .send({
+          customerId: customer.id,
+          occurredAt: new Date().toISOString(),
+          method: 'offline_visit',
+          nextActionAt: new Date(Date.now() + 86_400_000).toISOString(),
+          nextActionContent: '再次拜访',
+        })
+      expect(cannotVisitBeforeClaim.status).toBe(409)
+      expect(cannotVisitBeforeClaim.body.message).toContain('仅在案客户')
+
       const res = await request(app.getHttpServer())
         .post(`/api/customers/${customer.id}/claim`)
         .set('Authorization', `Bearer ${sales2.accessToken}`)
@@ -240,6 +330,45 @@ describe('归属治理与客户分级名额（§8.3）', () => {
       const [row] = await db.select().from(customers).where(eq(customers.id, customer.id)).limit(1)
       expect(row.status).toBe('active')
       expect(row.ownerId).toBe(await getUserId('sales2'))
+    })
+
+    it('销售不能标记无效；经理可标记并恢复给团队负责人', async () => {
+      const sales1 = await login('sales1', 'Crm@123456')
+      const manager = await login('manager', 'Crm@123456')
+      const customer = await createCustomer(sales1.accessToken, 'SMOKE_无效恢复')
+
+      const denied = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/release`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ target: 'invalid', reason: '误操作' })
+      expect(denied.status).toBe(403)
+
+      const invalidated = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/release`)
+        .set('Authorization', `Bearer ${manager.accessToken}`)
+        .send({ target: 'invalid', reason: '确认无效' })
+      expect(invalidated.status).toBe(201)
+      expect(invalidated.body.status).toBe('invalid')
+
+      const hiddenFromSales = await request(app.getHttpServer())
+        .get('/api/customers?status=invalid')
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+      expect(hiddenFromSales.status).toBe(200)
+      expect(hiddenFromSales.body.items).toHaveLength(0)
+
+      const visibleToManager = await request(app.getHttpServer())
+        .get('/api/customers?status=invalid')
+        .set('Authorization', `Bearer ${manager.accessToken}`)
+      expect(visibleToManager.body.items).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: customer.id, status: 'invalid' })]),
+      )
+
+      const restored = await request(app.getHttpServer())
+        .post(`/api/customers/${customer.id}/restore`)
+        .set('Authorization', `Bearer ${manager.accessToken}`)
+        .send({ toOwnerId: await getUserId('sales1'), reason: '确认仍有经营价值' })
+      expect(restored.status).toBe(201)
+      expect(restored.body).toMatchObject({ status: 'active', ownerId: await getUserId('sales1') })
     })
   })
 

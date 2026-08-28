@@ -27,6 +27,7 @@ export interface DedupCandidate {
   phoneMatched: boolean
   /** pg_trgm 相似度（DB 侧 similarity()，可无） */
   trigramSimilarity?: number | null
+  status?: 'active' | 'public' | 'invalid'
 }
 
 export interface DedupScored {
@@ -35,6 +36,7 @@ export interface DedupScored {
   candidateCity?: string | null
   confidence: DedupConfidence
   reasons: string[]
+  customerStatus?: 'active' | 'public' | 'invalid'
 }
 
 // 置信度分级（§8.2 表格）：高=精确类 / 中=trigram≥0.5 或 Jaro≥0.8 / 低=弱相似
@@ -99,6 +101,7 @@ export function scoreDuplicate(candidate: DedupCandidate, input: DedupInput): De
       candidateCity: candidate.city,
       confidence: 'high',
       reasons,
+      customerStatus: candidate.status,
     }
   if (medium)
     return {
@@ -107,6 +110,7 @@ export function scoreDuplicate(candidate: DedupCandidate, input: DedupInput): De
       candidateCity: candidate.city,
       confidence: 'medium',
       reasons,
+      customerStatus: candidate.status,
     }
 
   // 低：弱相似（Jaro 0.6~0.8 或 trigram 0.3~0.5）
@@ -117,6 +121,7 @@ export function scoreDuplicate(candidate: DedupCandidate, input: DedupInput): De
       candidateCity: candidate.city,
       confidence: 'low',
       reasons: [`名称弱相似 ${Math.max(jaro, trigram).toFixed(2)}`],
+      customerStatus: candidate.status,
     }
   }
   return null

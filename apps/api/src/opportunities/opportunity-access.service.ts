@@ -10,14 +10,14 @@ import { customers, opportunities } from '../common/db/schema'
 export class OpportunityAccessService {
   constructor(private readonly accessService: AccessService) {}
 
-  async findCustomer(id: string, actor: AuthUser) {
-    const visibleIds = await this.accessService.getVisibleUserIds(actor)
+  async findCustomer(id: string, _actor: AuthUser) {
     const [customer] = await db
-      .select({ id: customers.id, ownerId: customers.ownerId })
+      .select({ id: customers.id, ownerId: customers.ownerId, status: customers.status })
       .from(customers)
-      .where(and(eq(customers.id, id), inArray(customers.ownerId, visibleIds)))
+      .where(eq(customers.id, id))
       .limit(1)
     if (!customer) throw new NotFoundException('客户不存在')
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可建立商机')
     return customer
   }
 

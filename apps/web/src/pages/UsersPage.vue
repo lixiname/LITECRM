@@ -98,7 +98,20 @@
           <el-input v-model="dialog.phone" placeholder="可选" />
         </el-form-item>
         <el-form-item label="区域">
-          <el-input v-model="dialog.region" placeholder="可选" />
+          <el-select
+            v-model="dialog.region"
+            clearable
+            filterable
+            placeholder="可选"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="region in salesRegions ?? []"
+              :key="region.id"
+              :label="region.name"
+              :value="region.name"
+            />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -118,6 +131,7 @@ import {
   createUser,
   deactivateUser,
   listUsers,
+  listSalesRegions,
   resetUserPassword,
   ROLE_LABELS,
   type CreateUserInput,
@@ -129,6 +143,7 @@ import {
 } from '@crm/domain'
 
 const { data: users, loading, error, reload } = useQuery('users:list', listUsers)
+const { data: salesRegions } = useQuery('geography:sales-regions', listSalesRegions)
 
 const acting = ref(false)
 const dialog = reactive({

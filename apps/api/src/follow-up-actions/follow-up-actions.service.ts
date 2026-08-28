@@ -44,11 +44,12 @@ export class SalesPlansService {
 
   async createManual(dto: CreateSalesPlanDto, actor: AuthUser) {
     const [customer] = await db
-      .select({ ownerId: customers.ownerId })
+      .select({ ownerId: customers.ownerId, status: customers.status })
       .from(customers)
       .where(eq(customers.id, dto.customerId))
       .limit(1)
     if (!customer) throw new NotFoundException('客户不存在')
+    if (customer.status !== 'active') throw new ConflictException('仅在案客户可安排业务计划')
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
     if (dto.planKind === 'customer_visit' && (dto.opportunityId || dto.complaintId)) {
       throw new ConflictException('客户拜访计划不能关联商机或客诉')
@@ -224,8 +225,15 @@ export class SalesPlansService {
     await this.cancelPending(tx, eq(followUpActions.complaintId, complaintId), reason)
   }
 
-  async cancelPendingForCustomer(tx: DbClient, customerId: string, reason: string) {
-    await this.cancelPending(tx, eq(followUpActions.customerId, customerId), reason)
+  async cancelPendingCustomerVisits(tx: DbClient, customerId: string, reason: string) {
+    await this.cancelPending(
+      tx,
+      and(
+        eq(followUpActions.customerId, customerId),
+        eq(followUpActions.planKind, 'customer_visit'),
+      )!,
+      reason,
+    )
   }
 
   async reassignPendingForCustomer(tx: DbClient, customerId: string, ownerId: string) {

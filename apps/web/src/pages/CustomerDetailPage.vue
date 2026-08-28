@@ -12,12 +12,17 @@
           <el-button @click="businessDialogs?.openOpportunity()">建商机</el-button>
           <el-button @click="businessDialogs?.openComplaint()">登客诉</el-button>
         </template>
-        <el-button v-if="isPublic" type="success" @click="handleClaim">认领</el-button>
+        <el-button v-if="canClaim" type="success" @click="handleClaim">认领</el-button>
+        <el-button v-if="canRestore" type="success" @click="showRestore = true">
+          恢复客户
+        </el-button>
         <template v-if="detail && detail.status === 'active'">
           <el-button v-if="auth.hasAbility('customer.transfer')" @click="showTransfer = true">
             移交
           </el-button>
-          <el-button v-if="isOwner" type="danger" plain @click="showRelease = true">释放</el-button>
+          <el-button v-if="canRelease" type="danger" plain @click="showRelease = true">
+            客户状态
+          </el-button>
           <el-button
             v-if="auth.hasAbility('customer.transfer') && !isOwner"
             @click="showClaimReq = true"
@@ -99,18 +104,18 @@
     </el-dialog>
 
     <!-- 释放 -->
-    <el-dialog v-model="showRelease" title="释放客户" width="420px">
+    <el-dialog v-model="showRelease" title="变更客户状态" width="440px">
       <el-alert
         class="detail__dialog-alert"
         type="warning"
         :closable="false"
-        title="释放后未完成计划会被取消；存在未解决客诉时系统将阻止释放。"
+        title="开放商机或未解决客诉会阻止变更；普通待拜访计划将自动取消并留痕。"
       />
       <el-form label-width="80px">
         <el-form-item label="去向" required>
           <el-radio-group v-model="releaseForm.target">
             <el-radio value="pool">公海（他人可认领）</el-radio>
-            <el-radio value="invalid">无效</el-radio>
+            <el-radio v-if="canMarkInvalid" value="invalid">标记无效</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="原因" required>
@@ -119,7 +124,36 @@
       </el-form>
       <template #footer>
         <el-button @click="showRelease = false">取消</el-button>
-        <el-button type="danger" :loading="acting" @click="handleRelease">确认释放</el-button>
+        <el-button type="danger" :loading="acting" @click="handleRelease">确认变更</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 恢复无效档案 -->
+    <el-dialog v-model="showRestore" title="恢复无效客户" width="440px">
+      <el-alert
+        class="detail__dialog-alert"
+        type="info"
+        :closable="false"
+        title="恢复后客户重新进入在案状态；历史业务记录保持不变。"
+      />
+      <el-form label-width="90px">
+        <el-form-item label="负责人" required>
+          <el-select v-model="restoreForm.toOwnerId" filterable style="width: 100%">
+            <el-option
+              v-for="user in restoreAssignees"
+              :key="user.id"
+              :label="`${user.displayName}${user.region ? ` · ${user.region}` : ''}`"
+              :value="user.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="恢复原因" required>
+          <el-input v-model="restoreForm.reason" placeholder="说明为何重新纳入经营" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showRestore = false">取消</el-button>
+        <el-button type="primary" :loading="acting" @click="handleRestore">确认恢复</el-button>
       </template>
     </el-dialog>
 
@@ -166,6 +200,7 @@ import {
   transferCustomer,
   releaseCustomer,
   claimCustomer,
+  restoreCustomer,
   createClaim,
   listCustomerAssignees,
   getSalesPlan,
@@ -189,6 +224,7 @@ const { data: assignees } = useQuery('customers:assignees', () =>
 const showTransfer = ref(false)
 const showRelease = ref(false)
 const showClaimReq = ref(false)
+const showRestore = ref(false)
 const acting = ref(false)
 const businessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
 const editDialog = ref<InstanceType<typeof CustomerEditDialog>>()
@@ -232,16 +268,30 @@ watch(
 
 const transferForm = reactive({ toOwnerId: '', reason: '' })
 const releaseForm = reactive({ target: 'pool' as 'pool' | 'invalid', reason: '' })
+const restoreForm = reactive({ toOwnerId: '', reason: '' })
 const claimReason = ref('')
 
 const isOwner = computed(() => detail.value?.ownerId === auth.user?.id)
 const isPublic = computed(() => detail.value?.status === 'public')
+const isManager = computed(() => auth.user?.role === 'executive' || auth.user?.role === 'admin')
+const canClaim = computed(
+  () => isPublic.value && (auth.user?.role === 'sales' || auth.user?.role === 'executive'),
+)
+const canRelease = computed(
+  () => detail.value?.status === 'active' && (isOwner.value || isManager.value),
+)
+const canMarkInvalid = computed(() => isManager.value)
+const canRestore = computed(() => detail.value?.status === 'invalid' && isManager.value)
 const canEdit = computed(() =>
   Boolean(detail.value?.status === 'active' && auth.hasAbility('customer.write')),
 )
 const availableAssignees = computed(
   () => assignees.value?.filter((user) => user.id !== detail.value?.ownerId) ?? [],
 )
+const restoreAssignees = computed(() => {
+  if (!detail.value?.salesRegionId) return assignees.value ?? []
+  return (assignees.value ?? []).filter((user) => user.region === detail.value?.salesRegionName)
+})
 
 function moneyText(amount?: string): string {
   return amount ? `¥${Number(amount).toLocaleString()}` : '-'
@@ -280,6 +330,21 @@ async function handleRelease() {
     '已释放',
   )
   showRelease.value = false
+}
+
+async function handleRestore() {
+  if (!restoreForm.toOwnerId || !restoreForm.reason.trim()) {
+    return ElMessage.warning('请选择负责人并填写恢复原因')
+  }
+  await runAction(
+    () =>
+      restoreCustomer(customerId, {
+        toOwnerId: restoreForm.toOwnerId,
+        reason: restoreForm.reason.trim(),
+      }),
+    '客户已恢复为在案',
+  )
+  showRestore.value = false
 }
 
 async function handleClaim() {

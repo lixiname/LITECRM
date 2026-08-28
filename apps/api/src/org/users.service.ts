@@ -1,8 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
-import { eq } from 'drizzle-orm'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+import { and, eq, or } from 'drizzle-orm'
 import * as bcrypt from 'bcryptjs'
 import { db } from '../common/db/db'
-import { users } from '../common/db/schema'
+import { salesRegions, users } from '../common/db/schema'
 import { AuthService } from '../auth/auth.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
@@ -14,6 +19,7 @@ export class UsersService {
   constructor(private readonly authService: AuthService) {}
 
   async create(dto: CreateUserDto) {
+    await this.assertRegion(dto.region)
     const [exists] = await db
       .select({ id: users.id })
       .from(users)
@@ -51,6 +57,7 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto) {
     const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1)
     if (!existing) throw new NotFoundException('用户不存在')
+    await this.assertRegion(dto.region)
 
     const [updated] = await db
       .update(users)
@@ -80,6 +87,21 @@ export class UsersService {
   // 重置密码：复用 auth 服务（生成临时密码 + 全端失效）
   async resetPassword(id: string): Promise<string> {
     return this.authService.resetPassword(id)
+  }
+
+  private async assertRegion(region?: string) {
+    if (!region) return
+    const [match] = await db
+      .select({ id: salesRegions.id })
+      .from(salesRegions)
+      .where(
+        and(
+          eq(salesRegions.isActive, true),
+          or(eq(salesRegions.name, region), eq(salesRegions.code, region)),
+        ),
+      )
+      .limit(1)
+    if (!match) throw new BadRequestException('请选择有效的销售区域')
   }
 }
 

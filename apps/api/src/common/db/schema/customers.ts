@@ -69,6 +69,11 @@ export const customers = pgTable(
     uniqueIndex('customers_credit_code_uq').on(table.unifiedSocialCreditCode),
     check('customers_grade_check', sql`${table.grade} in ('S','A','B','C')`),
     check('customers_status_check', sql`${table.status} in ('active','invalid','public')`),
+    check(
+      'customers_lifecycle_check',
+      sql`(${table.status} = 'active' and ${table.ownerId} is not null)
+        or (${table.status} in ('public','invalid') and ${table.ownerId} is null)`,
+    ),
     // 模糊检索（§7.3 模糊层）：pg_trgm + GIN 加速
     index('customers_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
     index('customers_key_trgm_idx').using('gin', sql`${table.normalizedKey} gin_trgm_ops`),

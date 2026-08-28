@@ -107,6 +107,7 @@
           <div class="create-customer__dedup-title">检测到疑似重复客户：</div>
           <div v-for="h in dedupHits" :key="h.candidateId" class="create-customer__dedup-row">
             <span>{{ h.candidateName }}（{{ h.candidateCity ?? '未知城市' }}）</span>
+            <el-tag size="small" effect="plain">{{ customerStatusLabel(h.customerStatus) }}</el-tag>
             <el-tag
               size="small"
               :type="
@@ -118,13 +119,22 @@
             <span class="create-customer__dedup-reason">{{ h.reasons.join('；') }}</span>
           </div>
           <el-button
-            v-if="auth.hasAbility('customer.transfer') && firstHit"
+            v-if="auth.hasAbility('customer.transfer') && firstHit?.customerStatus === 'active'"
             size="small"
             type="primary"
             plain
             @click="applyClaim(firstHit)"
           >
             申请接管
+          </el-button>
+          <el-button
+            v-if="firstHit?.customerStatus === 'public' && auth.hasAbility('customer.write')"
+            size="small"
+            type="success"
+            plain
+            @click="claimPoolCustomer(firstHit)"
+          >
+            认领公海客户
           </el-button>
         </el-alert>
 
@@ -154,6 +164,7 @@ import {
   CUSTOMER_GRADE_OPTIONS,
   DEDUP_CONFIDENCE_LABELS,
   type DedupHit,
+  claimCustomer,
   type DimensionOption,
   type CustomerGrade,
   type AssigneeOption,
@@ -267,6 +278,21 @@ async function applyClaim(hit?: DedupHit) {
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '申请失败')
   }
+}
+
+async function claimPoolCustomer(hit?: DedupHit) {
+  if (!hit) return
+  try {
+    await claimCustomer(hit.candidateId)
+    ElMessage.success('公海客户已认领')
+    void router.push(`/customers/${hit.candidateId}`)
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '认领失败')
+  }
+}
+
+function customerStatusLabel(status?: DedupHit['customerStatus']) {
+  return status === 'public' ? '公海' : status === 'invalid' ? '无效档案' : '在案'
 }
 </script>
 

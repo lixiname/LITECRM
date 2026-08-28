@@ -1,7 +1,8 @@
 <template>
   <div class="customers">
-    <AppPageHeader title="客户管理" description="按名称、地区、等级和状态查找客户">
+    <AppPageHeader :title="pageTitle" :description="pageDescription">
       <template #actions>
+        <el-segmented v-model="filters.status" :options="poolOptions" @change="load" />
         <el-input
           v-model="keyword"
           placeholder="搜索名称/城市"
@@ -18,22 +19,8 @@
         >
           <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
         </el-select>
-        <el-select
-          v-model="filters.status"
-          placeholder="状态"
-          clearable
-          style="width: 110px"
-          @change="load"
-        >
-          <el-option
-            v-for="s in CUSTOMER_STATUS_OPTIONS"
-            :key="s.value"
-            :label="s.label"
-            :value="s.value"
-          />
-        </el-select>
         <el-button
-          v-if="auth.hasAbility('customer.write')"
+          v-if="auth.hasAbility('customer.write') && filters.status === 'active'"
           type="primary"
           @click="router.push('/customers/new')"
         >
@@ -107,7 +94,7 @@
       <AppQueryState
         :error="error"
         :empty="!loading && !page?.items.length"
-        empty-text="还没有客户；可以先新建一位客户"
+        :empty-text="emptyText"
         @retry="reload"
       />
       <el-pagination
@@ -144,6 +131,37 @@ const router = useRouter()
 const auth = useAuthStore()
 const PAGE_SIZE = 20
 const showOwner = computed(() => auth.user?.role !== 'sales')
+const poolOptions = computed(() => {
+  const options = [{ label: '在案客户', value: 'active' }]
+  if (
+    auth.user?.role === 'sales' ||
+    auth.user?.role === 'executive' ||
+    auth.user?.role === 'admin'
+  ) {
+    options.push({ label: '公海池', value: 'public' })
+  }
+  if (auth.user?.role === 'executive' || auth.user?.role === 'admin') {
+    options.push({ label: '无效档案', value: 'invalid' })
+  }
+  return options
+})
+const pageTitle = computed(() =>
+  filters.status === 'public' ? '公海客户' : filters.status === 'invalid' ? '无效档案' : '客户管理',
+)
+const pageDescription = computed(() =>
+  filters.status === 'public'
+    ? '检索本销售区域内暂无负责人的有效客户'
+    : filters.status === 'invalid'
+      ? '查看已停止经营、仍保留历史记录的客户档案'
+      : '查看本人或团队正在经营的客户',
+)
+const emptyText = computed(() =>
+  filters.status === 'public'
+    ? '当前销售区域暂无公海客户'
+    : filters.status === 'invalid'
+      ? '当前范围内暂无无效档案'
+      : '还没有在案客户；可以先新建一位客户',
+)
 const dimensionLabels = ref<Record<string, string>>({})
 
 onMounted(async () => {
@@ -159,14 +177,14 @@ onMounted(async () => {
 })
 
 const keyword = ref('')
-const filters = reactive<{ grade?: string; status?: string }>({})
+const filters = reactive<{ grade?: string; status: CustomerStatus }>({ status: 'active' })
 const pageNum = ref(1)
 const query = ref({
   page: 1,
   pageSize: PAGE_SIZE,
   keyword: '',
   grade: undefined as string | undefined,
-  status: undefined as string | undefined,
+  status: 'active' as CustomerStatus,
 })
 
 const {
