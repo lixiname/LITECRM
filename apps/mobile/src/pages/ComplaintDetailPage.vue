@@ -3,7 +3,10 @@
     <van-nav-bar title="客诉详情" left-arrow @click-left="router.back()" />
 
     <van-cell-group v-if="detail" inset class="complaint-summary">
-      <van-cell :title="detail.description" :label="`${detail.customerName} · ${typeLabel(detail.type)}`">
+      <van-cell
+        :title="detail.description"
+        :label="`${detail.customerName} · ${typeLabel(detail.type)}`"
+      >
         <template #value>
           <van-tag :type="detail.status === 'resolved' ? 'success' : 'danger'">
             {{ detail.status === 'resolved' ? '已解决' : '处理中' }}
@@ -39,13 +42,19 @@
               <van-tag v-else-if="item.status === 'resolved'" type="success">已解决</van-tag>
             </div>
             <p>{{ item.content }}</p>
-            <small>{{ formatTime(item.timestamp) }}{{ item.actorName ? ` · ${item.actorName}` : '' }}</small>
+            <small
+              >{{ formatTime(item.timestamp)
+              }}{{ item.actorName ? ` · ${item.actorName}` : '' }}</small
+            >
           </div>
         </article>
       </div>
     </van-cell-group>
 
-    <div v-if="detail?.status === 'registered' && auth.hasAbility('customer.write')" class="action-bar">
+    <div
+      v-if="detail?.status === 'registered' && auth.hasAbility('customer.write')"
+      class="action-bar"
+    >
       <van-button round block type="primary" @click="openFollowUp">处理 / 确认解决</van-button>
     </div>
   </div>
@@ -54,12 +63,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  getComplaint,
-  listDimensionOptions,
-  useAuthStore,
-  useQuery,
-} from '@crm/domain'
+import { getComplaint, listDimensionOptions, useAuthStore, useQuery } from '@crm/domain'
 
 const route = useRoute()
 const router = useRouter()
@@ -89,11 +93,7 @@ function formatTime(value: string): string {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function openFollowUp() {
-  const planId = detail.value?.actions[0]?.id
-  router.push({
-    path: `/complaints/${complaintId}/follow-up`,
-    query: planId ? { planId } : undefined,
-  })
+  router.push(`/complaints/${complaintId}/follow-up`)
 }
 </script>
 

@@ -11,7 +11,7 @@
         <el-button
           v-if="complaint && complaint.status === 'registered'"
           type="primary"
-          @click="showFollow = true"
+          @click="openFollow()"
         >
           跟进 / 确认解决
         </el-button>
@@ -23,11 +23,7 @@
         <strong>{{ complaint.description }}</strong>
         <span>{{ complaint.customerName }}</span>
       </div>
-      <el-button
-        v-if="complaint.status === 'registered'"
-        type="primary"
-        @click="showFollow = true"
-      >
+      <el-button v-if="complaint.status === 'registered'" type="primary" @click="openFollow()">
         处理 / 确认解决
       </el-button>
     </div>
@@ -77,8 +73,12 @@
             <div class="timeline-node__header">
               <strong>{{ item.title }}</strong>
               <el-tag v-if="item.status === 'overdue'" type="danger" size="small">已逾期</el-tag>
-              <el-tag v-else-if="item.status === 'pending'" type="warning" size="small">待处理</el-tag>
-              <el-tag v-else-if="item.status === 'resolved'" type="success" size="small">终点</el-tag>
+              <el-tag v-else-if="item.status === 'pending'" type="warning" size="small"
+                >待处理</el-tag
+              >
+              <el-tag v-else-if="item.status === 'resolved'" type="success" size="small"
+                >终点</el-tag
+              >
             </div>
             <p>{{ item.content }}</p>
             <small v-if="item.actorName">处理人：{{ item.actorName }}</small>
@@ -89,11 +89,11 @@
 
     <el-dialog v-model="showFollow" title="跟进客诉" width="420px">
       <el-alert
-        v-if="complaint?.actions[0]"
+        v-if="executingPlan"
         class="c-detail__plan"
         type="info"
         :closable="false"
-        :title="`原计划：${formatTime(complaint.actions[0].plannedAt)} · ${complaint.actions[0].content}`"
+        :title="`本次执行计划：${formatTime(executingPlan.plannedAt)} · ${executingPlan.content}`"
       />
       <el-form label-width="90px">
         <el-form-item label="处理确认" required><el-input v-model="form.content" /></el-form-item>
@@ -133,6 +133,7 @@ import {
   followUpComplaint,
   listDimensionOptions,
   type ComplaintTimelineStatus,
+  type SalesPlan,
 } from '@crm/domain'
 import AppPageHeader from '../components/AppPageHeader.vue'
 
@@ -158,6 +159,7 @@ const { data: typeOptions } = useQuery('catalog:complaint_type', () =>
 )
 const showFollow = ref(false)
 const acting = ref(false)
+const executingPlan = ref<SalesPlan>()
 const form = reactive({
   content: '',
   outcome: 'followed_up' as 'followed_up' | 'resolved',
@@ -179,7 +181,7 @@ watch(
       ElMessage.error('该计划不是当前客诉的待处理计划')
       return
     }
-    showFollow.value = true
+    openFollow(value.actions[0])
     routePlanOpened.value = true
   },
   { immediate: true },
@@ -200,11 +202,26 @@ function durationText(): string {
   )
   return days === 0 ? '当天' : `${days} 天`
 }
-function timelineType(status: ComplaintTimelineStatus): 'primary' | 'success' | 'danger' | 'warning' {
+function timelineType(
+  status: ComplaintTimelineStatus,
+): 'primary' | 'success' | 'danger' | 'warning' {
   if (status === 'resolved') return 'success'
   if (status === 'overdue') return 'danger'
   if (status === 'pending') return 'warning'
   return 'primary'
+}
+
+function openFollow(plan?: SalesPlan) {
+  executingPlan.value = plan
+  form.content = ''
+  form.outcome = 'followed_up'
+  form.resolution = ''
+  const currentPlan = plan ? undefined : complaint.value?.actions[0]
+  form.nextActionContent = currentPlan?.content ?? ''
+  form.nextActionAt = currentPlan
+    ? localInput(new Date(currentPlan.plannedAt))
+    : localInput(tomorrowAtNine())
+  showFollow.value = true
 }
 
 async function handleFollow() {
@@ -221,7 +238,7 @@ async function handleFollow() {
       content: form.content.trim(),
       outcome: form.outcome,
       resolution: form.outcome === 'resolved' ? form.resolution.trim() : undefined,
-      sourcePlanId: complaint.value.actions[0]?.id,
+      sourcePlanId: executingPlan.value?.id,
       nextActionAt:
         form.outcome === 'followed_up' ? new Date(form.nextActionAt).toISOString() : undefined,
       nextActionContent: form.outcome === 'followed_up' ? form.nextActionContent.trim() : undefined,
@@ -235,6 +252,17 @@ async function handleFollow() {
   } finally {
     acting.value = false
   }
+}
+
+function tomorrowAtNine(): Date {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  date.setHours(9, 0, 0, 0)
+  return date
+}
+
+function localInput(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 </script>
 

@@ -1,14 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import {
-  IsBoolean,
-  IsInt,
-  IsISO8601,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Min,
-  MinLength,
-} from 'class-validator'
+import { IsInt, IsISO8601, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator'
 
 export class CreateOpportunityFollowUpDto {
   @ApiProperty({ minimum: 1 })
@@ -36,19 +27,12 @@ export class CreateOpportunityFollowUpDto {
   @IsUUID()
   sourcePlanId?: string
 
-  @ApiPropertyOptional({ description: '临时记录时保留当前未完成计划，不另建下一计划' })
-  @IsOptional()
-  @IsBoolean()
-  keepExistingPlan?: boolean
-
-  @ApiPropertyOptional({ description: '下一行动内容；不保留现有计划时必填' })
-  @IsOptional()
+  @ApiProperty({ description: '下一行动内容；开放商机的每次跟进均必填' })
   @IsString()
   @MinLength(1)
-  nextActionContent?: string
+  nextActionContent!: string
 
-  @ApiPropertyOptional({ description: '下一行动计划时间；不保留现有计划时必填' })
-  @IsOptional()
+  @ApiProperty({ description: '下一行动计划时间；开放商机的每次跟进均必填' })
   @IsISO8601()
-  nextActionAt?: string
+  nextActionAt!: string
 }

@@ -20,6 +20,13 @@ export interface NewLinkedAction {
   content: string
 }
 
+export interface LinkedActionTarget {
+  planKind: SalesPlanKind
+  customerId?: string
+  opportunityId?: string
+  complaintId?: string
+}
+
 @Injectable()
 export class SalesPlansService {
   constructor(private readonly accessService: AccessService) {}
@@ -158,16 +165,7 @@ export class SalesPlansService {
     })
   }
 
-  async fulfillLinked(
-    tx: DbClient,
-    planId: string | undefined,
-    target: {
-      planKind: SalesPlanKind
-      customerId?: string
-      opportunityId?: string
-      complaintId?: string
-    },
-  ) {
+  async fulfillLinked(tx: DbClient, planId: string | undefined, target: LinkedActionTarget) {
     if (!planId) return
     const conditions = [
       eq(followUpActions.id, planId),
@@ -191,15 +189,22 @@ export class SalesPlansService {
     if (!updated) throw new ConflictException('来源计划不存在、已执行或不属于当前业务')
   }
 
-  async assertPendingExists(
+  /**
+   * 业务事实发生后接续下一计划：
+   * - 从计划进入：完成明确的来源计划，再创建下一计划；
+   * - 直接登记：不把现有计划算作已执行。下一安排未变化时沿用，变化时留痕取消旧计划再创建新计划。
+   */
+  async continueWithNext(
     tx: DbClient,
-    target: {
-      planKind: SalesPlanKind
-      customerId?: string
-      opportunityId?: string
-      complaintId?: string
-    },
+    sourcePlanId: string | undefined,
+    target: LinkedActionTarget,
+    next: NewLinkedAction,
   ) {
+    if (sourcePlanId) {
+      await this.fulfillLinked(tx, sourcePlanId, target)
+      return this.createLinked(tx, next)
+    }
+
     const conditions = [
       eq(followUpActions.status, 'pending'),
       eq(followUpActions.planKind, target.planKind),
@@ -209,12 +214,36 @@ export class SalesPlansService {
       conditions.push(eq(followUpActions.opportunityId, target.opportunityId))
     if (target.complaintId) conditions.push(eq(followUpActions.complaintId, target.complaintId))
     const [existing] = await tx
-      .select({ id: followUpActions.id })
+      .select({
+        id: followUpActions.id,
+        plannedAt: followUpActions.plannedAt,
+        content: followUpActions.content,
+      })
       .from(followUpActions)
       .where(and(...conditions))
       .limit(1)
-    if (!existing) throw new ConflictException('没有可保留的当前计划，请明确安排下一计划')
-    return existing
+    if (!existing) return this.createLinked(tx, next)
+
+    const nextContent = next.content.trim()
+    if (
+      existing.plannedAt.getTime() === next.plannedAt.getTime() &&
+      existing.content.trim() === nextContent
+    ) {
+      return existing
+    }
+
+    const [adjusted] = await tx
+      .update(followUpActions)
+      .set({
+        status: 'cancelled',
+        cancelReason: '记录新事实后已调整下一计划',
+        updatedAt: new Date(),
+        version: sql`${followUpActions.version} + 1`,
+      })
+      .where(and(eq(followUpActions.id, existing.id), eq(followUpActions.status, 'pending')))
+      .returning({ id: followUpActions.id })
+    if (!adjusted) throw new ConflictException('当前计划已变化，请刷新后重试')
+    return this.createLinked(tx, next)
   }
 
   async cancelPendingForOpportunity(tx: DbClient, opportunityId: string, reason: string) {

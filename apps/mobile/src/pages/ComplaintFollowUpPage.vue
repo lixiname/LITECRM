@@ -1,7 +1,16 @@
 <template>
   <div>
-    <van-nav-bar title="执行客诉计划" left-arrow @click-left="router.back()" />
-    <van-notice-bar v-if="plan" wrapable :scrollable="false" :text="`原计划：${plan.content}`" />
+    <van-nav-bar
+      :title="plan ? '执行客诉计划' : '记录客诉处理'"
+      left-arrow
+      @click-left="router.back()"
+    />
+    <van-notice-bar
+      v-if="plan"
+      wrapable
+      :scrollable="false"
+      :text="`本次执行计划：${plan.content}`"
+    />
     <van-form @submit="submit">
       <van-cell-group inset>
         <van-field v-model="content" label="处理情况" type="textarea" rows="3" required />
@@ -49,6 +58,11 @@ onMounted(async () => {
       getComplaint(complaintId),
       route.query.planId ? getSalesPlan(String(route.query.planId)) : Promise.resolve(undefined),
     ])
+    const currentPlan = plan.value ? undefined : detail.value?.actions[0]
+    if (currentPlan) {
+      nextAt.value = localInput(new Date(currentPlan.plannedAt))
+      nextContent.value = currentPlan.content
+    }
   } catch (error) {
     showToast(error instanceof Error ? error.message : '加载失败')
   }
@@ -81,6 +95,9 @@ function tomorrowAtNine() {
   const date = new Date()
   date.setDate(date.getDate() + 1)
   date.setHours(9, 0, 0, 0)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+}
+function localInput(date: Date): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 }
 </script>

@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common'
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customers, visitRecords } from '../common/db/schema'
@@ -25,10 +20,6 @@ export class VisitsService {
 
   async create(dto: CreateVisitDto, actor: AuthUser) {
     if (dto.visitType) await this.catalogService.assertDimensionValue('visit_type', dto.visitType)
-    if (dto.sourcePlanId && dto.keepExistingPlan)
-      throw new BadRequestException('执行来源计划时不能同时保留该计划')
-    if (!dto.keepExistingPlan && (!dto.nextActionAt || !dto.nextActionContent?.trim()))
-      throw new BadRequestException('请安排下次拜访，或明确保留当前计划')
     const customer = await this.findCustomer(dto.customerId, actor)
     if (customer.status !== 'active') throw new ConflictException('仅在案客户可登记拜访')
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
@@ -50,26 +41,23 @@ export class VisitsService {
         })
         .returning()
 
-      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
-        planKind: 'customer_visit',
-        customerId: dto.customerId,
-      })
-      if (dto.keepExistingPlan) {
-        await this.actionsService.assertPendingExists(tx, {
+      await this.actionsService.continueWithNext(
+        tx,
+        dto.sourcePlanId,
+        {
           planKind: 'customer_visit',
           customerId: dto.customerId,
-        })
-      } else {
-        await this.actionsService.createLinked(tx, {
+        },
+        {
           ownerId: customer.ownerId ?? actor.id,
           customerId: dto.customerId,
           planKind: 'customer_visit',
           originType: 'visit',
           sourceId: visit.id,
-          plannedAt: new Date(dto.nextActionAt!),
-          content: dto.nextActionContent!,
-        })
-      }
+          plannedAt: new Date(dto.nextActionAt),
+          content: dto.nextActionContent,
+        },
+      )
       await touchCustomerActivity(tx, dto.customerId, occurredAt, 'visit')
       return visit
     })

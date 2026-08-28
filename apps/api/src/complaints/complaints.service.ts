@@ -87,12 +87,6 @@ export class ComplaintsService {
           sourcePlanId: dto.sourcePlanId ?? null,
         })
         .returning()
-      await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
-        planKind: 'complaint_follow_up',
-        customerId: complaint.customerId,
-        complaintId: id,
-      })
-
       const values =
         dto.outcome === 'resolved'
           ? {
@@ -114,18 +108,32 @@ export class ComplaintsService {
       if (!updated) throw new ConflictException('客诉已被更新，请刷新后重试')
 
       if (dto.outcome === 'resolved') {
-        await this.actionsService.cancelPendingForComplaint(tx, id, '客诉已解决')
-      } else {
-        await this.actionsService.createLinked(tx, {
-          ownerId: complaint.currentOwnerId ?? actor.id,
+        await this.actionsService.fulfillLinked(tx, dto.sourcePlanId, {
+          planKind: 'complaint_follow_up',
           customerId: complaint.customerId,
           complaintId: id,
-          planKind: 'complaint_follow_up',
-          originType: 'complaint_follow_up',
-          sourceId: followUp.id,
-          plannedAt: new Date(dto.nextActionAt!),
-          content: dto.nextActionContent!,
         })
+        await this.actionsService.cancelPendingForComplaint(tx, id, '客诉已解决')
+      } else {
+        await this.actionsService.continueWithNext(
+          tx,
+          dto.sourcePlanId,
+          {
+            planKind: 'complaint_follow_up',
+            customerId: complaint.customerId,
+            complaintId: id,
+          },
+          {
+            ownerId: complaint.currentOwnerId ?? actor.id,
+            customerId: complaint.customerId,
+            complaintId: id,
+            planKind: 'complaint_follow_up',
+            originType: 'complaint_follow_up',
+            sourceId: followUp.id,
+            plannedAt: new Date(dto.nextActionAt!),
+            content: dto.nextActionContent!,
+          },
+        )
       }
       await touchCustomerActivity(tx, complaint.customerId, occurredAt)
       return updated

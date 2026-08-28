@@ -469,12 +469,32 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
     expect(complaintPage.body.items[0].id).toBe(complaintId)
     expect(complaintPage.body.items[0].customerName).toBe('M3_客诉客户')
 
+    // 从直接登记入口补充处理事实，不应把当前计划误算作已执行；下一安排相同则沿用。
+    const directFollowUp = await request(app.getHttpServer())
+      .post(`/api/complaints/${complaintId}/follow-up`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        version: createRes.body.version,
+        content: '已电话了解异响发生条件',
+        outcome: 'followed_up',
+        nextActionAt: '2026-08-29T09:00:00+08:00',
+        nextActionContent: '联系客户确认异响工况',
+      })
+    expect(directFollowUp.status).toBe(201)
+    const [unchangedAction] = await db
+      .select()
+      .from(followUpActions)
+      .where(eq(followUpActions.complaintId, complaintId))
+      .limit(1)
+    expect(unchangedAction.id).toBe(firstAction.id)
+    expect(unchangedAction.status).toBe('pending')
+
     // 跟进确认解决（§8.6：RESOLVED → 必填解决结果）
     const resolved = await request(app.getHttpServer())
       .post(`/api/complaints/${complaintId}/follow-up`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
-        version: createRes.body.version,
+        version: directFollowUp.body.version,
         sourcePlanId: firstAction.id,
         content: '更换轴承后解决',
         outcome: 'resolved',
@@ -488,6 +508,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
     expect(resolvedDetail.body.timeline.map((item: { type: string }) => item.type)).toEqual([
       'resolved',
+      'follow_up',
       'follow_up',
       'registered',
     ])

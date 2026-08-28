@@ -9,15 +9,7 @@
       v-if="plan"
       wrapable
       :scrollable="false"
-      :text="`原计划：${formatTime(plan.plannedAt)} · ${plan.content}`"
-    />
-    <van-notice-bar
-      v-else-if="existingPlan"
-      color="#9b6a00"
-      background="#fff7e6"
-      wrapable
-      :scrollable="false"
-      :text="`已有计划：${formatTime(existingPlan.plannedAt)} · ${existingPlan.content}`"
+      :text="`本次执行计划：${formatTime(plan.plannedAt)} · ${plan.content}`"
     />
     <van-tabs v-model:active="mode">
       <van-tab title="记录跟进" name="follow_up" />
@@ -25,15 +17,6 @@
     </van-tabs>
     <van-form @submit="submit">
       <van-cell-group inset>
-        <van-radio-group
-          v-if="!plan && existingPlan"
-          v-model="planHandling"
-          direction="horizontal"
-          class="handling"
-        >
-          <van-radio name="execute">关联并完成原计划</van-radio>
-          <van-radio name="keep">临时记录，保留原计划</van-radio>
-        </van-radio-group>
         <template v-if="mode === 'follow_up'">
           <van-field v-model="occurredAt" label="跟进时间" type="datetime-local" required />
           <van-field v-model="conclusion" label="本次结论" type="textarea" rows="2" required />
@@ -76,25 +59,12 @@
             placeholder="可选链接或文件编号"
           />
         </template>
-        <van-field
-          v-if="planHandling !== 'keep'"
-          v-model="nextAt"
-          label="下次时间"
-          type="datetime-local"
-          required
-        />
-        <van-field
-          v-if="planHandling !== 'keep'"
-          v-model="nextContent"
-          label="下次内容"
-          type="textarea"
-          rows="2"
-          required
-        />
+        <van-field v-model="nextAt" label="下次时间" type="datetime-local" required />
+        <van-field v-model="nextContent" label="下次内容" type="textarea" rows="2" required />
       </van-cell-group>
       <div class="submit">
         <van-button block round type="primary" native-type="submit" :loading="saving">
-          {{ planHandling === 'keep' ? '保存本次记录' : '保存并安排下一次' }}
+          保存并安排下一次
         </van-button>
       </div>
     </van-form>
@@ -132,8 +102,6 @@ const opportunityId = String(route.params.id)
 const planId = String(route.query.planId ?? '')
 const opportunity = ref<OpportunityDetail>()
 const plan = ref<SalesPlan>()
-const existingPlan = ref<SalesPlan>()
-const planHandling = ref<'execute' | 'keep' | 'new'>('new')
 const mode = ref<'follow_up' | 'quote'>('follow_up')
 const occurredAt = ref(localInput(new Date()))
 const conclusion = ref('')
@@ -171,8 +139,11 @@ onMounted(async () => {
     ])
     opportunity.value = detail
     plan.value = sourcePlan
-    existingPlan.value = detail.actions[0]
-    planHandling.value = sourcePlan ? 'execute' : existingPlan.value ? 'execute' : 'new'
+    const currentPlan = sourcePlan ? undefined : detail.actions[0]
+    if (currentPlan) {
+      nextAt.value = localInput(new Date(currentPlan.plannedAt))
+      nextContent.value = currentPlan.content
+    }
     mode.value = route.query.mode === 'quote' ? 'quote' : 'follow_up'
     const date = route.query.date as string | undefined
     if (date) {
@@ -186,11 +157,9 @@ onMounted(async () => {
 
 async function submit() {
   if (!opportunity.value) return
-  if (planHandling.value !== 'keep' && (!nextAt.value || !nextContent.value.trim())) return
+  if (!nextAt.value || !nextContent.value.trim()) return showToast('请填写下次时间和内容')
   saving.value = true
   try {
-    const linkedPlan =
-      plan.value ?? (planHandling.value === 'execute' ? existingPlan.value : undefined)
     if (mode.value === 'follow_up') {
       if (!conclusion.value.trim()) return showToast('请填写本次结论')
       await addOpportunityFollowUp(opportunityId, {
@@ -198,11 +167,9 @@ async function submit() {
         conclusion: conclusion.value.trim(),
         occurredAt: new Date(occurredAt.value).toISOString(),
         method: method.value.trim() || undefined,
-        sourcePlanId: linkedPlan?.id,
-        keepExistingPlan: planHandling.value === 'keep' || undefined,
-        nextActionAt:
-          planHandling.value === 'keep' ? undefined : new Date(nextAt.value).toISOString(),
-        nextActionContent: planHandling.value === 'keep' ? undefined : nextContent.value.trim(),
+        sourcePlanId: plan.value?.id,
+        nextActionAt: new Date(nextAt.value).toISOString(),
+        nextActionContent: nextContent.value.trim(),
       })
     } else {
       if (!amount.value) return showToast('请填写报价金额')
@@ -215,11 +182,9 @@ async function submit() {
         note: quoteNote.value.trim() || undefined,
         documentRef:
           quoteKind.value === 'formal' ? documentRef.value.trim() || undefined : undefined,
-        sourcePlanId: linkedPlan?.id,
-        keepExistingPlan: planHandling.value === 'keep' || undefined,
-        nextActionAt:
-          planHandling.value === 'keep' ? undefined : new Date(nextAt.value).toISOString(),
-        nextActionContent: planHandling.value === 'keep' ? undefined : nextContent.value.trim(),
+        sourcePlanId: plan.value?.id,
+        nextActionAt: new Date(nextAt.value).toISOString(),
+        nextActionContent: nextContent.value.trim(),
       })
     }
     showToast(mode.value === 'follow_up' ? '跟进已记录' : '报价已记录')
@@ -261,10 +226,5 @@ function localInput(date: Date): string {
 <style scoped>
 .submit {
   margin: var(--crm-spacing-lg) var(--crm-spacing-md);
-}
-.handling {
-  display: flex;
-  gap: 10px;
-  padding: var(--crm-spacing-md);
 }
 </style>

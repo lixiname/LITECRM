@@ -212,12 +212,7 @@ function dimensionLabel(dimension: string, value?: string | null): string {
 }
 
 function openVisit() {
-  router.push({
-    path: `/customers/${customerId}/visit/new`,
-    query: detail.value?.currentVisitPlan?.id
-      ? { planId: detail.value.currentVisitPlan.id }
-      : undefined,
-  })
+  router.push(`/customers/${customerId}/visit/new`)
 }
 </script>
 

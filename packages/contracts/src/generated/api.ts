@@ -1370,12 +1370,10 @@ export interface components {
             personnelChanges?: string;
             /** @description 本次拜访履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 临时记录时保留当前未完成计划，不另建下一计划 */
-            keepExistingPlan?: boolean;
-            /** @description 下次拜访计划时间；不保留现有计划时必填 */
-            nextActionAt?: string;
-            /** @description 下次拜访计划内容；不保留现有计划时必填 */
-            nextActionContent?: string;
+            /** @description 下次拜访计划时间；每次拜访登记均必填 */
+            nextActionAt: string;
+            /** @description 下次拜访计划内容；每次拜访登记均必填 */
+            nextActionContent: string;
         };
         /**
          * @description 初始金额依据：预估、口头报价或正式报价
@@ -1424,12 +1422,10 @@ export interface components {
             method?: string;
             /** @description 本次跟进履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 临时记录时保留当前未完成计划，不另建下一计划 */
-            keepExistingPlan?: boolean;
-            /** @description 下一行动内容；不保留现有计划时必填 */
-            nextActionContent?: string;
-            /** @description 下一行动计划时间；不保留现有计划时必填 */
-            nextActionAt?: string;
+            /** @description 下一行动内容；开放商机的每次跟进均必填 */
+            nextActionContent: string;
+            /** @description 下一行动计划时间；开放商机的每次跟进均必填 */
+            nextActionAt: string;
         };
         /** @enum {string} */
         OpportunityQuoteKind: "oral" | "formal";
@@ -1444,12 +1440,10 @@ export interface components {
             quoteNo?: string;
             /** @description 本次报价履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 临时报价时保留当前未完成计划，不另建下一计划 */
-            keepExistingPlan?: boolean;
-            /** @description 报价后的下一行动内容；不保留现有计划时必填 */
-            nextActionContent?: string;
-            /** @description 报价后的下一行动计划时间；不保留现有计划时必填 */
-            nextActionAt?: string;
+            /** @description 报价后的下一行动内容；开放商机的每次报价均必填 */
+            nextActionContent: string;
+            /** @description 报价后的下一行动计划时间；开放商机的每次报价均必填 */
+            nextActionAt: string;
             note?: string;
             /** @description 可选文件引用；不要求上传 */
             documentRef?: string;
@@ -2659,7 +2653,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 追加口头或正式报价；不会自动成交 */
+            /** @description 追加口头或正式报价，自动替代当前有效报价；不会自动成交 */
             200: {
                 headers: {
                     [name: string]: unknown;

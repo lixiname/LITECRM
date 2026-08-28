@@ -1367,7 +1367,7 @@
         },
         "responses": {
           "200": {
-            "description": "追加口头或正式报价；不会自动成交"
+            "description": "追加口头或正式报价，自动替代当前有效报价；不会自动成交"
           }
         },
         "tags": ["opportunities"]
@@ -3024,20 +3024,16 @@
             "type": "string",
             "description": "本次拜访履行的来源计划"
           },
-          "keepExistingPlan": {
-            "type": "boolean",
-            "description": "临时记录时保留当前未完成计划，不另建下一计划"
-          },
           "nextActionAt": {
             "type": "string",
-            "description": "下次拜访计划时间；不保留现有计划时必填"
+            "description": "下次拜访计划时间；每次拜访登记均必填"
           },
           "nextActionContent": {
             "type": "string",
-            "description": "下次拜访计划内容；不保留现有计划时必填"
+            "description": "下次拜访计划内容；每次拜访登记均必填"
           }
         },
-        "required": ["customerId", "occurredAt", "method"]
+        "required": ["customerId", "occurredAt", "method", "nextActionAt", "nextActionContent"]
       },
       "OpportunityInitialAmountBasis": {
         "type": "string",
@@ -3148,20 +3144,16 @@
             "type": "string",
             "description": "本次跟进履行的来源计划"
           },
-          "keepExistingPlan": {
-            "type": "boolean",
-            "description": "临时记录时保留当前未完成计划，不另建下一计划"
-          },
           "nextActionContent": {
             "type": "string",
-            "description": "下一行动内容；不保留现有计划时必填"
+            "description": "下一行动内容；开放商机的每次跟进均必填"
           },
           "nextActionAt": {
             "type": "string",
-            "description": "下一行动计划时间；不保留现有计划时必填"
+            "description": "下一行动计划时间；开放商机的每次跟进均必填"
           }
         },
-        "required": ["version", "conclusion"]
+        "required": ["version", "conclusion", "nextActionContent", "nextActionAt"]
       },
       "OpportunityQuoteKind": {
         "type": "string",
@@ -3197,17 +3189,13 @@
             "type": "string",
             "description": "本次报价履行的来源计划"
           },
-          "keepExistingPlan": {
-            "type": "boolean",
-            "description": "临时报价时保留当前未完成计划，不另建下一计划"
-          },
           "nextActionContent": {
             "type": "string",
-            "description": "报价后的下一行动内容；不保留现有计划时必填"
+            "description": "报价后的下一行动内容；开放商机的每次报价均必填"
           },
           "nextActionAt": {
             "type": "string",
-            "description": "报价后的下一行动计划时间；不保留现有计划时必填"
+            "description": "报价后的下一行动计划时间；开放商机的每次报价均必填"
           },
           "note": {
             "type": "string"
@@ -3217,7 +3205,7 @@
             "description": "可选文件引用；不要求上传"
           }
         },
-        "required": ["version", "kind", "quotedAt", "amount"]
+        "required": ["version", "kind", "quotedAt", "amount", "nextActionContent", "nextActionAt"]
       },
       "WinOpportunityDto": {
         "type": "object",

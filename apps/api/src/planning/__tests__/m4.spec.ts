@@ -110,7 +110,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     )
   })
 
-  it('周视图手工安排拜访计划，执行时保留原计划并接续下一次拜访', async () => {
+  it('周视图手工安排拜访计划，执行时完成原计划并接续下一次拜访', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M4_计划闭环客户')
     const plan = await request(app.getHttpServer())
@@ -161,7 +161,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     ).toBe('customer_visit')
   })
 
-  it('临时拜访可保留已有计划；计划替换必须原子地产生新计划', async () => {
+  it('直接登记不执行已有计划；下一安排相同则沿用，变化则留痕调整', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M4_临时拜访客户')
     const plan = await request(app.getHttpServer())
@@ -181,24 +181,42 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         customerId: customer.id,
         occurredAt: '2026-09-10T10:00:00+08:00',
         method: 'offline_visit',
-        keepExistingPlan: true,
+        nextActionAt: '2026-09-15T09:00:00+08:00',
+        nextActionContent: '原定客户拜访',
       })
     expect(unplanned.status).toBe(201)
     expect(unplanned.body.sourcePlanId).toBeNull()
 
-    const replacement = await request(app.getHttpServer())
-      .post(`/api/sales-plans/${plan.body.id}/replace`)
+    const [unchanged] = await db
+      .select()
+      .from(followUpActions)
+      .where(sql`${followUpActions.customerId} = ${customer.id}`)
+    expect(unchanged.id).toBe(plan.body.id)
+    expect(unchanged.status).toBe('pending')
+
+    const adjustedVisit = await request(app.getHttpServer())
+      .post('/api/visits')
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
-        version: plan.body.version,
-        plannedAt: '2026-09-18T14:00:00+08:00',
-        content: '改为拜访技术负责人',
-        reason: '客户联系人调整',
+        customerId: customer.id,
+        occurredAt: '2026-09-11T10:00:00+08:00',
+        method: 'remote',
+        nextActionAt: '2026-09-18T14:00:00+08:00',
+        nextActionContent: '改为拜访技术负责人',
       })
-    expect(replacement.status).toBe(201)
-    expect(replacement.body.replaced.status).toBe('cancelled')
-    expect(replacement.body.replacement.status).toBe('pending')
-    expect(replacement.body.replacement.content).toBe('改为拜访技术负责人')
+    expect(adjustedVisit.status).toBe(201)
+
+    const rows = await db
+      .select()
+      .from(followUpActions)
+      .where(sql`${followUpActions.customerId} = ${customer.id}`)
+    expect(rows.find((item) => item.id === plan.body.id)?.status).toBe('cancelled')
+    expect(rows.find((item) => item.id === plan.body.id)?.cancelReason).toBe(
+      '记录新事实后已调整下一计划',
+    )
+    const replacement = rows.find((item) => item.status === 'pending')
+    expect(replacement?.content).toBe('改为拜访技术负责人')
+    expect(replacement?.sourceId).toBe(adjustedVisit.body.id)
   })
 
   it('费用作废不改总额：draft → submitted → voided（剔除统计留痕）', async () => {

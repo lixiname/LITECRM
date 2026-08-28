@@ -192,10 +192,9 @@ const currentQuote = computed(() =>
 )
 
 function openRecord(mode: 'follow_up' | 'quote') {
-  const planId = opportunity.value?.actions[0]?.id
   void router.push({
     path: `/opportunities/${opportunityId}/follow-up`,
-    query: { mode, ...(planId ? { planId } : {}) },
+    query: { mode },
   })
 }
 
