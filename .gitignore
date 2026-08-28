@@ -8,4 +8,7 @@ coverage/
 *.local
 *.log
 *.tsbuildinfo
+*.xls
+*.xlsx
+~$*
 .DS_Store
