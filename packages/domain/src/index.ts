@@ -2,6 +2,7 @@
 export * from './services/http'
 export * from './services/auth'
 export * from './services/users'
+export * from './services/grade-quotas'
 export * from './services/customers'
 export * from './services/catalog'
 export * from './services/geography'

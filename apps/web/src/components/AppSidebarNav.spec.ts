@@ -45,6 +45,7 @@ describe('AppSidebarNav', () => {
     expect(wrapper.text()).toContain('我的工作计划、待办与每日记录')
     expect(wrapper.text()).toContain('经营分析团队、商机与重点客户')
     expect(wrapper.text()).toContain('业务字典业务选项与展示名称')
+    expect(wrapper.text()).toContain('分级名额客户等级上限与人员覆盖')
   })
 
   it('只读角色不显示填报、管理和系统入口，也不留下空分组', () => {

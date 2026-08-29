@@ -116,6 +116,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customer-grade-quotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GradeQuotasController_getOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer-grade-quotas/defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["GradeQuotasController_updateDefaults"];
+        trace?: never;
+    };
+    "/customer-grade-quotas/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradeQuotasController_updateUser"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/catalog/{dimension}": {
         parameters: {
             query?: never;
@@ -1192,6 +1240,61 @@ export interface components {
             /** @description 是否启用 */
             isActive?: boolean;
         };
+        /** @enum {string} */
+        CustomerGrade: "S" | "A" | "B" | "C";
+        GradeQuotaDefaultDto: {
+            grade: components["schemas"]["CustomerGrade"];
+            /** @description null 表示不限 */
+            limit: number | null;
+        };
+        /** @enum {string} */
+        CustomerGradeQuotaMode: "inherit" | "limited" | "unlimited";
+        UserGradeQuotaDto: {
+            grade: components["schemas"]["CustomerGrade"];
+            /** @description 当前在案客户数 */
+            used: number;
+            mode: components["schemas"]["CustomerGradeQuotaMode"];
+            /** @description 个人自定义值；继承时为 null */
+            overrideLimit: number | null;
+            /** @description 最终生效上限；null 表示不限 */
+            effectiveLimit: number | null;
+            /** @description 剩余名额；不限时为 null */
+            remaining: number | null;
+            /** @description 当前占用是否超过生效上限 */
+            exceeded: boolean;
+            /** @description 当前占用是否已达到或超过生效上限 */
+            atCapacity: boolean;
+        };
+        UserGradeQuotaSummaryDto: {
+            userId: string;
+            username: string;
+            displayName: string;
+            role: components["schemas"]["Role"];
+            region?: string | null;
+            isActive: boolean;
+            quotas: components["schemas"]["UserGradeQuotaDto"][];
+        };
+        GradeQuotaOverviewDto: {
+            defaults: components["schemas"]["GradeQuotaDefaultDto"][];
+            users: components["schemas"]["UserGradeQuotaSummaryDto"][];
+        };
+        GradeQuotaDefaultInputDto: {
+            grade: components["schemas"]["CustomerGrade"];
+            /** @description 公司默认名额；null 表示不限 */
+            limit: number | null;
+        };
+        UpdateGradeQuotaDefaultsDto: {
+            items: components["schemas"]["GradeQuotaDefaultInputDto"][];
+        };
+        UserGradeQuotaInputDto: {
+            grade: components["schemas"]["CustomerGrade"];
+            mode: components["schemas"]["CustomerGradeQuotaMode"];
+            /** @description mode=limited 时的个人上限 */
+            limit?: number;
+        };
+        UpdateUserGradeQuotasDto: {
+            items: components["schemas"]["UserGradeQuotaInputDto"][];
+        };
         /**
          * @description 维度
          * @enum {string}
@@ -1232,11 +1335,6 @@ export interface components {
             /** @example 江苏 */
             name: string;
         };
-        /**
-         * @description 客户等级 S/A/B/C
-         * @enum {string}
-         */
-        CustomerGrade: "S" | "A" | "B" | "C";
         CreateContactDto: {
             /** @description 姓名（可空=裸电话） */
             name?: string;
@@ -1914,6 +2012,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+        };
+    };
+    GradeQuotasController_getOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 公司默认名额及人员占用概览 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeQuotaOverviewDto"];
+                };
+            };
+        };
+    };
+    GradeQuotasController_updateDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGradeQuotaDefaultsDto"];
+            };
+        };
+        responses: {
+            /** @description 更新公司默认分级名额 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeQuotaOverviewDto"];
+                };
+            };
+        };
+    };
+    GradeQuotasController_updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserGradeQuotasDto"];
+            };
+        };
+        responses: {
+            /** @description 替换指定负责人的四级名额策略 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeQuotaOverviewDto"];
                 };
             };
         };

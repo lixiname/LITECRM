@@ -253,6 +253,92 @@
         "tags": ["Users"]
       }
     },
+    "/customer-grade-quotas": {
+      "get": {
+        "operationId": "GradeQuotasController_getOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "公司默认名额及人员占用概览",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeQuotaOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["customer-grade-quotas"]
+      }
+    },
+    "/customer-grade-quotas/defaults": {
+      "patch": {
+        "operationId": "GradeQuotasController_updateDefaults",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGradeQuotaDefaultsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新公司默认分级名额",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeQuotaOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["customer-grade-quotas"]
+      }
+    },
+    "/customer-grade-quotas/users/{userId}": {
+      "put": {
+        "operationId": "GradeQuotasController_updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserGradeQuotasDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "替换指定负责人的四级名额策略",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GradeQuotaOverviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["customer-grade-quotas"]
+      }
+    },
     "/catalog/{dimension}": {
       "get": {
         "operationId": "CatalogController_listByDimension",
@@ -2535,6 +2621,207 @@
           }
         }
       },
+      "CustomerGrade": {
+        "type": "string",
+        "enum": ["S", "A", "B", "C"]
+      },
+      "GradeQuotaDefaultDto": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGrade"
+              }
+            ]
+          },
+          "limit": {
+            "type": "number",
+            "nullable": true,
+            "description": "null 表示不限"
+          }
+        },
+        "required": ["grade", "limit"]
+      },
+      "CustomerGradeQuotaMode": {
+        "type": "string",
+        "enum": ["inherit", "limited", "unlimited"]
+      },
+      "UserGradeQuotaDto": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGrade"
+              }
+            ]
+          },
+          "used": {
+            "type": "number",
+            "description": "当前在案客户数"
+          },
+          "mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGradeQuotaMode"
+              }
+            ]
+          },
+          "overrideLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "个人自定义值；继承时为 null"
+          },
+          "effectiveLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "最终生效上限；null 表示不限"
+          },
+          "remaining": {
+            "type": "number",
+            "nullable": true,
+            "description": "剩余名额；不限时为 null"
+          },
+          "exceeded": {
+            "type": "boolean",
+            "description": "当前占用是否超过生效上限"
+          },
+          "atCapacity": {
+            "type": "boolean",
+            "description": "当前占用是否已达到或超过生效上限"
+          }
+        },
+        "required": [
+          "grade",
+          "used",
+          "mode",
+          "overrideLimit",
+          "effectiveLimit",
+          "remaining",
+          "exceeded",
+          "atCapacity"
+        ]
+      },
+      "UserGradeQuotaSummaryDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Role"
+              }
+            ]
+          },
+          "region": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "quotas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserGradeQuotaDto"
+            }
+          }
+        },
+        "required": ["userId", "username", "displayName", "role", "isActive", "quotas"]
+      },
+      "GradeQuotaOverviewDto": {
+        "type": "object",
+        "properties": {
+          "defaults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradeQuotaDefaultDto"
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserGradeQuotaSummaryDto"
+            }
+          }
+        },
+        "required": ["defaults", "users"]
+      },
+      "GradeQuotaDefaultInputDto": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGrade"
+              }
+            ]
+          },
+          "limit": {
+            "type": "number",
+            "nullable": true,
+            "description": "公司默认名额；null 表示不限"
+          }
+        },
+        "required": ["grade", "limit"]
+      },
+      "UpdateGradeQuotaDefaultsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GradeQuotaDefaultInputDto"
+            }
+          }
+        },
+        "required": ["items"]
+      },
+      "UserGradeQuotaInputDto": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGrade"
+              }
+            ]
+          },
+          "mode": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerGradeQuotaMode"
+              }
+            ]
+          },
+          "limit": {
+            "type": "number",
+            "description": "mode=limited 时的个人上限"
+          }
+        },
+        "required": ["grade", "mode"]
+      },
+      "UpdateUserGradeQuotasDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserGradeQuotaInputDto"
+            }
+          }
+        },
+        "required": ["items"]
+      },
       "CustomerDimension": {
         "type": "string",
         "enum": [
@@ -2633,11 +2920,6 @@
           }
         },
         "required": ["id", "code", "name"]
-      },
-      "CustomerGrade": {
-        "type": "string",
-        "enum": ["S", "A", "B", "C"],
-        "description": "客户等级 S/A/B/C"
       },
       "CreateContactDto": {
         "type": "object",

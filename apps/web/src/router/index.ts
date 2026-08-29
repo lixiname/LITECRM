@@ -123,6 +123,12 @@ const router = createRouter({
           component: () => import('@/pages/UsersPage.vue'),
           meta: { title: '用户管理', requiresAbility: 'user.manage' },
         },
+        {
+          path: 'customer-grade-quotas',
+          name: 'customer-grade-quotas',
+          component: () => import('@/pages/CustomerGradeQuotasPage.vue'),
+          meta: { title: '客户分级名额', requiresAbility: 'user.manage' },
+        },
       ],
     },
   ],

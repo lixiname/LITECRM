@@ -115,6 +115,13 @@ const navGroups: NavGroup[] = [
         description: '业务选项与展示名称',
         ability: 'user.manage',
       },
+      {
+        index: '/customer-grade-quotas',
+        icon: '级',
+        title: '分级名额',
+        description: '客户等级上限与人员覆盖',
+        ability: 'user.manage',
+      },
     ],
   },
 ]
