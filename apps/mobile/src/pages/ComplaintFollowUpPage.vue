@@ -17,7 +17,7 @@
         <van-switch-cell v-model="resolved" title="本次已解决" />
         <van-field v-if="resolved" v-model="resolution" label="解决结果" required />
         <template v-else>
-          <van-field v-model="nextAt" label="下次时间" type="datetime-local" required />
+          <van-field v-model="nextAt" label="下次日期" type="date" required />
           <van-field v-model="nextContent" label="下次内容" required />
         </template>
       </van-cell-group>
@@ -49,7 +49,7 @@ const plan = ref<SalesPlan>()
 const content = ref('')
 const resolved = ref(false)
 const resolution = ref('')
-const nextAt = ref(tomorrowAtNine())
+const nextAt = ref(tomorrow())
 const nextContent = ref('')
 const saving = ref(false)
 onMounted(async () => {
@@ -60,7 +60,7 @@ onMounted(async () => {
     ])
     const currentPlan = plan.value ? undefined : detail.value?.actions[0]
     if (currentPlan) {
-      nextAt.value = localInput(new Date(currentPlan.plannedAt))
+      nextAt.value = currentPlan.plannedAt
       nextContent.value = currentPlan.content
     }
   } catch (error) {
@@ -80,7 +80,7 @@ async function submit() {
       outcome: resolved.value ? 'resolved' : 'followed_up',
       resolution: resolved.value ? resolution.value.trim() : undefined,
       sourcePlanId: plan.value?.id,
-      nextActionAt: resolved.value ? undefined : new Date(nextAt.value).toISOString(),
+      nextActionAt: resolved.value ? undefined : nextAt.value,
       nextActionContent: resolved.value ? undefined : nextContent.value.trim(),
     })
     showToast('处理结果已保存')
@@ -91,14 +91,10 @@ async function submit() {
     saving.value = false
   }
 }
-function tomorrowAtNine() {
+function tomorrow() {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-}
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 </script>
 <style scoped>

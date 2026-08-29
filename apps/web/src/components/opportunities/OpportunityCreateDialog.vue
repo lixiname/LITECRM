@@ -88,8 +88,8 @@
       <el-form-item v-else label="报价时间" required>
         <el-date-picker
           v-model="form.initialQuotedAt"
-          type="datetime"
-          value-format="YYYY-MM-DDTHH:mm:ss"
+          type="date"
+          value-format="YYYY-MM-DD"
           style="width: 100%"
         />
       </el-form-item>
@@ -140,9 +140,9 @@
       <el-form-item label="计划时间" required class="opportunity-form__wide">
         <el-date-picker
           v-model="form.firstActionAt"
-          type="datetime"
-          value-format="YYYY-MM-DDTHH:mm:ss"
-          placeholder="选择计划时间"
+          type="date"
+          value-format="YYYY-MM-DD"
+          placeholder="选择计划日期"
           style="width: 100%"
         />
       </el-form-item>
@@ -239,7 +239,7 @@ function open(options?: { customerId?: string; customerName?: string; discovered
     productLines: [],
     initialAmountBasis: 'estimate',
     initialAmount: undefined,
-    initialQuotedAt: localDateTime(new Date()),
+    initialQuotedAt: localDate(new Date()),
     initialQuoteNo: '',
     initialQuoteDocumentRef: '',
     approximate: true,
@@ -247,7 +247,7 @@ function open(options?: { customerId?: string; customerName?: string; discovered
     discoveredDate: options?.discoveredDate ?? today(),
     expectedCloseDate: '',
     firstActionContent: '',
-    firstActionAt: localDateTime(tomorrowAtNine()),
+    firstActionAt: localDate(tomorrow()),
   })
   visible.value = true
   if (!contextCustomerId.value) void searchCustomers()
@@ -287,10 +287,7 @@ async function submit() {
       initialAmount: form.initialAmount,
       approximate: form.initialAmountBasis === 'estimate' ? form.approximate : undefined,
       estimateNote: form.estimateNote.trim() || undefined,
-      initialQuotedAt:
-        form.initialAmountBasis === 'estimate'
-          ? undefined
-          : new Date(form.initialQuotedAt).toISOString(),
+      initialQuotedAt: form.initialAmountBasis === 'estimate' ? undefined : form.initialQuotedAt,
       initialQuoteNo:
         form.initialAmountBasis === 'formal_quote'
           ? form.initialQuoteNo.trim() || undefined
@@ -302,7 +299,7 @@ async function submit() {
       discoveredDate: form.discoveredDate || undefined,
       expectedCloseDate: form.expectedCloseDate || undefined,
       firstActionContent: form.firstActionContent.trim(),
-      firstActionAt: new Date(form.firstActionAt).toISOString(),
+      firstActionAt: form.firstActionAt,
     })
     visible.value = false
     ElMessage.success('商机已创建')
@@ -315,19 +312,18 @@ async function submit() {
 }
 
 function today(): string {
-  return localDateTime(new Date()).slice(0, 10)
+  return localDate(new Date())
 }
 
-function tomorrowAtNine(): Date {
+function tomorrow(): Date {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
   return date
 }
 
-function localDateTime(date: Date): string {
+function localDate(date: Date): string {
   const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 19)
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
 }
 
 defineExpose({ open })

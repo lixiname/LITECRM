@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { Type } from 'class-transformer'
-import { IsDate, IsISO8601, IsString, IsUUID, MinLength } from 'class-validator'
+import { IsString, IsUUID, MinLength } from 'class-validator'
+import { IsBusinessDate } from '../../common/business-date'
 
 // 登记客诉：问题事实和第一步处理行动同事务写入。
 export class CreateComplaintDto {
@@ -8,10 +8,9 @@ export class CreateComplaintDto {
   @IsUUID()
   customerId!: string
 
-  @ApiProperty({ description: '发生时间' })
-  @Type(() => Date)
-  @IsDate()
-  occurredAt!: Date
+  @ApiProperty({ description: '发生日期（YYYY-MM-DD）' })
+  @IsBusinessDate()
+  occurredAt!: string
 
   @ApiProperty({ description: '客诉类型（字典：complaint_type）' })
   @IsString()
@@ -22,8 +21,8 @@ export class CreateComplaintDto {
   @MinLength(1, { message: '问题描述不能为空' })
   description!: string
 
-  @ApiProperty({ description: '第一步处理行动计划时间' })
-  @IsISO8601()
+  @ApiProperty({ description: '第一步处理行动日期（YYYY-MM-DD）' })
+  @IsBusinessDate()
   firstActionAt!: string
 
   @ApiProperty({ description: '第一步处理行动内容' })

@@ -219,6 +219,7 @@ import {
   listOpportunities,
   OPPORTUNITY_RISK_LABELS,
   OPPORTUNITY_STAGE_OPTIONS,
+  isBusinessDateOverdue,
   type FollowUpAction,
   type Opportunity,
   type OpportunityListQuery,
@@ -319,7 +320,11 @@ function resetFilters() {
 }
 
 function clearManagementScope() {
-  Object.assign(managementScope, { ownerId: undefined, salesRegionId: undefined, productLine: undefined })
+  Object.assign(managementScope, {
+    ownerId: undefined,
+    salesRegionId: undefined,
+    productLine: undefined,
+  })
   void router.replace('/opportunities')
   applyFilters()
 }
@@ -342,7 +347,7 @@ function timeText(value: string | undefined): string {
 }
 
 function isActionOverdue(action: FollowUpAction | null | undefined): boolean {
-  return Boolean(action && new Date(action.plannedAt).getTime() < Date.now())
+  return Boolean(action && isBusinessDateOverdue(action.plannedAt))
 }
 </script>
 

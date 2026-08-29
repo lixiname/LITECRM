@@ -8,8 +8,8 @@
       :title="`本次执行计划：${formatPlanTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
     />
     <el-form label-width="100px">
-      <el-form-item label="沟通时间" required>
-        <el-input v-model="visitForm.occurredAt" type="datetime-local" />
+      <el-form-item label="拜访日期" required>
+        <el-date-picker v-model="visitForm.occurredAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
       <el-form-item label="方式" required>
         <el-select v-model="visitForm.method" style="width: 100%">
@@ -42,8 +42,8 @@
       <el-form-item label="下次拜访" required>
         <el-input v-model="visitForm.nextActionContent" placeholder="下一步具体做什么" />
       </el-form-item>
-      <el-form-item label="下次时间" required>
-        <el-input v-model="visitForm.nextActionAt" type="datetime-local" />
+      <el-form-item label="下次日期" required>
+        <el-date-picker v-model="visitForm.nextActionAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -61,8 +61,8 @@
 
   <el-dialog v-model="visible.complaint" title="登记客诉" width="520px">
     <el-form label-width="100px">
-      <el-form-item label="发生时间" required>
-        <el-input v-model="complaintForm.occurredAt" type="datetime-local" />
+      <el-form-item label="发生日期" required>
+        <el-date-picker v-model="complaintForm.occurredAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
       <el-form-item label="客诉类型" required>
         <el-select v-model="complaintForm.type" style="width: 100%">
@@ -80,8 +80,12 @@
       <el-form-item label="第一步计划" required>
         <el-input v-model="complaintForm.firstActionContent" placeholder="如：联系售后确认处理人" />
       </el-form-item>
-      <el-form-item label="计划时间" required>
-        <el-input v-model="complaintForm.firstActionAt" type="datetime-local" />
+      <el-form-item label="计划日期" required>
+        <el-date-picker
+          v-model="complaintForm.firstActionAt"
+          type="date"
+          value-format="YYYY-MM-DD"
+        />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -159,17 +163,15 @@ const complaintForm = reactive({
 
 function openVisit(plan?: SalesPlan, occurredDate?: string) {
   sourcePlan.value = plan
-  const occurredAt = occurredDate ? new Date(`${occurredDate}T09:00:00`) : new Date()
+  const occurredAt = occurredDate ?? today()
   const existingPlan = plan ? undefined : props.currentVisitPlan
   Object.assign(visitForm, {
-    occurredAt: localInput(occurredAt),
+    occurredAt,
     method: 'offline_visit',
     visitType: undefined,
     businessSituation: '',
     nextActionContent: existingPlan?.content ?? '',
-    nextActionAt: existingPlan
-      ? localInput(new Date(existingPlan.plannedAt))
-      : localInput(tomorrowAtNine()),
+    nextActionAt: existingPlan ? existingPlan.plannedAt : tomorrow(),
   })
   visible.visit = true
 }
@@ -179,16 +181,13 @@ function openOpportunity() {
 }
 
 function openComplaint(occurredDate?: string) {
-  const occurredAt = occurredDate ? new Date(`${occurredDate}T09:00:00`) : new Date()
-  const firstActionAt = new Date(occurredAt)
-  firstActionAt.setDate(firstActionAt.getDate() + 1)
-  firstActionAt.setHours(9, 0, 0, 0)
+  const occurredAt = occurredDate ?? today()
   Object.assign(complaintForm, {
-    occurredAt: localInput(occurredAt),
+    occurredAt,
     type: '',
     description: '',
     firstActionContent: '',
-    firstActionAt: localInput(firstActionAt),
+    firstActionAt: nextDate(occurredAt),
   })
   visible.complaint = true
 }
@@ -201,13 +200,13 @@ async function submitVisit() {
     () =>
       createVisit({
         customerId: props.customerId,
-        occurredAt: new Date(visitForm.occurredAt).toISOString(),
+        occurredAt: visitForm.occurredAt,
         method: visitForm.method,
         visitType: visitForm.visitType,
         businessSituation: visitForm.businessSituation.trim() || undefined,
         sourcePlanId: sourcePlan.value?.id,
         nextActionContent: visitForm.nextActionContent.trim(),
-        nextActionAt: new Date(visitForm.nextActionAt).toISOString(),
+        nextActionAt: visitForm.nextActionAt,
       }),
     'visit',
     '拜访已记录',
@@ -231,11 +230,11 @@ async function submitComplaint() {
     () =>
       createComplaint({
         customerId: props.customerId,
-        occurredAt: new Date(complaintForm.occurredAt).toISOString(),
+        occurredAt: complaintForm.occurredAt,
         type: complaintForm.type,
         description: complaintForm.description.trim(),
         firstActionContent: complaintForm.firstActionContent.trim(),
-        firstActionAt: new Date(complaintForm.firstActionAt).toISOString(),
+        firstActionAt: complaintForm.firstActionAt,
       }),
     'complaint',
     '客诉已登记',
@@ -260,20 +259,29 @@ async function run(
   }
 }
 
-function tomorrowAtNine(): Date {
+function tomorrow(): string {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
-  return date
+  return localDate(date)
 }
 
-function localInput(date: Date): string {
+function localDate(date: Date): string {
   const offset = date.getTimezoneOffset() * 60_000
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10)
+}
+
+function today(): string {
+  return localDate(new Date())
+}
+
+function nextDate(value: string): string {
+  const date = new Date(`${value}T00:00:00`)
+  date.setDate(date.getDate() + 1)
+  return localDate(date)
 }
 
 function formatPlanTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value
 }
 
 defineExpose({ openVisit, openOpportunity, openComplaint })

@@ -2984,7 +2984,7 @@
           },
           "plannedAt": {
             "type": "string",
-            "description": "计划执行时间"
+            "description": "计划执行日期（YYYY-MM-DD）"
           },
           "content": {
             "type": "string",
@@ -3014,7 +3014,7 @@
           },
           "plannedAt": {
             "type": "string",
-            "description": "新的计划执行时间"
+            "description": "新的计划执行日期（YYYY-MM-DD）"
           },
           "reason": {
             "type": "string",
@@ -3108,9 +3108,8 @@
             "description": "客户 ID"
           },
           "occurredAt": {
-            "format": "date-time",
             "type": "string",
-            "description": "沟通时间（业务时间）"
+            "description": "拜访日期（YYYY-MM-DD）"
           },
           "method": {
             "description": "拜访方式",
@@ -3142,7 +3141,7 @@
           },
           "nextActionAt": {
             "type": "string",
-            "description": "下次拜访计划时间；每次拜访登记均必填"
+            "description": "下次拜访日期（YYYY-MM-DD）；每次拜访登记均必填"
           },
           "nextActionContent": {
             "type": "string",
@@ -3204,7 +3203,7 @@
           },
           "initialQuotedAt": {
             "type": "string",
-            "description": "首条报价时间；报价依据时可填，默认创建时间"
+            "description": "首条报价日期；报价依据时可填，默认今天"
           },
           "initialQuoteNo": {
             "type": "string",
@@ -3224,7 +3223,7 @@
           },
           "firstActionAt": {
             "type": "string",
-            "description": "第一步行动计划时间"
+            "description": "第一步行动日期（YYYY-MM-DD）"
           }
         },
         "required": [
@@ -3253,7 +3252,7 @@
           },
           "quotedAt": {
             "type": "string",
-            "description": "报价时间；缺省时与本次推进时间一致"
+            "description": "报价日期（YYYY-MM-DD）；缺省时与本次推进日期一致"
           },
           "amount": {
             "type": "number",
@@ -3287,7 +3286,7 @@
           },
           "occurredAt": {
             "type": "string",
-            "description": "业务发生时间，缺省为当前时间"
+            "description": "业务发生日期（YYYY-MM-DD），缺省为今天"
           },
           "method": {
             "type": "string",
@@ -3311,7 +3310,7 @@
           },
           "nextActionAt": {
             "type": "string",
-            "description": "下一行动计划时间；开放商机的每次跟进均必填"
+            "description": "下一行动日期（YYYY-MM-DD）；开放商机的每次跟进均必填"
           }
         },
         "required": ["version", "conclusion", "nextActionContent", "nextActionAt"]
@@ -3332,7 +3331,7 @@
           },
           "quotedAt": {
             "type": "string",
-            "description": "报价时间"
+            "description": "报价日期（YYYY-MM-DD）"
           },
           "amount": {
             "type": "number",
@@ -3352,7 +3351,7 @@
           },
           "nextActionAt": {
             "type": "string",
-            "description": "报价后的下一行动计划时间；开放商机的每次报价均必填"
+            "description": "报价后的下一行动日期（YYYY-MM-DD）；开放商机的每次报价均必填"
           },
           "note": {
             "type": "string"
@@ -3373,7 +3372,7 @@
           },
           "occurredAt": {
             "type": "string",
-            "description": "客户明确下单时间"
+            "description": "客户明确下单日期（YYYY-MM-DD）"
           },
           "amount": {
             "type": "number",
@@ -3419,9 +3418,8 @@
             "description": "客户 ID"
           },
           "occurredAt": {
-            "format": "date-time",
             "type": "string",
-            "description": "发生时间"
+            "description": "发生日期（YYYY-MM-DD）"
           },
           "type": {
             "type": "string",
@@ -3433,7 +3431,7 @@
           },
           "firstActionAt": {
             "type": "string",
-            "description": "第一步处理行动计划时间"
+            "description": "第一步处理行动日期（YYYY-MM-DD）"
           },
           "firstActionContent": {
             "type": "string",
@@ -3488,7 +3486,7 @@
           },
           "nextActionAt": {
             "type": "string",
-            "description": "下一处理行动计划时间（followed_up 必填）"
+            "description": "下一处理行动日期（YYYY-MM-DD，followed_up 必填）"
           },
           "nextActionContent": {
             "type": "string",

@@ -41,8 +41,8 @@
         <van-field
           v-if="form.initialAmountBasis !== 'estimate'"
           v-model="form.initialQuotedAt"
-          label="报价时间"
-          type="datetime-local"
+          label="报价日期"
+          type="date"
           :rules="[{ required: true }]"
         />
         <van-field
@@ -88,8 +88,8 @@
         />
         <van-field
           v-model="form.firstActionAt"
-          label="计划时间"
-          type="datetime-local"
+          label="计划日期"
+          type="date"
           :rules="[{ required: true }]"
         />
       </van-cell-group>
@@ -134,7 +134,7 @@ const form = reactive({
   estimateNote: '',
   discoveredDate: localDate(new Date()),
   expectedCloseDate: '',
-  initialQuotedAt: localInput(new Date()),
+  initialQuotedAt: localDate(new Date()),
   initialQuoteNo: '',
   initialQuoteDocumentRef: '',
   firstActionContent: '',
@@ -208,10 +208,7 @@ async function handleSubmit() {
       estimateNote: form.estimateNote.trim() || undefined,
       discoveredDate: form.discoveredDate || undefined,
       expectedCloseDate: form.expectedCloseDate || undefined,
-      initialQuotedAt:
-        form.initialAmountBasis === 'estimate'
-          ? undefined
-          : new Date(form.initialQuotedAt).toISOString(),
+      initialQuotedAt: form.initialAmountBasis === 'estimate' ? undefined : form.initialQuotedAt,
       initialQuoteNo:
         form.initialAmountBasis === 'formal_quote' ? form.initialQuoteNo || undefined : undefined,
       initialQuoteDocumentRef:
@@ -219,7 +216,7 @@ async function handleSubmit() {
           ? form.initialQuoteDocumentRef.trim() || undefined
           : undefined,
       firstActionContent: form.firstActionContent,
-      firstActionAt: new Date(form.firstActionAt).toISOString(),
+      firstActionAt: form.firstActionAt,
     })
     showToast('商机已创建')
     router.back()
@@ -230,12 +227,8 @@ async function handleSubmit() {
   }
 }
 
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-}
-
 function localDate(date: Date): string {
-  return localInput(date).slice(0, 10)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 </script>
 

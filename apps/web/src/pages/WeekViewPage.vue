@@ -91,7 +91,7 @@
                 >
                   <div class="week-view__item-head">
                     <span>{{ planLabel(action.planKind) }}</span>
-                    <small>{{ timeOnly(action.plannedAt) }}</small>
+                    <small>待办</small>
                   </div>
                   <strong class="week-view__customer">{{ action.customerName }}</strong>
                   <small v-if="action.opportunityName">{{ action.opportunityName }}</small>
@@ -125,7 +125,7 @@
                 >
                   <div class="week-view__item-head">
                     <span>{{ recordLabel(record.type) }}</span
-                    ><small>{{ timeOnly(record.occurredAt) }}</small>
+                    ><small>记录</small>
                   </div>
                   <strong class="week-view__customer">{{ record.customerName }}</strong>
                   <small v-if="record.opportunityName">{{ record.opportunityName }}</small>
@@ -145,7 +145,7 @@
                   :class="{ 'week-view__closed-item--clickable': action.status === 'completed' }"
                   @click="openClosedPlan(action)"
                 >
-                  <span>{{ timeOnly(action.plannedAt) }} · {{ planLabel(action.planKind) }}</span>
+                  <span>{{ planLabel(action.planKind) }}</span>
                   <strong>{{ action.customerName }}</strong>
                   <small>{{
                     action.status === 'completed' ? '已执行' : action.cancelReason
@@ -693,13 +693,10 @@ function fmt(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 function toPlannedAt(value: string): string {
-  return new Date(`${value}T09:00:00`).toISOString()
-}
-function timeOnly(value: string): string {
-  return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return value
 }
 function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 

@@ -92,9 +92,9 @@ export const customers = pgTable(
     createdById: uuid('created_by_id')
       .notNull()
       .references(() => users.id), // 建档人（与 owner 语义分离 §8.3）
-    firstVisitedAt: timestamp('first_visited_at', { withTimezone: true }), // 派生（M3 事件写入）
-    firstDealAt: timestamp('first_deal_at', { withTimezone: true }), // 派生（M3 事件写入）
-    lastActivityAt: timestamp('last_activity_at', { withTimezone: true }), // 派生
+    firstVisitedAt: date('first_visited_at'), // 派生（M3 事件写入）
+    firstDealAt: date('first_deal_at'), // 派生（M3 事件写入）
+    lastActivityAt: date('last_activity_at'), // 派生
     preCrmDealConfirmed: boolean('pre_crm_deal_confirmed').default(false).notNull(), // CRM 启用前已成交的历史事实
     preCrmSalesAmount: numeric('pre_crm_sales_amount', { precision: 14, scale: 2 }), // 可空：未知不等于 0
     importBatchId: uuid('import_batch_id').references(() => customerImportBatches.id),

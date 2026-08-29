@@ -25,7 +25,7 @@
             <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
             <strong>{{ action.customerName }}</strong>
             <span>{{ action.content }}</span>
-            <small>{{ formatTime(action.plannedAt) }}</small>
+            <small>{{ action.plannedAt }}</small>
           </div>
           <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
             改期
@@ -62,7 +62,6 @@
                 <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
                 <strong>{{ action.customerName }}</strong>
                 <span>{{ action.content }}</span>
-                <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
               <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
                 改期
@@ -84,7 +83,6 @@
             >
               <div class="record-row__head">
                 <span>{{ recordLabel(record.type) }}</span>
-                <small>{{ timeOnly(record.occurredAt) }}</small>
               </div>
               <strong>{{ record.customerName }}</strong>
               <span>{{ record.summary }}</span>
@@ -101,7 +99,7 @@
               :class="{ 'closed-row--clickable': action.status === 'completed' }"
               @click="openClosedPlan(action)"
             >
-              <span>{{ timeOnly(action.plannedAt) }} · {{ planLabel(action.planKind) }}</span>
+              <span>{{ planLabel(action.planKind) }}</span>
               <strong>{{ action.customerName }}</strong>
               <small>{{ action.status === 'completed' ? '已执行' : action.cancelReason }}</small>
             </div>
@@ -231,7 +229,7 @@ function executePlan(action: SalesPlan) {
 }
 function openReschedule(action: SalesPlan) {
   selectedAction.value = action
-  commandSheet.plannedAt = localDate(new Date(action.plannedAt))
+  commandSheet.plannedAt = action.plannedAt
   commandSheet.reason = ''
   commandSheet.history = []
   commandSheet.visible = true
@@ -252,7 +250,7 @@ async function submitReschedule() {
     await rescheduleSalesPlan(
       action.id,
       action.version,
-      new Date(`${commandSheet.plannedAt}T09:00:00`).toISOString(),
+      commandSheet.plannedAt,
       commandSheet.reason.trim(),
     )
     showToast('计划已改期并保留记录')
@@ -301,17 +299,6 @@ function recordLabel(type: MobileActualRecord['type']): string {
     complaint_registered: '客诉登记',
     complaint_follow_up: '客诉处理',
   }[type]
-}
-function timeOnly(value: string): string {
-  return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-function formatTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', {
-    month: 'numeric',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 </script>
 

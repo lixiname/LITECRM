@@ -117,7 +117,7 @@ describe('管理看板 reporting 域', () => {
         status: 'active',
         ownerId: ids.reportSales,
         createdById: ids.reportSales,
-        lastActivityAt: now,
+        lastActivityAt: today,
       })
       await tx.insert(opportunities).values([
         {
@@ -140,7 +140,7 @@ describe('管理看板 reporting 域', () => {
           source: 'referral',
           estimatedAmount: '180000',
           createdAt: tenDaysAgo,
-          closedAt: now,
+          closedAt: today,
           closeReason: '客户明确下单',
         },
       ])
@@ -150,7 +150,7 @@ describe('管理看板 reporting 域', () => {
           opportunityId: ids.openOpportunity,
           actorId: ids.reportSales,
           kind: 'oral',
-          quotedAt: tenDaysAgo,
+          quotedAt: businessDate(tenDaysAgo),
           amount: '110000',
           status: 'superseded',
         },
@@ -159,7 +159,7 @@ describe('管理看板 reporting 域', () => {
           opportunityId: ids.openOpportunity,
           actorId: ids.reportSales,
           kind: 'formal',
-          quotedAt: now,
+          quotedAt: today,
           amount: '125000',
           status: 'active',
         },
@@ -168,7 +168,7 @@ describe('管理看板 reporting 域', () => {
           opportunityId: ids.wonOpportunity,
           actorId: ids.reportSales,
           kind: 'formal',
-          quotedAt: yesterday,
+          quotedAt: businessDate(yesterday),
           amount: '200000',
           status: 'active',
         },
@@ -177,7 +177,7 @@ describe('管理看板 reporting 域', () => {
         id: ids.deal,
         customerId: ids.customer,
         ownerId: ids.reportSales,
-        occurredAt: now,
+        occurredAt: today,
         amount: '200000',
         sourceOpportunityId: ids.wonOpportunity,
         sourceQuoteId: ids.wonQuote,
@@ -189,7 +189,7 @@ describe('管理看板 reporting 域', () => {
         opportunityId: ids.openOpportunity,
         planKind: 'opportunity_follow_up',
         originType: 'manual',
-        plannedAt: yesterday,
+        plannedAt: businessDate(yesterday),
         content: 'REPORT_逾期确认正式报价反馈',
         status: 'pending',
       })
@@ -197,7 +197,7 @@ describe('管理看板 reporting 域', () => {
         id: ids.visit,
         customerId: ids.customer,
         ownerId: ids.reportSales,
-        occurredAt: now,
+        occurredAt: today,
         method: 'offline_visit',
         businessSituation: 'REPORT_现场复核',
       })
@@ -205,7 +205,7 @@ describe('管理看板 reporting 域', () => {
         id: ids.complaint,
         customerId: ids.customer,
         ownerId: ids.reportSales,
-        occurredAt: now,
+        occurredAt: today,
         type: 'service',
         status: 'registered',
         description: 'REPORT_未解决客诉',
@@ -242,7 +242,9 @@ describe('管理看板 reporting 域', () => {
     expect(pipeline.status).toBe(200)
     expect(pipeline.body.pool.totalCount).toBe(1)
     expect(pipeline.body.pool.totalAmount).toBe(125000)
-    expect(pipeline.body.pool.buckets.find((item: { key: string }) => item.key === 'formal_quote')).toMatchObject({
+    expect(
+      pipeline.body.pool.buckets.find((item: { key: string }) => item.key === 'formal_quote'),
+    ).toMatchObject({
       count: 1,
       amount: 125000,
     })
@@ -297,7 +299,9 @@ describe('管理看板 reporting 域', () => {
     const defaultView = await request(app.getHttpServer())
       .get(`/api/week-view?start=${start}&end=${end}`)
       .set('Authorization', `Bearer ${managerToken}`)
-    expect(defaultView.body.businessRecords.some((item: { id: string }) => item.id === ids.visit)).toBe(false)
+    expect(
+      defaultView.body.businessRecords.some((item: { id: string }) => item.id === ids.visit),
+    ).toBe(false)
 
     const outsideScope = await request(app.getHttpServer())
       .get(`/api/week-view?start=${start}&end=${end}&ownerId=${assistantId}`)

@@ -11,7 +11,7 @@ const plan: SalesPlan = {
   planKind: 'customer_visit',
   originType: 'manual',
   sourceId: null,
-  plannedAt: '2026-08-24T09:00:00+08:00',
+  plannedAt: '2026-08-24',
   content: '拜访客户',
   status: 'completed',
   completedAt: '2026-08-24T10:00:00+08:00',

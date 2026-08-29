@@ -17,6 +17,7 @@ import type { CreateOpportunityQuoteDto } from './dto/create-opportunity-quote.d
 import type { WinOpportunityDto } from './dto/win-opportunity.dto'
 import { OpportunityAccessService } from './opportunity-access.service'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
+import { businessDate, todayBusinessDate } from '../common/business-date'
 
 /** 商机过程命令：跟进、报价、成交与未成交结案。 */
 @Injectable()
@@ -32,7 +33,7 @@ export class OpportunityCommandsService {
     this.opportunityAccess.assertOpen(opportunity.stage)
 
     return db.transaction(async (tx) => {
-      const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date()
+      const occurredAt = dto.occurredAt ? businessDate(dto.occurredAt) : todayBusinessDate()
       const [followUp] = await tx
         .insert(opportunityFollowUps)
         .values({
@@ -51,7 +52,7 @@ export class OpportunityCommandsService {
             actorId: actor.id,
             followUpId: followUp.id,
             kind: dto.quote.kind,
-            quotedAt: dto.quote.quotedAt ? new Date(dto.quote.quotedAt) : occurredAt,
+            quotedAt: dto.quote.quotedAt ? businessDate(dto.quote.quotedAt) : occurredAt,
             amount: dto.quote.amount,
             quoteNo: dto.quote.quoteNo,
             note: dto.quote.note,
@@ -74,7 +75,7 @@ export class OpportunityCommandsService {
           planKind: 'opportunity_follow_up',
           originType: 'opportunity_follow_up',
           sourceId: followUp.id,
-          plannedAt: new Date(dto.nextActionAt),
+          plannedAt: businessDate(dto.nextActionAt),
           content: dto.nextActionContent,
         },
       )
@@ -115,7 +116,7 @@ export class OpportunityCommandsService {
     this.opportunityAccess.assertOpen(opportunity.stage)
 
     return db.transaction(async (tx) => {
-      const occurredAt = new Date(dto.quotedAt)
+      const occurredAt = businessDate(dto.quotedAt)
       const quote = await this.appendQuote(tx, {
         opportunityId: id,
         actorId: actor.id,
@@ -143,7 +144,7 @@ export class OpportunityCommandsService {
           planKind: 'opportunity_follow_up',
           originType: 'opportunity_quote',
           sourceId: quote.id,
-          plannedAt: new Date(dto.nextActionAt),
+          plannedAt: businessDate(dto.nextActionAt),
           content: dto.nextActionContent,
         },
       )
@@ -186,7 +187,7 @@ export class OpportunityCommandsService {
           )
           .limit(1)
 
-        const occurredAt = new Date(dto.occurredAt)
+        const occurredAt = businessDate(dto.occurredAt)
         const [updated] = await tx
           .update(opportunities)
           .set({
@@ -242,7 +243,7 @@ export class OpportunityCommandsService {
     const opportunity = await this.opportunityAccess.getEditable(id, actor)
     this.opportunityAccess.assertOpen(opportunity.stage)
     return db.transaction(async (tx) => {
-      const closedAt = new Date()
+      const closedAt = todayBusinessDate()
       const [updated] = await tx
         .update(opportunities)
         .set({
@@ -276,7 +277,7 @@ export class OpportunityCommandsService {
       actorId: string
       followUpId?: string
       kind: CreateOpportunityQuoteDto['kind']
-      quotedAt: Date
+      quotedAt: string
       amount: number
       quoteNo?: string
       sourcePlanId?: string

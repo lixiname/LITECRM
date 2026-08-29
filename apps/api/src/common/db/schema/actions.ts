@@ -31,7 +31,7 @@ export const visitRecords = pgTable(
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id), // 填报人快照
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     method: text('method').notNull(),
     visitType: text('visit_type'),
     businessSituation: text('business_situation'),
@@ -69,8 +69,8 @@ export const opportunities = pgTable(
     estimateNote: text('estimate_note'),
     discoveredDate: date('discovered_date'),
     expectedCloseDate: date('expected_close_date'),
-    lastFollowUpAt: timestamp('last_follow_up_at', { withTimezone: true }),
-    closedAt: timestamp('closed_at', { withTimezone: true }),
+    lastFollowUpAt: date('last_follow_up_at'),
+    closedAt: date('closed_at'),
     closeReason: text('close_reason'),
     notes: text('notes'),
     entrySource: text('entry_source'),
@@ -120,7 +120,7 @@ export const opportunityFollowUps = pgTable(
       .notNull()
       .references(() => users.id),
     sourcePlanId: uuid('source_plan_id'),
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     conclusion: text('conclusion').notNull(),
     method: text('method'),
     entrySource: text('entry_source'),
@@ -144,7 +144,7 @@ export const opportunityQuotes = pgTable(
       .notNull()
       .references(() => users.id),
     kind: text('kind').notNull(),
-    quotedAt: timestamp('quoted_at', { withTimezone: true }).notNull(),
+    quotedAt: date('quoted_at').notNull(),
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     quoteNo: text('quote_no'),
     status: text('status').notNull().default('active'),
@@ -182,7 +182,7 @@ export const opportunityEvents = pgTable(
     actorId: uuid('actor_id')
       .notNull()
       .references(() => users.id),
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     type: text('type').notNull(),
     schemaVersion: integer('schema_version').default(1).notNull(),
     payload: jsonb('payload'),
@@ -206,7 +206,7 @@ export const deals = pgTable(
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id), // 成交确认时客户负责人快照
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     productLine: text('product_line'),
     tradeType: text('trade_type'),
@@ -235,12 +235,12 @@ export const complaints = pgTable(
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id),
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     type: text('type').notNull(),
     status: text('status').notNull().default('registered'),
     description: text('description').notNull(),
     resolution: text('resolution'),
-    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolvedAt: date('resolved_at'),
     entrySource: text('entry_source'),
     entryRefId: uuid('entry_ref_id'),
   },
@@ -262,7 +262,7 @@ export const complaintFollowUps = pgTable(
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id),
-    occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+    occurredAt: date('occurred_at').notNull(),
     content: text('content').notNull(),
     outcome: text('outcome').notNull(),
     resolution: text('resolution'),

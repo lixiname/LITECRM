@@ -13,7 +13,7 @@
     />
     <van-form @submit="submit">
       <van-cell-group inset>
-        <van-field v-model="occurredAt" label="推进时间" type="datetime-local" required />
+        <van-field v-model="occurredAt" label="推进日期" type="date" required />
         <van-field v-model="conclusion" label="本次结论" type="textarea" rows="2" required />
         <van-field
           v-model="methodLabel"
@@ -55,7 +55,7 @@
             placeholder="可选链接或文件编号"
           />
         </template>
-        <van-field v-model="nextAt" label="下次时间" type="datetime-local" required />
+        <van-field v-model="nextAt" label="下次日期" type="date" required />
         <van-field v-model="nextContent" label="下次内容" type="textarea" rows="2" required />
       </van-cell-group>
       <div class="submit">
@@ -97,7 +97,7 @@ const opportunityId = String(route.params.id)
 const planId = String(route.query.planId ?? '')
 const opportunity = ref<OpportunityDetail>()
 const plan = ref<SalesPlan>()
-const occurredAt = ref(localInput(new Date()))
+const occurredAt = ref(localDate(new Date()))
 const conclusion = ref('')
 const method = ref('')
 const methodLabel = ref('')
@@ -121,7 +121,7 @@ const quoteKindColumns = OPPORTUNITY_QUOTE_KIND_OPTIONS.map((item) => ({
 const currentQuote = computed(() =>
   opportunity.value?.quotes.find((quote) => quote.status === 'active'),
 )
-const nextAt = ref(tomorrowAtNine())
+const nextAt = ref(tomorrow())
 const nextContent = ref('')
 const saving = ref(false)
 
@@ -135,12 +135,12 @@ onMounted(async () => {
     plan.value = sourcePlan
     const currentPlan = sourcePlan ? undefined : detail.actions[0]
     if (currentPlan) {
-      nextAt.value = localInput(new Date(currentPlan.plannedAt))
+      nextAt.value = currentPlan.plannedAt
       nextContent.value = currentPlan.content
     }
     const date = route.query.date as string | undefined
     if (date) {
-      occurredAt.value = `${date}T09:00`
+      occurredAt.value = date
     }
   } catch (error) {
     showToast(error instanceof Error ? error.message : '加载失败')
@@ -157,7 +157,7 @@ async function submit() {
     await addOpportunityFollowUp(opportunityId, {
       version: opportunity.value.version,
       conclusion: conclusion.value.trim(),
-      occurredAt: new Date(occurredAt.value).toISOString(),
+      occurredAt: occurredAt.value,
       method: method.value.trim() || undefined,
       quote: hasQuote.value
         ? {
@@ -170,7 +170,7 @@ async function submit() {
           }
         : undefined,
       sourcePlanId: plan.value?.id,
-      nextActionAt: new Date(nextAt.value).toISOString(),
+      nextActionAt: nextAt.value,
       nextActionContent: nextContent.value.trim(),
     })
     showToast(hasQuote.value ? '推进与报价已记录' : '推进已记录')
@@ -195,17 +195,16 @@ function pickQuoteKind({
   quoteKindLabel.value = selectedOptions[0].text
   showQuoteKind.value = false
 }
-function tomorrowAtNine() {
+function tomorrow() {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+  return localDate(date)
 }
 function formatTime(value: string) {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value
 }
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+function localDate(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 </script>
 

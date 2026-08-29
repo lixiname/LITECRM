@@ -61,7 +61,7 @@ export const followUpActions = pgTable(
     planKind: text('plan_kind').notNull(),
     originType: text('source_type').notNull(),
     sourceId: uuid('source_id'),
-    plannedAt: timestamp('planned_at', { withTimezone: true }).notNull(),
+    plannedAt: date('planned_at').notNull(),
     content: text('content').notNull(),
     status: text('status').notNull().default('pending'),
     completedAt: timestamp('completed_at', { withTimezone: true }),
@@ -129,8 +129,8 @@ export const salesPlanReschedules = pgTable(
     salesPlanId: uuid('sales_plan_id')
       .notNull()
       .references(() => followUpActions.id),
-    fromPlannedAt: timestamp('from_planned_at', { withTimezone: true }).notNull(),
-    toPlannedAt: timestamp('to_planned_at', { withTimezone: true }).notNull(),
+    fromPlannedAt: date('from_planned_at').notNull(),
+    toPlannedAt: date('to_planned_at').notNull(),
     reason: text('reason').notNull(),
     changedById: uuid('changed_by_id')
       .notNull()

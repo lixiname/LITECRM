@@ -249,7 +249,7 @@ describe('归属治理与客户分级名额（§8.3）', () => {
           customerId: customer.id,
           planKind: 'customer_visit',
           originType: 'manual',
-          plannedAt: new Date(Date.now() + 86_400_000),
+          plannedAt: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
           content: '下次上门拜访',
         })
         .returning()
@@ -318,9 +318,9 @@ describe('归属治理与客户分级名额（§8.3）', () => {
         .set('Authorization', `Bearer ${sales2.accessToken}`)
         .send({
           customerId: customer.id,
-          occurredAt: new Date().toISOString(),
+          occurredAt: new Date().toISOString().slice(0, 10),
           method: 'offline_visit',
-          nextActionAt: new Date(Date.now() + 86_400_000).toISOString(),
+          nextActionAt: new Date(Date.now() + 86_400_000).toISOString().slice(0, 10),
           nextActionContent: '再次拜访',
         })
       expect(cannotVisitBeforeClaim.status).toBe(409)

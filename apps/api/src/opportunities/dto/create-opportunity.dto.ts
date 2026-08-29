@@ -3,7 +3,6 @@ import {
   IsBoolean,
   IsArray,
   IsIn,
-  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -15,6 +14,7 @@ import {
   OPPORTUNITY_INITIAL_AMOUNT_BASES,
   type OpportunityInitialAmountBasis,
 } from '../../common/constants'
+import { IsBusinessDate } from '../../common/business-date'
 
 // 新建商机：金额依据可以是估算或首条报价；商业事实与第一步行动同事务落库。
 export class CreateOpportunityDto {
@@ -56,7 +56,7 @@ export class CreateOpportunityDto {
 
   @ApiPropertyOptional({ description: '需求发现日' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   discoveredDate?: string
 
   @ApiPropertyOptional({ description: '产品线，多选', type: [String] })
@@ -65,9 +65,9 @@ export class CreateOpportunityDto {
   @IsString({ each: true })
   productLines?: string[]
 
-  @ApiPropertyOptional({ description: '首条报价时间；报价依据时可填，默认创建时间' })
+  @ApiPropertyOptional({ description: '首条报价日期；报价依据时可填，默认今天' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   initialQuotedAt?: string
 
   @ApiPropertyOptional({ description: '首张正式报价单号' })
@@ -82,7 +82,7 @@ export class CreateOpportunityDto {
 
   @ApiPropertyOptional({ description: '预计成交日' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   expectedCloseDate?: string
 
   @ApiProperty({ description: '第一步行动内容' })
@@ -90,7 +90,7 @@ export class CreateOpportunityDto {
   @MinLength(1, { message: '下一步动作必填' })
   firstActionContent!: string
 
-  @ApiProperty({ description: '第一步行动计划时间' })
-  @IsISO8601()
+  @ApiProperty({ description: '第一步行动日期（YYYY-MM-DD）' })
+  @IsBusinessDate()
   firstActionAt!: string
 }

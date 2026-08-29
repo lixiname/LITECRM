@@ -1,20 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import {
-  IsISO8601,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Min,
-  MinLength,
-} from 'class-validator'
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Min, MinLength } from 'class-validator'
 import {
   COMPLAINT_STATUSES,
   FOLLOW_UP_OUTCOMES,
   type ComplaintStatus,
   type FollowUpOutcome,
 } from '../../common/constants'
+import { IsBusinessDate } from '../../common/business-date'
 
 // 客诉跟进（§8.6）：content 必填；FOLLOWED_UP → 必填下次确认日；RESOLVED → 必填解决结果
 export class FollowUpComplaintDto {
@@ -42,9 +34,9 @@ export class FollowUpComplaintDto {
   @IsUUID()
   sourcePlanId?: string
 
-  @ApiPropertyOptional({ description: '下一处理行动计划时间（followed_up 必填）' })
+  @ApiPropertyOptional({ description: '下一处理行动日期（YYYY-MM-DD，followed_up 必填）' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   nextActionAt?: string
 
   @ApiPropertyOptional({ description: '下一处理行动内容（followed_up 必填）' })

@@ -110,8 +110,8 @@
           <el-form-item label="下一计划" required>
             <el-input v-model="form.nextActionContent" placeholder="下一步具体做什么" />
           </el-form-item>
-          <el-form-item label="计划时间" required>
-            <el-input v-model="form.nextActionAt" type="datetime-local" />
+          <el-form-item label="计划日期" required>
+            <el-date-picker v-model="form.nextActionAt" type="date" value-format="YYYY-MM-DD" />
           </el-form-item>
         </template>
       </el-form>
@@ -218,9 +218,7 @@ function openFollow(plan?: SalesPlan) {
   form.resolution = ''
   const currentPlan = plan ? undefined : complaint.value?.actions[0]
   form.nextActionContent = currentPlan?.content ?? ''
-  form.nextActionAt = currentPlan
-    ? localInput(new Date(currentPlan.plannedAt))
-    : localInput(tomorrowAtNine())
+  form.nextActionAt = currentPlan ? currentPlan.plannedAt : localDate(tomorrow())
   showFollow.value = true
 }
 
@@ -239,8 +237,7 @@ async function handleFollow() {
       outcome: form.outcome,
       resolution: form.outcome === 'resolved' ? form.resolution.trim() : undefined,
       sourcePlanId: executingPlan.value?.id,
-      nextActionAt:
-        form.outcome === 'followed_up' ? new Date(form.nextActionAt).toISOString() : undefined,
+      nextActionAt: form.outcome === 'followed_up' ? form.nextActionAt : undefined,
       nextActionContent: form.outcome === 'followed_up' ? form.nextActionContent.trim() : undefined,
     })
     ElMessage.success('已记录')
@@ -254,15 +251,14 @@ async function handleFollow() {
   }
 }
 
-function tomorrowAtNine(): Date {
+function tomorrow(): Date {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
   return date
 }
 
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+function localDate(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 </script>
 

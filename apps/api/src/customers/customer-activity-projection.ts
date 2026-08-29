@@ -11,7 +11,7 @@ type ActivityKind = 'activity' | 'visit' | 'deal'
 export async function touchCustomerActivity(
   tx: DbClient,
   customerId: string,
-  occurredAt: Date,
+  occurredAt: string,
   kind: ActivityKind = 'activity',
 ): Promise<void> {
   const firstVisitedAt =

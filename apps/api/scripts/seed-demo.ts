@@ -53,6 +53,7 @@ const ids = {
 
 const daysFromNow = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000)
 const dateOnly = (date: Date) => date.toISOString().slice(0, 10)
+const businessDaysFromNow = (days: number) => dateOnly(daysFromNow(days))
 
 async function seedDemoBusinessData() {
   await seedAccounts()
@@ -66,9 +67,9 @@ async function seedDemoBusinessData() {
   const sales2 = salesRows.find((item) => item.username === 'sales2')
   if (!sales || !sales2) throw new Error('缺少 sales1/sales2 测试账号')
 
-  const activeAt = daysFromNow(-2)
-  const wonAt = daysFromNow(-20)
-  const stalledAt = daysFromNow(-48)
+  const activeAt = businessDaysFromNow(-2)
+  const wonAt = businessDaysFromNow(-20)
+  const stalledAt = businessDaysFromNow(-48)
 
   await db.transaction(async (tx) => {
     const customerRows = [
@@ -87,7 +88,7 @@ async function seedDemoBusinessData() {
         grade: 'A' as const,
         ownerId: sales.id,
         createdById: sales.id,
-        firstVisitedAt: daysFromNow(-12),
+        firstVisitedAt: businessDaysFromNow(-12),
         lastActivityAt: activeAt,
         notes: '电子材料产线，关注循环水系统稳定性。',
       },
@@ -143,8 +144,8 @@ async function seedDemoBusinessData() {
         grade: 'S' as const,
         ownerId: sales2.id,
         createdById: sales2.id,
-        firstVisitedAt: daysFromNow(-35),
-        lastActivityAt: daysFromNow(-34),
+        firstVisitedAt: businessDaysFromNow(-35),
+        lastActivityAt: businessDaysFromNow(-34),
         notes: '用于演示管理层关注的 S 类客户与正式报价逾期。',
       },
     ]
@@ -208,13 +209,16 @@ async function seedDemoBusinessData() {
         id: ids.visit,
         customerId: ids.activeCustomer,
         ownerId: sales.id,
-        occurredAt: daysFromNow(-12),
+        occurredAt: businessDaysFromNow(-12),
         method: 'offline_visit',
         visitType: 'new_customer',
         businessSituation: '新建电子材料产线，计划改造循环冷却系统。',
         equipmentSituation: '现有泵组能耗偏高，过滤精度不稳定。',
       })
-      .onConflictDoUpdate({ target: visitRecords.id, set: { occurredAt: daysFromNow(-12) } })
+      .onConflictDoUpdate({
+        target: visitRecords.id,
+        set: { occurredAt: businessDaysFromNow(-12) },
+      })
 
     const opportunityRows = [
       {
@@ -245,8 +249,8 @@ async function seedDemoBusinessData() {
         approximate: false,
         createdAt: daysFromNow(-60),
         discoveredDate: dateOnly(daysFromNow(-60)),
-        expectedCloseDate: dateOnly(wonAt),
-        lastFollowUpAt: daysFromNow(-22),
+        expectedCloseDate: wonAt,
+        lastFollowUpAt: businessDaysFromNow(-22),
         closedAt: wonAt,
         closeReason: '客户明确下单',
       },
@@ -279,7 +283,7 @@ async function seedDemoBusinessData() {
         createdAt: daysFromNow(-40),
         discoveredDate: dateOnly(daysFromNow(-40)),
         expectedCloseDate: dateOnly(daysFromNow(20)),
-        lastFollowUpAt: daysFromNow(-34),
+        lastFollowUpAt: businessDaysFromNow(-34),
       },
     ] as const
     for (const row of opportunityRows) {
@@ -320,7 +324,7 @@ async function seedDemoBusinessData() {
         opportunityId: ids.activeOpportunity,
         actorId: sales.id,
         kind: 'oral',
-        quotedAt: daysFromNow(-4),
+        quotedAt: businessDaysFromNow(-4),
         amount: '365000',
         status: 'active',
         note: '初步组合价格',
@@ -330,7 +334,7 @@ async function seedDemoBusinessData() {
         opportunityId: ids.wonOpportunity,
         actorId: sales.id,
         kind: 'formal',
-        quotedAt: daysFromNow(-25),
+        quotedAt: businessDaysFromNow(-25),
         amount: '620000',
         quoteNo: 'DEMO-Q-002',
         status: 'active',
@@ -340,7 +344,7 @@ async function seedDemoBusinessData() {
         opportunityId: ids.keyOpportunity,
         actorId: sales2.id,
         kind: 'formal',
-        quotedAt: daysFromNow(-34),
+        quotedAt: businessDaysFromNow(-34),
         amount: '880000',
         quoteNo: 'DEMO-Q-004',
         status: 'active',
@@ -391,7 +395,7 @@ async function seedDemoBusinessData() {
         id: ids.complaint,
         customerId: ids.activeCustomer,
         ownerId: sales.id,
-        occurredAt: daysFromNow(-1),
+        occurredAt: businessDaysFromNow(-1),
         type: 'service',
         status: 'registered',
         description: '客户反馈现场安装空间需要再次确认。',
@@ -410,7 +414,7 @@ async function seedDemoBusinessData() {
         planKind: 'opportunity_follow_up',
         originType: 'opportunity_follow_up',
         sourceId: ids.followUp,
-        plannedAt: daysFromNow(2),
+        plannedAt: businessDaysFromNow(2),
         content: '带技术人员复核过滤精度和安装空间',
         status: 'pending',
       },
@@ -422,7 +426,7 @@ async function seedDemoBusinessData() {
         planKind: 'opportunity_follow_up',
         originType: 'opportunity_quote',
         sourceId: ids.keyQuote,
-        plannedAt: daysFromNow(-3),
+        plannedAt: businessDaysFromNow(-3),
         content: '确认储能项目正式报价评审结果',
         status: 'pending',
       },
@@ -434,7 +438,7 @@ async function seedDemoBusinessData() {
         planKind: 'complaint_follow_up',
         originType: 'complaint',
         sourceId: ids.complaint,
-        plannedAt: daysFromNow(1),
+        plannedAt: businessDaysFromNow(1),
         content: '电话确认现场安装尺寸',
         status: 'pending',
       },
@@ -494,12 +498,12 @@ async function seedDemoBusinessData() {
         id: ids.keyVisit,
         customerId: ids.keyCustomer,
         ownerId: sales2.id,
-        occurredAt: daysFromNow(-6),
+        occurredAt: businessDaysFromNow(-6),
         method: 'offline_visit',
         visitType: 'existing_maintenance',
         businessSituation: '复核扩建产线的过滤系统参数和交付窗口。',
       })
-      .onConflictDoUpdate({ target: visitRecords.id, set: { occurredAt: daysFromNow(-6) } })
+      .onConflictDoUpdate({ target: visitRecords.id, set: { occurredAt: businessDaysFromNow(-6) } })
 
     const expenseDate = dateOnly(new Date())
     const expenseRows = [

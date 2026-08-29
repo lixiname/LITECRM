@@ -17,7 +17,7 @@ export function opportunityStagnationSql(): SQL {
         select 1 from ${followUpActions}
         where ${followUpActions.opportunityId} = ${opportunities.id}
           and ${followUpActions.status} = 'pending'
-          and ${followUpActions.plannedAt} < now()
+          and ${followUpActions.plannedAt} < current_date
       )
       or greatest(
         ${opportunities.createdAt},
@@ -63,7 +63,7 @@ export function deriveOpportunityStagnation(
   const riskFlags: string[] = []
   if ((OPEN_STAGES as readonly string[]).includes(opportunity.stage)) {
     if (!currentAction) riskFlags.push('no_pending_action')
-    if (currentAction && new Date(currentAction.plannedAt).getTime() < Date.now()) {
+    if (currentAction && String(currentAction.plannedAt).slice(0, 10) < businessDateToday()) {
       riskFlags.push('action_overdue')
     }
     if (inactiveDays >= OPPORTUNITY_INACTIVITY_DAYS) riskFlags.push('inactive_30d')
@@ -75,4 +75,12 @@ export function deriveOpportunityStagnation(
     }
   }
   return { lastBusinessActivityAt, inactiveDays, riskFlags }
+}
+
+function businessDateToday(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

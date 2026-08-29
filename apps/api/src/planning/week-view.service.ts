@@ -23,8 +23,7 @@ export class WeekViewService {
 
   async getWeekView(user: AuthUser, start: string, end: string, requestedOwnerId?: string) {
     const ownerId = await this.accessService.resolveVisibleUserId(user, requestedOwnerId)
-    const inRange = (column: AnyColumn) =>
-      sql`(${column} at time zone 'Asia/Shanghai')::date between ${start} and ${end}`
+    const inRange = (column: AnyColumn) => sql`${column} between ${start} and ${end}`
 
     const [
       planView,
@@ -143,7 +142,7 @@ export class WeekViewService {
         ...createdOpportunities.map((item) => ({
           id: item.id,
           type: 'opportunity_created' as const,
-          occurredAt: new Date(`${item.discoveredDate!}T12:00:00+08:00`),
+          occurredAt: item.discoveredDate!,
           customerId: item.customerId,
           customerName: item.customerName,
           opportunityId: item.id,

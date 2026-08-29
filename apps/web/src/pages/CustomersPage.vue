@@ -145,6 +145,7 @@ import {
   CUSTOMER_GRADE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
   CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
+  isBusinessDateOverdue,
   type CustomerItem,
   type CustomerStatus,
   type CustomerRelationshipStage,
@@ -297,7 +298,7 @@ function actionTime(value?: string | null): string {
   return `${isOverdue(value) ? '已逾期 · ' : ''}${date.toLocaleDateString('zh-CN')}`
 }
 function isOverdue(value?: string | null): boolean {
-  return Boolean(value && new Date(value).getTime() < Date.now())
+  return isBusinessDateOverdue(value)
 }
 </script>
 

@@ -8,8 +8,8 @@
       :title="`本次执行计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
     />
     <el-form label-width="100px">
-      <el-form-item label="跟进时间" required>
-        <el-input v-model="followForm.occurredAt" type="datetime-local" />
+      <el-form-item label="跟进日期" required>
+        <el-date-picker v-model="followForm.occurredAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
       <el-form-item label="本次结论" required
         ><el-input v-model="followForm.conclusion"
@@ -57,8 +57,8 @@
       <el-form-item label="下一计划" required
         ><el-input v-model="followForm.nextActionContent"
       /></el-form-item>
-      <el-form-item label="计划时间" required
-        ><el-input v-model="followForm.nextActionAt" type="datetime-local"
+      <el-form-item label="计划日期" required
+        ><el-date-picker v-model="followForm.nextActionAt" type="date" value-format="YYYY-MM-DD"
       /></el-form-item>
     </el-form>
     <template #footer>
@@ -79,8 +79,8 @@
       "
     />
     <el-form label-width="100px">
-      <el-form-item label="下单时间" required
-        ><el-input v-model="winForm.occurredAt" type="datetime-local"
+      <el-form-item label="下单日期" required
+        ><el-date-picker v-model="winForm.occurredAt" type="date" value-format="YYYY-MM-DD"
       /></el-form-item>
       <el-form-item label="成交金额" required
         ><el-input v-model.number="winForm.amount" type="number"
@@ -136,12 +136,12 @@ const showClose = ref(false)
 const acting = ref(false)
 const sourcePlan = ref<SalesPlan>()
 const followForm = reactive({
-  occurredAt: localInput(new Date()),
+  occurredAt: localDate(new Date()),
   conclusion: '',
   method: '',
   hasQuote: false,
   nextActionContent: '',
-  nextActionAt: localInput(new Date()),
+  nextActionAt: localDate(new Date()),
 })
 const quoteForm = reactive({
   kind: 'oral' as 'oral' | 'formal',
@@ -151,7 +151,7 @@ const quoteForm = reactive({
   note: '',
 })
 const winForm = reactive({
-  occurredAt: localInput(new Date()),
+  occurredAt: localDate(new Date()),
   amount: undefined as number | undefined,
 })
 const closeForm = reactive({ result: 'lost' as 'lost' | 'demand_disappeared', reason: '' })
@@ -165,7 +165,7 @@ function openProgress(plan?: SalesPlan, occurredDate?: string) {
   followForm.conclusion = ''
   followForm.method = ''
   followForm.hasQuote = false
-  followForm.occurredAt = occurredDate ? `${occurredDate}T09:00` : localInput(new Date())
+  followForm.occurredAt = occurredDate ?? localDate(new Date())
   quoteForm.kind = 'oral'
   quoteForm.amount = undefined
   quoteForm.quoteNo = ''
@@ -215,7 +215,7 @@ async function handleProgress() {
       addOpportunityFollowUp(props.opportunity.id, {
         version: props.opportunity.version,
         conclusion: followForm.conclusion.trim(),
-        occurredAt: new Date(followForm.occurredAt).toISOString(),
+        occurredAt: followForm.occurredAt,
         method: followForm.method.trim() || undefined,
         quote: followForm.hasQuote
           ? {
@@ -229,7 +229,7 @@ async function handleProgress() {
           : undefined,
         sourcePlanId: sourcePlan.value?.id,
         nextActionContent: followForm.nextActionContent.trim(),
-        nextActionAt: new Date(followForm.nextActionAt).toISOString(),
+        nextActionAt: followForm.nextActionAt,
       }),
     followForm.hasQuote ? '推进与报价已记录' : '推进已记录',
   )
@@ -243,7 +243,7 @@ async function handleWin() {
     () =>
       winOpportunity(props.opportunity.id, {
         version: props.opportunity.version,
-        occurredAt: new Date(winForm.occurredAt).toISOString(),
+        occurredAt: winForm.occurredAt,
         amount: winForm.amount!,
       }),
     '成交已确认',
@@ -272,10 +272,10 @@ function amountText(amount: string): string {
   return `¥${Number(amount).toLocaleString()}`
 }
 function formatTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value
 }
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+function localDate(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 
 function prefillNext(
@@ -284,15 +284,12 @@ function prefillNext(
 ) {
   const currentPlan = executingPlan ? undefined : props.opportunity.actions[0]
   target.nextActionContent = currentPlan?.content ?? ''
-  target.nextActionAt = currentPlan
-    ? localInput(new Date(currentPlan.plannedAt))
-    : localInput(tomorrowAtNine())
+  target.nextActionAt = currentPlan ? currentPlan.plannedAt : localDate(tomorrow())
 }
 
-function tomorrowAtNine(): Date {
+function tomorrow(): Date {
   const date = new Date()
   date.setDate(date.getDate() + 1)
-  date.setHours(9, 0, 0, 0)
   return date
 }
 </script>

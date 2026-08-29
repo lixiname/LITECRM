@@ -12,8 +12,8 @@
       <van-cell-group inset>
         <van-field
           v-model="form.occurredAt"
-          label="时间"
-          type="datetime-local"
+          label="拜访日期"
+          type="date"
           :rules="[{ required: true, message: '请选择沟通时间' }]"
         />
         <van-field
@@ -51,8 +51,8 @@
         <van-field v-model="form.personnelChanges" label="人员变动" placeholder="人员变动" />
         <van-field
           v-model="form.nextActionAt"
-          label="下次拜访时间"
-          type="datetime-local"
+          label="下次拜访日期"
+          type="date"
           :rules="[{ required: true, message: '请选择下次拜访时间' }]"
         />
         <van-field
@@ -111,15 +111,14 @@ const form = reactive({
   nextActionAt: '',
   nextActionContent: '',
 })
-// 周览执行计划时，发生时间默认当前；下一次拜访默认明天 09:00。
+// 周览执行计划时，发生日期默认今天；下一次拜访默认明天。
 const qDate = route.query.date as string | undefined
 const now = new Date()
-form.occurredAt = localInput(now)
+form.occurredAt = localDate(now)
 const nextVisit = new Date(now)
 nextVisit.setDate(nextVisit.getDate() + 1)
-nextVisit.setHours(9, 0, 0, 0)
-form.nextActionAt = localInput(nextVisit)
-if (qDate) form.occurredAt = `${qDate}T${localInput(now).slice(11)}`
+form.nextActionAt = localDate(nextVisit)
+if (qDate) form.occurredAt = qDate
 const methodLabel = ref('')
 const visitTypeLabel = ref('')
 const showMethod = ref(false)
@@ -144,7 +143,7 @@ onMounted(async () => {
     sourcePlan.value = plan
     const currentPlan = plan ? undefined : customer.currentVisitPlan
     if (currentPlan) {
-      form.nextActionAt = localInput(new Date(currentPlan.plannedAt))
+      form.nextActionAt = currentPlan.plannedAt
       form.nextActionContent = currentPlan.content
     }
     visitTypeColumns.value = options
@@ -175,14 +174,14 @@ async function handleSubmit() {
   try {
     await createVisit({
       customerId,
-      occurredAt: new Date(form.occurredAt).toISOString(),
+      occurredAt: form.occurredAt,
       method: form.method as never,
       visitType: form.visitType as never,
       businessSituation: form.businessSituation || undefined,
       equipmentSituation: form.equipmentSituation || undefined,
       personnelChanges: form.personnelChanges || undefined,
       sourcePlanId: sourcePlan.value?.id,
-      nextActionAt: new Date(form.nextActionAt).toISOString(),
+      nextActionAt: form.nextActionAt,
       nextActionContent: form.nextActionContent.trim(),
     })
     showToast('拜访已记录')
@@ -194,12 +193,12 @@ async function handleSubmit() {
   }
 }
 
-function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+function localDate(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value
 }
 </script>
 

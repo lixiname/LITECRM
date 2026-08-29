@@ -1,14 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsISO8601, IsOptional, IsString, IsUUID, MinLength } from 'class-validator'
+import { IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator'
 import { SALES_PLAN_KINDS, type SalesPlanKind } from '../../common/constants'
+import { IsBusinessDate } from '../../common/business-date'
 
 export class CreateSalesPlanDto {
   @ApiProperty({ description: '业务计划类型', enum: SALES_PLAN_KINDS, enumName: 'SalesPlanKind' })
   @IsIn(SALES_PLAN_KINDS)
   planKind!: SalesPlanKind
 
-  @ApiProperty({ description: '计划执行时间' })
-  @IsISO8601()
+  @ApiProperty({ description: '计划执行日期（YYYY-MM-DD）' })
+  @IsBusinessDate()
   plannedAt!: string
 
   @ApiProperty({ description: '计划内容' })

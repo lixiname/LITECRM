@@ -3,7 +3,6 @@ import { Type } from 'class-transformer'
 import {
   IsIn,
   IsInt,
-  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -13,15 +12,16 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { OPPORTUNITY_QUOTE_KINDS, type OpportunityQuoteKind } from '../../common/constants'
+import { IsBusinessDate } from '../../common/business-date'
 
 export class OpportunityProgressQuoteDto {
   @ApiProperty({ enum: OPPORTUNITY_QUOTE_KINDS, enumName: 'OpportunityQuoteKind' })
   @IsIn(OPPORTUNITY_QUOTE_KINDS)
   kind!: OpportunityQuoteKind
 
-  @ApiPropertyOptional({ description: '报价时间；缺省时与本次推进时间一致' })
+  @ApiPropertyOptional({ description: '报价日期（YYYY-MM-DD）；缺省时与本次推进日期一致' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   quotedAt?: string
 
   @ApiProperty({ description: '报价总额' })
@@ -56,9 +56,9 @@ export class CreateOpportunityFollowUpDto {
   @MinLength(1)
   conclusion!: string
 
-  @ApiPropertyOptional({ description: '业务发生时间，缺省为当前时间' })
+  @ApiPropertyOptional({ description: '业务发生日期（YYYY-MM-DD），缺省为今天' })
   @IsOptional()
-  @IsISO8601()
+  @IsBusinessDate()
   occurredAt?: string
 
   @ApiPropertyOptional({ description: '沟通方式' })
@@ -82,7 +82,7 @@ export class CreateOpportunityFollowUpDto {
   @MinLength(1)
   nextActionContent!: string
 
-  @ApiProperty({ description: '下一行动计划时间；开放商机的每次跟进均必填' })
-  @IsISO8601()
+  @ApiProperty({ description: '下一行动日期（YYYY-MM-DD）；开放商机的每次跟进均必填' })
+  @IsBusinessDate()
   nextActionAt!: string
 }

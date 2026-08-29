@@ -6,8 +6,8 @@
       <van-cell-group inset>
         <van-field
           v-model="form.occurredAt"
-          label="发生时间"
-          type="datetime-local"
+          label="发生日期"
+          type="date"
           :rules="[{ required: true }]"
         />
         <van-field
@@ -29,8 +29,8 @@
         />
         <van-field
           v-model="form.firstActionAt"
-          label="第一步计划时间"
-          type="datetime-local"
+          label="第一步计划日期"
+          type="date"
           :rules="[{ required: true }]"
         />
         <van-field
@@ -65,19 +65,17 @@ const router = useRouter()
 const customerId = route.params.id as string
 
 const form = reactive({
-  occurredAt: '',
+  occurredAt: localDate(new Date()),
   type: '' as string,
   description: '',
-  firstActionAt: '',
+  firstActionAt: tomorrow(),
   firstActionContent: '',
 })
-// 周览/记一笔预填日期（发生时间保留当前时分，第一步行动默认当天 09:00）
+// 周览/记一笔预填业务日期；不虚构具体时分。
 const qDate = route.query.date as string | undefined
 if (qDate) {
-  const now = new Date()
-  const hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-  form.occurredAt = `${qDate}T${hm}`
-  form.firstActionAt = `${qDate}T09:00`
+  form.occurredAt = qDate
+  form.firstActionAt = qDate
 }
 const typeLabel = ref('')
 const showType = ref(false)
@@ -106,10 +104,10 @@ async function handleSubmit() {
   try {
     await createComplaint({
       customerId,
-      occurredAt: new Date(form.occurredAt).toISOString(),
+      occurredAt: form.occurredAt,
       type: form.type as never,
       description: form.description,
-      firstActionAt: new Date(form.firstActionAt).toISOString(),
+      firstActionAt: form.firstActionAt,
       firstActionContent: form.firstActionContent,
     })
     showToast('客诉已登记')
@@ -119,6 +117,16 @@ async function handleSubmit() {
   } finally {
     saving.value = false
   }
+}
+
+function localDate(date: Date): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
+}
+
+function tomorrow(): string {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  return localDate(date)
 }
 </script>
 

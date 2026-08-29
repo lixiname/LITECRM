@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsIn,
   IsInt,
-  IsISO8601,
   IsNumber,
   IsOptional,
   IsString,
@@ -11,6 +10,7 @@ import {
   MinLength,
 } from 'class-validator'
 import { OPPORTUNITY_QUOTE_KINDS, type OpportunityQuoteKind } from '../../common/constants'
+import { IsBusinessDate } from '../../common/business-date'
 
 export class CreateOpportunityQuoteDto {
   @ApiProperty({ minimum: 1 })
@@ -22,8 +22,8 @@ export class CreateOpportunityQuoteDto {
   @IsIn(OPPORTUNITY_QUOTE_KINDS)
   kind!: OpportunityQuoteKind
 
-  @ApiProperty({ description: '报价时间' })
-  @IsISO8601()
+  @ApiProperty({ description: '报价日期（YYYY-MM-DD）' })
+  @IsBusinessDate()
   quotedAt!: string
 
   @ApiProperty({ description: '报价总额' })
@@ -46,8 +46,8 @@ export class CreateOpportunityQuoteDto {
   @MinLength(1)
   nextActionContent!: string
 
-  @ApiProperty({ description: '报价后的下一行动计划时间；开放商机的每次报价均必填' })
-  @IsISO8601()
+  @ApiProperty({ description: '报价后的下一行动日期（YYYY-MM-DD）；开放商机的每次报价均必填' })
+  @IsBusinessDate()
   nextActionAt!: string
 
   @ApiPropertyOptional()

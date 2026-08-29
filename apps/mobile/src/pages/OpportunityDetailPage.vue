@@ -106,7 +106,7 @@
               : '当前没有有效报价，成交记录将不关联报价'
           "
         />
-        <van-field v-model="winSheet.occurredAt" label="下单时间" type="datetime-local" required />
+        <van-field v-model="winSheet.occurredAt" label="下单日期" type="date" required />
         <van-field v-model="winSheet.amount" label="成交金额" type="number" required />
         <van-field v-model="winSheet.note" label="备注" placeholder="可选" />
         <van-button block round type="success" native-type="submit" :loading="acting">
@@ -225,7 +225,7 @@ async function submitWin() {
   try {
     await winOpportunity(opportunityId, {
       version: opportunity.value.version,
-      occurredAt: new Date(winSheet.occurredAt).toISOString(),
+      occurredAt: winSheet.occurredAt,
       amount: Number(winSheet.amount),
       note: winSheet.note.trim() || undefined,
     })
@@ -299,7 +299,7 @@ function dateText(value?: string | null): string {
   return value ? new Date(value).toLocaleDateString('zh-CN') : '-'
 }
 function localInput(date: Date): string {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
 }
 </script>
 

@@ -14,6 +14,7 @@ import {
 import type { FollowUpActionSourceType, SalesPlanKind } from '../common/constants'
 import type { CreateSalesPlanDto } from './dto/create-follow-up-action.dto'
 import type { RescheduleSalesPlanDto } from './dto/action-command.dto'
+import { businessDate, todayBusinessDate } from '../common/business-date'
 
 export interface NewLinkedAction {
   ownerId: string
@@ -23,7 +24,7 @@ export interface NewLinkedAction {
   planKind: SalesPlanKind
   originType: FollowUpActionSourceType
   sourceId?: string | null
-  plannedAt: Date
+  plannedAt: string
   content: string
 }
 
@@ -105,7 +106,7 @@ export class SalesPlansService {
           complaintId: dto.complaintId,
           planKind: dto.planKind,
           originType: 'manual',
-          plannedAt: new Date(dto.plannedAt),
+          plannedAt: businessDate(dto.plannedAt),
           content: dto.content,
         }),
       )
@@ -133,8 +134,8 @@ export class SalesPlansService {
         .limit(1)
       if (!current) throw new ConflictException('行动已变化，请刷新后重试')
 
-      const nextPlannedAt = new Date(dto.plannedAt)
-      if (businessDate(current.plannedAt) === businessDate(nextPlannedAt)) {
+      const nextPlannedAt = businessDate(dto.plannedAt)
+      if (current.plannedAt === nextPlannedAt) {
         throw new ConflictException('新日期与当前计划日期相同')
       }
 
@@ -245,10 +246,7 @@ export class SalesPlansService {
     if (!existing) return this.createLinked(tx, next)
 
     const nextContent = next.content.trim()
-    if (
-      existing.plannedAt.getTime() === next.plannedAt.getTime() &&
-      existing.content.trim() === nextContent
-    ) {
+    if (existing.plannedAt === next.plannedAt && existing.content.trim() === nextContent) {
       return existing
     }
 
@@ -321,12 +319,7 @@ export class SalesPlansService {
 
   async week(actor: AuthUser, start: string, end: string, requestedOwnerId?: string) {
     const ownerId = await this.accessService.resolveVisibleUserId(actor, requestedOwnerId)
-    const today = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Shanghai',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date())
+    const today = todayBusinessDate()
     const ownerCondition = eq(followUpActions.ownerId, ownerId)
     const projection = {
       ...getTableColumns(followUpActions),
@@ -345,18 +338,13 @@ export class SalesPlansService {
           and(
             ownerCondition,
             eq(followUpActions.status, 'pending'),
-            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date < ${start}`,
-            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date < ${today}`,
+            sql`${followUpActions.plannedAt} < ${start}`,
+            sql`${followUpActions.plannedAt} < ${today}`,
           ),
         )
         .orderBy(asc(followUpActions.plannedAt)),
       query()
-        .where(
-          and(
-            ownerCondition,
-            sql`(${followUpActions.plannedAt} at time zone 'Asia/Shanghai')::date between ${start} and ${end}`,
-          ),
-        )
+        .where(and(ownerCondition, sql`${followUpActions.plannedAt} between ${start} and ${end}`))
         .orderBy(asc(followUpActions.plannedAt)),
     ])
     return { overdue, plans: ranged }
@@ -400,13 +388,4 @@ function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const value = error as { code?: string; cause?: { code?: string } }
   return value.code === '23505' || value.cause?.code === '23505'
-}
-
-function businessDate(value: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(value)
 }

@@ -145,7 +145,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
 
   it('新增拜访后同步客户最近活动，并进入活动时间线', async () => {
     const customer = await createCustomer('WB_活动时间线')
-    const occurredAt = new Date().toISOString()
+    const occurredAt = new Date().toISOString().slice(0, 10)
     const visit = await request(app.getHttpServer())
       .post('/api/visits')
       .set('Authorization', `Bearer ${token}`)
@@ -155,7 +155,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
         method: 'offline_visit',
         visitType: 'new_customer',
         businessSituation: '确认扩产计划',
-        nextActionAt: '2026-09-15T09:00:00+08:00',
+        nextActionAt: '2026-09-15',
         nextActionContent: '确认扩产设备选型进展',
       })
     expect(visit.status).toBe(201)

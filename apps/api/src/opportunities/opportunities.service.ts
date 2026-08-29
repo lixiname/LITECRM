@@ -21,6 +21,7 @@ import { OpportunityAccessService } from './opportunity-access.service'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
 import type { OpportunityQueryDto } from './dto/opportunity-query.dto'
 import { deriveOpportunityStagnation, opportunityStagnationSql } from './opportunity-stagnation'
+import { businessDate, todayBusinessDate } from '../common/business-date'
 
 /** 商机创建与查询；过程命令由 OpportunityCommandsService 承担。 */
 @Injectable()
@@ -42,7 +43,7 @@ export class OpportunitiesService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
-      const occurredAt = new Date()
+      const occurredAt = todayBusinessDate()
       const isQuoteBorn = dto.initialAmountBasis !== 'estimate'
       const [opportunity] = await tx
         .insert(opportunities)
@@ -61,9 +62,11 @@ export class OpportunitiesService {
         })
         .returning()
       if (productLines.length) {
-        await tx.insert(opportunityProductLines).values(
-          productLines.map((productLine) => ({ opportunityId: opportunity.id, productLine })),
-        )
+        await tx
+          .insert(opportunityProductLines)
+          .values(
+            productLines.map((productLine) => ({ opportunityId: opportunity.id, productLine })),
+          )
       }
       const initialQuote = isQuoteBorn
         ? (
@@ -73,7 +76,7 @@ export class OpportunitiesService {
                 opportunityId: opportunity.id,
                 actorId: actor.id,
                 kind: dto.initialAmountBasis === 'formal_quote' ? 'formal' : 'oral',
-                quotedAt: dto.initialQuotedAt ? new Date(dto.initialQuotedAt) : occurredAt,
+                quotedAt: dto.initialQuotedAt ? businessDate(dto.initialQuotedAt) : occurredAt,
                 amount: String(dto.initialAmount),
                 quoteNo:
                   dto.initialAmountBasis === 'formal_quote'
@@ -108,7 +111,7 @@ export class OpportunitiesService {
         planKind: 'opportunity_follow_up',
         originType: initialQuote ? 'opportunity_quote' : 'opportunity',
         sourceId: initialQuote?.id ?? opportunity.id,
-        plannedAt: new Date(dto.firstActionAt),
+        plannedAt: businessDate(dto.firstActionAt),
         content: dto.firstActionContent,
       })
       await touchCustomerActivity(tx, dto.customerId, occurredAt)

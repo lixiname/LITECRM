@@ -36,6 +36,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   getActualRecordDetail,
+  localBusinessDate,
   type ActualRecordDetail,
   type ActualRecordReference,
 } from '@crm/domain'
@@ -54,7 +55,7 @@ onMounted(async () => {
     const common = {
       id: String(route.params.id),
       type,
-      occurredAt: new Date().toISOString(),
+      occurredAt: localBusinessDate(),
       customerId: String(route.query.customerId ?? ''),
       customerName: String(route.query.customerName ?? ''),
       summary: '',
@@ -87,7 +88,7 @@ function openRelated() {
 }
 
 function formatTime(value: string): string {
-  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+  return value || '-'
 }
 </script>
 

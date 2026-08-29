@@ -1384,7 +1384,7 @@ export interface components {
         CreateSalesPlanDto: {
             /** @description 业务计划类型 */
             planKind: components["schemas"]["SalesPlanKind"];
-            /** @description 计划执行时间 */
+            /** @description 计划执行日期（YYYY-MM-DD） */
             plannedAt: string;
             /** @description 计划内容 */
             content: string;
@@ -1397,7 +1397,7 @@ export interface components {
         };
         RescheduleSalesPlanDto: {
             version: number;
-            /** @description 新的计划执行时间 */
+            /** @description 新的计划执行日期（YYYY-MM-DD） */
             plannedAt: string;
             /** @description 改期原因 */
             reason: string;
@@ -1446,10 +1446,7 @@ export interface components {
         CreateVisitDto: {
             /** @description 客户 ID */
             customerId: string;
-            /**
-             * Format: date-time
-             * @description 沟通时间（业务时间）
-             */
+            /** @description 拜访日期（YYYY-MM-DD） */
             occurredAt: string;
             /** @description 拜访方式 */
             method: components["schemas"]["VisitMethod"];
@@ -1463,7 +1460,7 @@ export interface components {
             personnelChanges?: string;
             /** @description 本次拜访履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 下次拜访计划时间；每次拜访登记均必填 */
+            /** @description 下次拜访日期（YYYY-MM-DD）；每次拜访登记均必填 */
             nextActionAt: string;
             /** @description 下次拜访计划内容；每次拜访登记均必填 */
             nextActionContent: string;
@@ -1492,7 +1489,7 @@ export interface components {
             discoveredDate?: string;
             /** @description 产品线，多选 */
             productLines?: string[];
-            /** @description 首条报价时间；报价依据时可填，默认创建时间 */
+            /** @description 首条报价日期；报价依据时可填，默认今天 */
             initialQuotedAt?: string;
             /** @description 首张正式报价单号 */
             initialQuoteNo?: string;
@@ -1502,14 +1499,14 @@ export interface components {
             expectedCloseDate?: string;
             /** @description 第一步行动内容 */
             firstActionContent: string;
-            /** @description 第一步行动计划时间 */
+            /** @description 第一步行动日期（YYYY-MM-DD） */
             firstActionAt: string;
         };
         /** @enum {string} */
         OpportunityQuoteKind: "oral" | "formal";
         OpportunityProgressQuoteDto: {
             kind: components["schemas"]["OpportunityQuoteKind"];
-            /** @description 报价时间；缺省时与本次推进时间一致 */
+            /** @description 报价日期（YYYY-MM-DD）；缺省时与本次推进日期一致 */
             quotedAt?: string;
             /** @description 报价总额 */
             amount: number;
@@ -1524,7 +1521,7 @@ export interface components {
             version: number;
             /** @description 本次跟进结论 */
             conclusion: string;
-            /** @description 业务发生时间，缺省为当前时间 */
+            /** @description 业务发生日期（YYYY-MM-DD），缺省为今天 */
             occurredAt?: string;
             /** @description 沟通方式 */
             method?: string;
@@ -1534,13 +1531,13 @@ export interface components {
             quote?: components["schemas"]["OpportunityProgressQuoteDto"];
             /** @description 下一行动内容；开放商机的每次跟进均必填 */
             nextActionContent: string;
-            /** @description 下一行动计划时间；开放商机的每次跟进均必填 */
+            /** @description 下一行动日期（YYYY-MM-DD）；开放商机的每次跟进均必填 */
             nextActionAt: string;
         };
         CreateOpportunityQuoteDto: {
             version: number;
             kind: components["schemas"]["OpportunityQuoteKind"];
-            /** @description 报价时间 */
+            /** @description 报价日期（YYYY-MM-DD） */
             quotedAt: string;
             /** @description 报价总额 */
             amount: number;
@@ -1550,7 +1547,7 @@ export interface components {
             sourcePlanId?: string;
             /** @description 报价后的下一行动内容；开放商机的每次报价均必填 */
             nextActionContent: string;
-            /** @description 报价后的下一行动计划时间；开放商机的每次报价均必填 */
+            /** @description 报价后的下一行动日期（YYYY-MM-DD）；开放商机的每次报价均必填 */
             nextActionAt: string;
             note?: string;
             /** @description 可选文件引用；不要求上传 */
@@ -1558,7 +1555,7 @@ export interface components {
         };
         WinOpportunityDto: {
             version: number;
-            /** @description 客户明确下单时间 */
+            /** @description 客户明确下单日期（YYYY-MM-DD） */
             occurredAt: string;
             /** @description 成交金额 */
             amount: number;
@@ -1580,16 +1577,13 @@ export interface components {
         CreateComplaintDto: {
             /** @description 客户 ID */
             customerId: string;
-            /**
-             * Format: date-time
-             * @description 发生时间
-             */
+            /** @description 发生日期（YYYY-MM-DD） */
             occurredAt: string;
             /** @description 客诉类型（字典：complaint_type） */
             type: string;
             /** @description 问题描述 */
             description: string;
-            /** @description 第一步处理行动计划时间 */
+            /** @description 第一步处理行动日期（YYYY-MM-DD） */
             firstActionAt: string;
             /** @description 第一步处理行动内容 */
             firstActionContent: string;
@@ -1614,7 +1608,7 @@ export interface components {
             resolution?: string;
             /** @description 本次处理履行的来源计划 */
             sourcePlanId?: string;
-            /** @description 下一处理行动计划时间（followed_up 必填） */
+            /** @description 下一处理行动日期（YYYY-MM-DD，followed_up 必填） */
             nextActionAt?: string;
             /** @description 下一处理行动内容（followed_up 必填） */
             nextActionContent?: string;

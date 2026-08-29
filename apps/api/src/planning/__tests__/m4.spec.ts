@@ -109,9 +109,9 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: '2026-09-02T08:30:00+08:00',
+        occurredAt: '2026-09-02',
         method: 'offline_visit',
-        nextActionAt: '2026-09-02T09:00:00+08:00',
+        nextActionAt: '2026-09-02',
         nextActionContent: '确认过滤设备选型参数',
       })
     expect(res.status).toBe(201)
@@ -144,7 +144,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .send({
         planKind: 'customer_visit',
         customerId: customer.id,
-        plannedAt: '2026-09-08T09:00:00+08:00',
+        plannedAt: '2026-09-08',
         content: '了解过滤设备运行情况',
       })
     expect(plan.status).toBe(201)
@@ -155,10 +155,10 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .send({
         customerId: customer.id,
         sourcePlanId: plan.body.id,
-        occurredAt: '2026-09-08T10:00:00+08:00',
+        occurredAt: '2026-09-08',
         method: 'offline_visit',
         businessSituation: '现场实际改为了解明年扩产计划',
-        nextActionAt: '2026-10-08T09:00:00+08:00',
+        nextActionAt: '2026-10-08',
         nextActionContent: '确认扩产预算是否获批',
       })
     expect(visit.status).toBe(201)
@@ -195,7 +195,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .send({
         planKind: 'customer_visit',
         customerId: customer.id,
-        plannedAt: '2026-09-15T09:00:00+08:00',
+        plannedAt: '2026-09-15',
         content: '拜访设备负责人',
       })
     expect(plan.status).toBe(201)
@@ -205,15 +205,13 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: plan.body.version,
-        plannedAt: '2026-09-18T09:00:00+08:00',
+        plannedAt: '2026-09-18',
         reason: '客户临时安排设备检修',
       })
     expect(rescheduled.status).toBe(201)
     expect(rescheduled.body.id).toBe(plan.body.id)
     expect(rescheduled.body.content).toBe('拜访设备负责人')
-    expect(new Date(rescheduled.body.plannedAt).toISOString()).toBe(
-      new Date('2026-09-18T09:00:00+08:00').toISOString(),
-    )
+    expect(rescheduled.body.plannedAt).toBe('2026-09-18')
 
     const history = await request(app.getHttpServer())
       .get(`/api/sales-plans/${plan.body.id}/reschedules`)
@@ -234,7 +232,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: rescheduled.body.version,
-        plannedAt: '2026-09-18T15:00:00+08:00',
+        plannedAt: '2026-09-18',
         reason: '只修改同一天的时刻',
       })
     expect(sameDay.status).toBe(409)
@@ -249,7 +247,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .send({
         planKind: 'customer_visit',
         customerId: customer.id,
-        plannedAt: '2026-09-15T09:00:00+08:00',
+        plannedAt: '2026-09-15',
         content: '原定客户拜访',
       })
 
@@ -258,9 +256,9 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: '2026-09-10T10:00:00+08:00',
+        occurredAt: '2026-09-10',
         method: 'offline_visit',
-        nextActionAt: '2026-09-15T09:00:00+08:00',
+        nextActionAt: '2026-09-15',
         nextActionContent: '原定客户拜访',
       })
     expect(unplanned.status).toBe(201)
@@ -278,9 +276,9 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: '2026-09-11T10:00:00+08:00',
+        occurredAt: '2026-09-11',
         method: 'remote',
-        nextActionAt: '2026-09-18T14:00:00+08:00',
+        nextActionAt: '2026-09-18',
         nextActionContent: '改为拜访技术负责人',
       })
     expect(adjustedVisit.status).toBe(201)
@@ -311,7 +309,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         initialAmountBasis: 'estimate',
         initialAmount: 260000,
         discoveredDate: '2026-09-21',
-        firstActionAt: '2026-09-22T09:00:00+08:00',
+        firstActionAt: '2026-09-22',
         firstActionContent: '确认过滤精度参数',
       })
     expect(created.status).toBe(201)
@@ -324,12 +322,12 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: before.body.version,
-        occurredAt: '2026-09-22T10:00:00+08:00',
+        occurredAt: '2026-09-22',
         conclusion: '客户确认参数，本次给出口头报价',
         method: 'offline_visit',
         quote: { kind: 'oral', amount: 255000, note: '按当前配置估算' },
         sourcePlanId: before.body.actions[0].id,
-        nextActionAt: '2026-09-29T09:00:00+08:00',
+        nextActionAt: '2026-09-29',
         nextActionContent: '确认客户对报价的反馈',
       })
     expect(progressed.status).toBe(201)
@@ -408,9 +406,9 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString().slice(0, 10),
         method: 'remote',
-        nextActionAt: '2026-09-10T09:00:00+08:00',
+        nextActionAt: '2026-09-10',
         nextActionContent: '再次拜访客户',
       })
     const visitId = visitRes.body.id

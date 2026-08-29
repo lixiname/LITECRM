@@ -8,6 +8,7 @@ import { CatalogService } from '../catalog/catalog.service'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
+import { businessDate } from '../common/business-date'
 
 // 拜访保存已发生事实；来源计划与下一次拜访计划在同一事务闭环，不复制进拜访事实。
 @Injectable()
@@ -25,7 +26,7 @@ export class VisitsService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
-      const occurredAt = new Date(dto.occurredAt)
+      const occurredAt = businessDate(dto.occurredAt)
       const [visit] = await tx
         .insert(visitRecords)
         .values({
@@ -54,7 +55,7 @@ export class VisitsService {
           planKind: 'customer_visit',
           originType: 'visit',
           sourceId: visit.id,
-          plannedAt: new Date(dto.nextActionAt),
+          plannedAt: businessDate(dto.nextActionAt),
           content: dto.nextActionContent,
         },
       )

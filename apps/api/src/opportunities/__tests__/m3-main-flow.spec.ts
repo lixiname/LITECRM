@@ -93,11 +93,11 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString().slice(0, 10),
         method: 'offline_visit',
         visitType: 'existing_maintenance',
         businessSituation: '生意稳定',
-        nextActionAt: '2026-09-01T09:00:00+08:00',
+        nextActionAt: '2026-09-01',
         nextActionContent: '联系设备负责人确认运行参数',
       })
     expect(visitRes.status).toBe(201)
@@ -124,7 +124,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         initialAmountBasis: 'estimate',
         initialAmount: 500000,
         firstActionContent: '约见技术负责人',
-        firstActionAt: '2026-08-30T09:00:00+08:00',
+        firstActionAt: '2026-08-30',
       })
     expect(oppRes.status).toBe(201)
     expect(oppRes.body.stage).toBe('intent')
@@ -145,7 +145,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         conclusion: '已确认需求',
         sourcePlanId: firstAction.id,
         nextActionContent: '准备口头报价',
-        nextActionAt: '2026-08-31T09:00:00+08:00',
+        nextActionAt: '2026-08-31',
       })
     expect(followUp.status).toBe(201)
     expect(followUp.body.stage).toBe('following')
@@ -171,11 +171,11 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .send({
         version: followUp.body.version,
         kind: 'oral',
-        quotedAt: '2026-09-01T10:00:00+08:00',
+        quotedAt: '2026-09-01',
         amount: 600000,
         sourcePlanId: quotePreparationAction.id,
         nextActionContent: '确认客户对口头报价的反馈',
-        nextActionAt: '2026-09-03T09:00:00+08:00',
+        nextActionAt: '2026-09-03',
       })
     expect(oralQuote.status).toBe(201)
 
@@ -188,12 +188,12 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .send({
         version: afterOral.body.version,
         kind: 'formal',
-        quotedAt: '2026-09-02T10:00:00+08:00',
+        quotedAt: '2026-09-02',
         amount: 620000,
         quoteNo: 'Q-M3-001',
         sourcePlanId: afterOral.body.actions[0].id,
         nextActionContent: '确认客户对正式报价的反馈',
-        nextActionAt: '2026-09-05T09:00:00+08:00',
+        nextActionAt: '2026-09-05',
       })
     expect(formalQuote.status).toBe(201)
     expect(formalQuote.body.supersedesQuoteId).toBe(oralQuote.body.id)
@@ -208,7 +208,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         opportunityId: oppId,
         actorId: afterQuote.body.ownerId,
         kind: 'oral',
-        quotedAt: new Date('2026-09-02T11:00:00+08:00'),
+        quotedAt: '2026-09-02',
         amount: '610000',
       })
       expect.fail('数据库应拒绝同一商机的第二条有效报价')
@@ -222,7 +222,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: afterQuote.body.version,
-        occurredAt: '2026-09-03T10:00:00+08:00',
+        occurredAt: '2026-09-03',
         amount: 620000,
       })
     expect(won.status).toBe(201)
@@ -263,7 +263,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: won.body.opportunity.version,
-        occurredAt: '2026-09-03T10:00:00+08:00',
+        occurredAt: '2026-09-03',
         amount: 620000,
       })
     expect(duplicate.status).toBe(409)
@@ -290,7 +290,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         discoveredDate: '2026-08-01',
         expectedCloseDate: '2026-12-31',
         firstActionContent: '确认工况参数',
-        firstActionAt: '2026-12-01T09:00:00+08:00',
+        firstActionAt: '2026-12-01',
       })
     expect(active.status).toBe(201)
 
@@ -304,7 +304,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         initialAmountBasis: 'estimate',
         initialAmount: 420000,
         firstActionContent: '等待客户反馈',
-        firstActionAt: '2026-06-01T09:00:00+08:00',
+        firstActionAt: '2026-06-01',
       })
     expect(stagnant.status).toBe(201)
 
@@ -320,7 +320,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       opportunityId: stagnant.body.id,
       actorId: stagnant.body.ownerId,
       kind: 'formal',
-      quotedAt: oldDate,
+      quotedAt: oldDate.toISOString().slice(0, 10),
       amount: '430000',
       quoteNo: 'Q-WORKBENCH-001',
     })
@@ -379,10 +379,10 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         initialAmountBasis: 'formal_quote',
         initialAmount: 360000,
         discoveredDate: '2026-08-27',
-        initialQuotedAt: '2026-08-27T10:00:00+08:00',
+        initialQuotedAt: '2026-08-27',
         initialQuoteNo: 'Q-INITIAL-001',
         firstActionContent: '确认客户对报价单的反馈',
-        firstActionAt: '2026-08-29T09:00:00+08:00',
+        firstActionAt: '2026-08-29',
       })
 
     expect(result.status).toBe(201)
@@ -434,10 +434,10 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString().slice(0, 10),
         type: 'product_quality',
         description: '设备异响',
-        firstActionAt: '2026-08-29T09:00:00+08:00',
+        firstActionAt: '2026-08-29',
         firstActionContent: '联系客户确认异响工况',
       })
     expect(createRes.status).toBe(201)
@@ -477,7 +477,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         version: createRes.body.version,
         content: '已电话了解异响发生条件',
         outcome: 'followed_up',
-        nextActionAt: '2026-08-29T09:00:00+08:00',
+        nextActionAt: '2026-08-29',
         nextActionContent: '联系客户确认异响工况',
       })
     expect(directFollowUp.status).toBe(201)
@@ -522,7 +522,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         version: resolved.body.version,
         content: '再跟',
         outcome: 'followed_up',
-        nextActionAt: '2026-09-01T09:00:00+08:00',
+        nextActionAt: '2026-09-01',
         nextActionContent: '再次联系客户',
       })
     expect(again.status).toBe(409)
@@ -536,10 +536,10 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         customerId: customer.id,
-        occurredAt: new Date().toISOString(),
+        occurredAt: new Date().toISOString().slice(0, 10),
         type: 'service',
         description: '售后未处理',
-        firstActionAt: '2026-08-28T09:00:00+08:00',
+        firstActionAt: '2026-08-28',
         firstActionContent: '联系售后确认处理人',
       })
 

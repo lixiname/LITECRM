@@ -63,11 +63,18 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { upsertExpense, listExpenses, submitExpense, voidExpense, type Expense } from '@crm/domain'
+import {
+  localBusinessDate,
+  upsertExpense,
+  listExpenses,
+  submitExpense,
+  voidExpense,
+  type Expense,
+} from '@crm/domain'
 
 const router = useRouter()
 const form = reactive({
-  expenseDate: new Date().toISOString().slice(0, 10),
+  expenseDate: localBusinessDate(),
   dining: undefined as number | undefined,
   gifts: undefined as number | undefined,
   tobaccoAlcohol: undefined as number | undefined,

@@ -21,6 +21,7 @@ import type { CreateComplaintDto } from './dto/create-complaint.dto'
 import type { FollowUpComplaintDto } from './dto/follow-up-complaint.dto'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
 import type { ComplaintQueryDto } from './dto/complaint-query.dto'
+import { businessDate, todayBusinessDate } from '../common/business-date'
 
 @Injectable()
 export class ComplaintsService {
@@ -37,7 +38,7 @@ export class ComplaintsService {
     await this.accessService.assertCanContributeCustomer(customer.ownerId, actor)
 
     return db.transaction(async (tx) => {
-      const occurredAt = new Date(dto.occurredAt)
+      const occurredAt = businessDate(dto.occurredAt)
       const [complaint] = await tx
         .insert(complaints)
         .values({
@@ -55,7 +56,7 @@ export class ComplaintsService {
         planKind: 'complaint_follow_up',
         originType: 'complaint',
         sourceId: complaint.id,
-        plannedAt: new Date(dto.firstActionAt),
+        plannedAt: businessDate(dto.firstActionAt),
         content: dto.firstActionContent,
       })
       await touchCustomerActivity(tx, dto.customerId, occurredAt)
@@ -74,7 +75,7 @@ export class ComplaintsService {
     }
 
     return db.transaction(async (tx) => {
-      const occurredAt = new Date()
+      const occurredAt = todayBusinessDate()
       const [followUp] = await tx
         .insert(complaintFollowUps)
         .values({
@@ -130,7 +131,7 @@ export class ComplaintsService {
             planKind: 'complaint_follow_up',
             originType: 'complaint_follow_up',
             sourceId: followUp.id,
-            plannedAt: new Date(dto.nextActionAt!),
+            plannedAt: businessDate(dto.nextActionAt!),
             content: dto.nextActionContent!,
           },
         )
@@ -152,7 +153,7 @@ export class ComplaintsService {
       )
     }
     if (query.overdue !== undefined) {
-      const isOverdue = sql`${complaints.status} = 'registered' AND ${followUpActions.plannedAt} < now()`
+      const isOverdue = sql`${complaints.status} = 'registered' AND ${followUpActions.plannedAt} < current_date`
       conditions.push(query.overdue ? isOverdue : sql`not (${isOverdue})`)
     }
     const pendingJoin = and(
@@ -181,7 +182,7 @@ export class ComplaintsService {
         .where(where)
         .orderBy(
           asc(sql`case
-            when ${complaints.status} = 'registered' and ${followUpActions.plannedAt} < now() then 0
+            when ${complaints.status} = 'registered' and ${followUpActions.plannedAt} < current_date then 0
             when ${complaints.status} = 'registered' then 1
             else 2
           end`),
@@ -251,16 +252,11 @@ export class ComplaintsService {
             id: action.id,
             type: 'pending_action' as const,
             timestamp: action.plannedAt,
-            title:
-              new Date(action.plannedAt).getTime() < Date.now()
-                ? '待处理（已逾期）'
-                : '下一处理行动',
+            title: action.plannedAt < todayBusinessDate() ? '待处理（已逾期）' : '下一处理行动',
             content: action.content,
             actorName: null,
             status:
-              new Date(action.plannedAt).getTime() < Date.now()
-                ? ('overdue' as const)
-                : ('pending' as const),
+              action.plannedAt < todayBusinessDate() ? ('overdue' as const) : ('pending' as const),
           }))),
       ...followUps.map((item) => ({
         id: item.id,

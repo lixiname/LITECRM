@@ -40,6 +40,7 @@ import {
   listCustomers,
   CUSTOMER_STATUS_OPTIONS,
   CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
+  isBusinessDateOverdue,
   listDimensionOptions,
   type CustomerItem,
   type CustomerStatus,
@@ -116,7 +117,7 @@ function locationText(customer: CustomerItem): string {
 }
 
 function isOverdue(value?: string | null): boolean {
-  return Boolean(value && new Date(value).getTime() < Date.now())
+  return isBusinessDateOverdue(value)
 }
 
 function nextActionText(customer: CustomerItem): string {

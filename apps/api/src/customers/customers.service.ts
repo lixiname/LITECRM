@@ -48,6 +48,7 @@ import type { DedupCheckDto } from './dto/dedup-check.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
 import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
 import { GeographyService } from '../geography/geography.service'
+import { businessDate } from '../common/business-date'
 
 export interface ImportedCustomerInput {
   name: string
@@ -445,6 +446,7 @@ export class CustomersService {
           id: deals.id,
           amount: deals.amount,
           occurredAt: deals.occurredAt,
+          createdAt: deals.createdAt,
           sourceOpportunityId: deals.sourceOpportunityId,
         })
         .from(deals)
@@ -592,6 +594,7 @@ export class CustomersService {
         type: 'visit' as const,
         id: visit.id,
         occurredAt: visit.occurredAt,
+        sortAt: visit.createdAt,
         title: '拜访',
         summary: visit.businessSituation || visit.equipmentSituation || '已完成客户拜访',
         targetType: 'customer' as const,
@@ -601,7 +604,8 @@ export class CustomersService {
       ...opportunitiesWithContext.map((opp) => ({
         type: 'opportunity' as const,
         id: opp.id,
-        occurredAt: opp.createdAt,
+        occurredAt: opp.discoveredDate ?? businessDate(opp.createdAt),
+        sortAt: opp.createdAt,
         title: '新建商机',
         summary: opp.name,
         targetType: 'opportunity' as const,
@@ -616,6 +620,7 @@ export class CustomersService {
           type: 'opportunity_follow_up' as const,
           id: followUp.id,
           occurredAt: followUp.occurredAt,
+          sortAt: followUp.createdAt,
           title: '商机跟进',
           summary: followUp.conclusion,
           targetType: 'opportunity' as const,
@@ -627,6 +632,7 @@ export class CustomersService {
         type: 'quote' as const,
         id: quote.id,
         occurredAt: quote.quotedAt,
+        sortAt: quote.createdAt,
         title: quote.kind === 'formal' ? '正式报价' : '口头报价',
         summary: `¥${quote.amount}`,
         targetType: 'opportunity' as const,
@@ -637,6 +643,7 @@ export class CustomersService {
         type: 'complaint' as const,
         id: complaint.id,
         occurredAt: complaint.occurredAt,
+        sortAt: complaint.createdAt,
         title: '登记客诉',
         summary: complaint.description,
         targetType: 'complaint' as const,
@@ -647,6 +654,7 @@ export class CustomersService {
         type: 'complaint_follow_up' as const,
         id: followUp.id,
         occurredAt: followUp.occurredAt,
+        sortAt: followUp.createdAt,
         title: followUp.outcome === 'resolved' ? '客诉解决' : '客诉跟进',
         summary: followUp.content,
         targetType: 'complaint' as const,
@@ -657,6 +665,7 @@ export class CustomersService {
         type: 'deal' as const,
         id: deal.id,
         occurredAt: deal.occurredAt,
+        sortAt: deal.createdAt,
         title: '成交',
         summary: `¥${deal.amount}`,
         targetType: 'opportunity' as const,
@@ -670,6 +679,7 @@ export class CustomersService {
           type: 'ownership_event' as const,
           id: event.id,
           occurredAt: event.occurredAt,
+          sortAt: event.createdAt,
           title: ownershipEventTitle(event.eventType),
           summary: ownershipEventSummary(event.eventType, fromOwnerName, toOwnerName, event.reason),
           targetType: 'customer' as const,
@@ -683,9 +693,9 @@ export class CustomersService {
         }
       }),
     ]
-      .map((item) => ({ ...item, occurredAt: new Date(item.occurredAt).toISOString() }))
-      .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+      .sort((a, b) => new Date(b.sortAt).getTime() - new Date(a.sortAt).getTime())
       .slice(0, 30)
+      .map(({ sortAt: _, ...item }) => item)
 
     return {
       ...customer,

@@ -60,7 +60,7 @@ function openItem(item: CustomerTimelineItem) {
   )
 }
 function timeText(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function typeLabel(type: CustomerTimelineItem['type']): string {
   const labels: Record<CustomerTimelineItem['type'], string> = {

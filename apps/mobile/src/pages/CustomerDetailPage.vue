@@ -218,7 +218,7 @@ function amountBasisLabel(basis: OpportunityInitialAmountBasis): string {
 }
 
 function timeText(v: string): string {
-  return new Date(v).toLocaleString('zh-CN', { hour12: false })
+  return v.length === 10 ? v : new Date(v).toLocaleString('zh-CN', { hour12: false })
 }
 
 function dimensionLabel(dimension: string, value?: string | null): string {

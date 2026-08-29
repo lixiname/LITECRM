@@ -36,7 +36,7 @@ type PipelineOpportunity = {
   stage: string
   createdAt: Date
   expectedCloseDate: string | null
-  closedAt: Date | null
+  closedAt: string | null
   estimatedAmount: string | null
 }
 
@@ -46,7 +46,7 @@ type QuoteRow = {
   kind: string
   status: string
   amount: string
-  quotedAt: Date
+  quotedAt: string
 }
 
 type PipelineContext = {
@@ -55,9 +55,12 @@ type PipelineContext = {
   latestActiveQuote: Map<string, QuoteRow>
   firstQuote: Map<string, QuoteRow>
   firstFormalQuote: Map<string, QuoteRow>
-  latestFollowUp: Map<string, { opportunityId: string; occurredAt: Date }>
-  currentAction: Map<string, { opportunityId: string | null; plannedAt: Date }>
-  dealByOpportunity: Map<string, { sourceOpportunityId: string; amount: string; occurredAt: Date }>
+  latestFollowUp: Map<string, { opportunityId: string; occurredAt: string }>
+  currentAction: Map<string, { opportunityId: string | null; plannedAt: string }>
+  dealByOpportunity: Map<
+    string,
+    { sourceOpportunityId: string; amount: string; occurredAt: string }
+  >
 }
 
 @Injectable()
@@ -236,7 +239,7 @@ export class ReportingService {
     const range = this.range(query)
     const scope = await this.scope(query, actor)
     const timeCondition = (column: AnyColumn) =>
-      sql`(${column} at time zone 'Asia/Shanghai')::date between ${range.start} and ${range.end}`
+      sql`${column} between ${range.start} and ${range.end}`
     const ids = scope.targetIds
     const [visits, followUps, quotes, registeredComplaints, complaintUpdates, actions] =
       await Promise.all([
@@ -291,7 +294,7 @@ export class ReportingService {
                 timeCondition(followUpActions.plannedAt),
                 and(
                   eq(followUpActions.status, 'pending'),
-                  sql`${followUpActions.plannedAt} < now()`,
+                  sql`${followUpActions.plannedAt} < current_date`,
                 ),
               ),
             ),
@@ -318,7 +321,7 @@ export class ReportingService {
             customerId: string | null
             customerName: string
             content: string
-            plannedAt: Date
+            plannedAt: string
           }[],
         },
       ]),
@@ -337,13 +340,13 @@ export class ReportingService {
       item.actualRecordCount =
         item.visits + item.opportunityFollowUps + item.quotes + item.complaintRecords
     }
-    const now = Date.now()
+    const today = this.businessDate(new Date())
     for (const action of actions) {
       const item = result.get(action.ownerId)!
       const plannedInRange = this.inRange(action.plannedAt, range)
       if (action.status === 'pending' && plannedInRange) item.pendingCount += 1
       if (action.status === 'completed' && plannedInRange) item.completedPlanCount += 1
-      if (action.status === 'pending' && action.plannedAt.getTime() < now) {
+      if (action.status === 'pending' && action.plannedAt < today) {
         item.overdueCount += 1
         item.topOverdue.push({
           id: action.id,
@@ -355,7 +358,7 @@ export class ReportingService {
       }
     }
     for (const item of result.values()) {
-      item.topOverdue.sort((a, b) => a.plannedAt.getTime() - b.plannedAt.getTime())
+      item.topOverdue.sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
       item.topOverdue = item.topOverdue.slice(0, 3)
     }
     return { range, members: [...result.values()] }
@@ -430,7 +433,10 @@ export class ReportingService {
         })
         .from(followUpActions)
         .where(
-          and(inArray(followUpActions.customerId, customerIds), eq(followUpActions.status, 'pending')),
+          and(
+            inArray(followUpActions.customerId, customerIds),
+            eq(followUpActions.status, 'pending'),
+          ),
         ),
     ])
     const opportunityIds = opportunityRows.map((item) => item.id)
@@ -471,15 +477,15 @@ export class ReportingService {
     const complaintsByCustomer = this.countBy(unresolvedComplaints, (item) => item.customerId)
     const actionsByCustomer = this.groupBy(customerActions, (item) => item.customerId!)
     const opportunitiesByCustomer = this.groupBy(opportunityRows, (item) => item.customerId)
-    const now = Date.now()
-    const staleBoundary = now - 30 * DAY_MS
+    const today = this.businessDate(new Date())
+    const staleBoundary = this.businessDate(new Date(Date.now() - 30 * DAY_MS))
 
     const items = customerRows.map((customer) => {
       const reasons = new Set<string>()
       const customerOpportunities = opportunitiesByCustomer.get(customer.id) ?? []
       let openOpportunityAmount = 0
       if ((complaintsByCustomer.get(customer.id) ?? 0) > 0) reasons.add('unresolved_complaint')
-      if ((actionsByCustomer.get(customer.id) ?? []).some((item) => item.plannedAt.getTime() < now)) {
+      if ((actionsByCustomer.get(customer.id) ?? []).some((item) => item.plannedAt < today)) {
         reasons.add('overdue_action')
       }
       for (const opportunity of customerOpportunities) {
@@ -493,8 +499,8 @@ export class ReportingService {
         )
         for (const flag of risk.riskFlags) reasons.add(flag)
       }
-      const activityAt = customer.lastActivityAt ?? customer.createdAt
-      if (activityAt.getTime() < staleBoundary) reasons.add('customer_inactive_30d')
+      const activityAt = customer.lastActivityAt ?? this.businessDate(customer.createdAt)
+      if (activityAt < staleBoundary) reasons.add('customer_inactive_30d')
       return {
         id: customer.id,
         name: customer.name,
@@ -602,8 +608,7 @@ export class ReportingService {
 
   private range(query: ReportingQueryDto): Range {
     const end = query.end ?? this.businessDate(new Date())
-    const start =
-      query.start ?? `${end.slice(0, 7)}-01`
+    const start = query.start ?? `${end.slice(0, 7)}-01`
     const startTime = new Date(`${start}T00:00:00`).getTime()
     const endTime = new Date(`${end}T23:59:59`).getTime()
     if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || startTime > endTime) {
@@ -691,7 +696,10 @@ export class ReportingService {
         .where(inArray(opportunityFollowUps.opportunityId, opportunityIds))
         .orderBy(desc(opportunityFollowUps.occurredAt)),
       db
-        .select({ opportunityId: followUpActions.opportunityId, plannedAt: followUpActions.plannedAt })
+        .select({
+          opportunityId: followUpActions.opportunityId,
+          plannedAt: followUpActions.plannedAt,
+        })
         .from(followUpActions)
         .where(
           and(
@@ -716,7 +724,11 @@ export class ReportingService {
         quoteRows.filter((item) => item.status === 'active'),
         (item) => item.opportunityId,
       ),
-      firstQuote: this.earliestMap(quoteRows, (item) => item.opportunityId, (item) => item.quotedAt),
+      firstQuote: this.earliestMap(
+        quoteRows,
+        (item) => item.opportunityId,
+        (item) => item.quotedAt,
+      ),
       firstFormalQuote: this.earliestMap(
         quoteRows.filter((item) => item.kind === 'formal'),
         (item) => item.opportunityId,
@@ -739,12 +751,12 @@ export class ReportingService {
   private earliestMap<T>(
     rows: T[],
     key: (row: T) => string,
-    time: (row: T) => Date,
+    time: (row: T) => string,
   ): Map<string, T> {
     const result = new Map<string, T>()
     for (const row of rows) {
       const existing = result.get(key(row))
-      if (!existing || time(row).getTime() < time(existing).getTime()) result.set(key(row), row)
+      if (!existing || time(row) < time(existing)) result.set(key(row), row)
     }
     return result
   }
