@@ -20,7 +20,8 @@
       <section v-if="activeStep === 0" class="customer-import__section">
         <h3>上传 Excel 客户档案</h3>
         <p class="customer-import__help">
-          支持 .xlsx，单次最多 2,000 行。客户名称必须提供；ERP 编码、信用代码和联系人均可暂缺。
+          支持 .xlsx，单次最多 2,000 行。建议下载模板后从第 3 行填写；客户名称必须提供，ERP
+          编码、信用代码和联系人均可暂缺。
         </p>
         <el-upload
           drag

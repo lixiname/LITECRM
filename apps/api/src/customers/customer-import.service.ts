@@ -14,6 +14,9 @@ import { CustomersService, type ImportedCustomerInput } from './customers.servic
 import type { CustomerImportField, PreviewCustomerImportDto } from './dto/customer-import.dto'
 
 const MAX_IMPORT_ROWS = 2000
+const MAX_HEADER_SCAN_ROWS = 10
+const TEMPLATE_INSTRUCTION =
+  '填写说明：第 2 行为字段名称，请勿删除或修改；请从第 3 行开始填写客户数据。客户名称必填，其余字段可按现有资料填写。'
 
 const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   name: ['客户名称', '名称', '公司名称', 'name'],
@@ -53,10 +56,28 @@ export class CustomerImportService {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('客户导入')
     const headers = Object.values(HEADER_ALIASES).map((aliases) => aliases[0])
+    sheet.columns = headers.map((header) => ({ key: header, width: 18 }))
+    sheet.mergeCells(1, 1, 1, headers.length)
+    sheet.getCell('A1').value = TEMPLATE_INSTRUCTION
+    sheet.getRow(1).height = 34
+    sheet.getRow(1).alignment = { vertical: 'middle', wrapText: true }
+    sheet.getRow(1).font = { color: { argb: 'FF7A4F01' } }
+    sheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFFFF4D6' },
+    }
     sheet.addRow(headers)
-    sheet.getRow(1).font = { bold: true }
-    sheet.views = [{ state: 'frozen', ySplit: 1 }]
-    sheet.columns = headers.map((header) => ({ header, key: header, width: 18 }))
+    sheet.getRow(2).height = 24
+    sheet.getRow(2).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    sheet.getRow(2).alignment = { vertical: 'middle' }
+    sheet.getRow(2).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF315F87' },
+    }
+    sheet.views = [{ state: 'frozen', ySplit: 2 }]
+    sheet.autoFilter = { from: 'A2', to: `${sheet.getColumn(headers.length).letter}2` }
     const output = await workbook.xlsx.writeBuffer()
     return Buffer.from(output)
   }
@@ -67,15 +88,16 @@ export class CustomerImportService {
     await workbook.xlsx.load(file.buffer as unknown as ExcelJS.Buffer)
     const sheet = workbook.worksheets[0]
     if (!sheet) throw new BadRequestException('Excel 中没有工作表')
-    const headers = rowValues(sheet.getRow(1)).map(cellText)
+    const headerRowNumber = findHeaderRowNumber(sheet)
+    const headers = trimTrailingEmpty(rowValues(sheet.getRow(headerRowNumber)).map(cellText))
     if (headers.length === 0 || headers.some((header) => !header)) {
-      throw new BadRequestException('第一行必须是完整的列标题')
+      throw new BadRequestException('表头行必须是完整的列标题，列标题之间不能留空')
     }
     if (new Set(headers).size !== headers.length)
       throw new BadRequestException('Excel 列标题不能重复')
 
     const rows: { rowNumber: number; rawData: RawRow }[] = []
-    for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber += 1) {
+    for (let rowNumber = headerRowNumber + 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
       const values = rowValues(sheet.getRow(rowNumber))
       const rawData = Object.fromEntries(
         headers.map((header, index) => [header, cellPrimitive(values[index])]),
@@ -402,6 +424,39 @@ function suggestMapping(headers: string[]): Partial<Record<CustomerImportField, 
       return header ? [[field, header]] : []
     }),
   )
+}
+
+function findHeaderRowNumber(sheet: ExcelJS.Worksheet): number {
+  const scanLimit = Math.min(sheet.rowCount, MAX_HEADER_SCAN_ROWS)
+  const candidateRows: { rowNumber: number; values: string[] }[] = []
+  for (let rowNumber = 1; rowNumber <= scanLimit; rowNumber += 1) {
+    const values = trimTrailingEmpty(rowValues(sheet.getRow(rowNumber)).map(cellText))
+    if (values.some(Boolean)) candidateRows.push({ rowNumber, values })
+  }
+  if (candidateRows.length === 0) throw new BadRequestException('Excel 中没有列标题')
+
+  const nameAliases = new Set(HEADER_ALIASES.name.map((alias) => alias.toLowerCase()))
+  const recognized = candidateRows.find(({ values }) =>
+    values.some((value) => nameAliases.has(value.toLowerCase())),
+  )
+  if (recognized) return recognized.rowNumber
+
+  const firstDataLikeRow = candidateRows.find(({ values }) => !isInstructionRow(values))
+  if (firstDataLikeRow) return firstDataLikeRow.rowNumber
+  throw new BadRequestException('未找到 Excel 列标题，请保留模板中的字段名称行')
+}
+
+function isInstructionRow(values: string[]): boolean {
+  const nonEmpty = values.filter(Boolean)
+  if (nonEmpty.length === 0) return true
+  const text = [...new Set(nonEmpty)].join(' ')
+  return /^(填写|导入|使用|模板)?说明\s*[:：]/i.test(text)
+}
+
+function trimTrailingEmpty(values: string[]): string[] {
+  let end = values.length
+  while (end > 0 && !values[end - 1]) end -= 1
+  return values.slice(0, end)
 }
 
 function rowValues(row: ExcelJS.Row): ExcelJS.CellValue[] {
