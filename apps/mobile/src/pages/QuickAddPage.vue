@@ -1,30 +1,23 @@
 <template>
   <div class="quick-add">
-    <van-nav-bar title="快速记录当日事项" left-arrow @click-left="router.back()" />
+    <van-nav-bar
+      :title="pageTitle"
+      :left-arrow="fromWeek"
+      @click-left="fromWeek && router.back()"
+    />
 
-    <!-- 日期快捷（§3.2 补录刚需） -->
-    <div class="quick-add__date">
-      <span class="quick-add__date-label">日期</span>
-      <van-button
-        size="small"
-        :type="date === yesterday ? 'primary' : 'default'"
-        @click="setDate(yesterday)"
-        >昨天</van-button
-      >
-      <van-button
-        size="small"
-        :type="date === today ? 'primary' : 'default'"
-        @click="setDate(today)"
-        >今天</van-button
-      >
-      <van-button
-        size="small"
-        :type="date === tomorrow ? 'primary' : 'default'"
-        @click="setDate(tomorrow)"
-        >明天</van-button
-      >
-      <span class="quick-add__date-val">{{ date }}</span>
-    </div>
+    <van-cell-group
+      inset
+      :title="fromWeek && date < today ? `正在补录 ${displayDate(date)} 的业务实际` : '本次记录'"
+      class="quick-add__date"
+    >
+      <van-cell
+        title="发生日期"
+        :value="date === today ? `今天 · ${displayDate(date)}` : displayDate(date)"
+        is-link
+        @click="showDateCalendar = true"
+      />
+    </van-cell-group>
 
     <van-cell-group v-if="dayPlans.length" inset title="优先处理已有计划" class="quick-add__plans">
       <van-cell
@@ -125,6 +118,16 @@
         @cancel="showOpportunityPicker = false"
       />
     </van-popup>
+
+    <van-calendar
+      v-model:show="showDateCalendar"
+      title="选择实际发生日期"
+      :show-confirm="false"
+      :default-date="new Date(`${date}T00:00:00`)"
+      :min-date="calendarMinDate"
+      :max-date="todayDate"
+      @confirm="selectOccurredDate"
+    />
   </div>
 </template>
 
@@ -136,6 +139,7 @@ import {
   getCustomer,
   getOpportunity,
   getWeekView,
+  isBusinessDate,
   listCustomers,
   listOpportunities,
   type CustomerItem,
@@ -154,11 +158,13 @@ const fmt = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const today = fmt(new Date())
-const yesterday = fmt(new Date(Date.now() - 86400000))
-const tomorrow = fmt(new Date(Date.now() + 86400000))
+const todayDate = new Date(`${today}T00:00:00`)
+const calendarMinDate = new Date(todayDate.getFullYear() - 2, 0, 1)
+const fromWeek = route.query.source === 'week'
 
-// 日期：优先路由 query（周览传入），默认今天
-const date = ref<string>((route.query.date as string) || today)
+// 实际发生日期：直接进入默认今天；周视图“记录当日实际”明确携带所选日期。
+const requestedDate = isBusinessDate(route.query.date) ? route.query.date : today
+const date = ref<string>(requestedDate > today ? today : requestedDate)
 const type = ref<QuickRecordType | null>(null)
 const keyword = ref('')
 const customers = ref<CustomerItem[]>([])
@@ -168,6 +174,7 @@ const opportunities = ref<Opportunity[]>([])
 const opportunityId = ref('')
 const saving = ref(false)
 const showOpportunityPicker = ref(false)
+const showDateCalendar = ref(false)
 const dayPlans = ref<SalesPlan[]>([])
 const matchingPlan = ref<SalesPlan>()
 const recordOutsidePlan = ref(false)
@@ -181,11 +188,14 @@ const matchingPlanCta = computed(() => {
   if (!matchingPlan.value) return '按此计划填报'
   return matchingPlan.value.plannedAt.slice(0, 10) > date.value ? '提前执行此计划' : '按此计划填报'
 })
+const pageTitle = computed(() => (fromWeek && date.value < today ? '补录当日实际' : '记录'))
 
 onMounted(loadPlans)
 
-function setDate(d: string) {
-  date.value = d
+function selectOccurredDate(value: Date | Date[]) {
+  const selected = Array.isArray(value) ? value[0] : value
+  date.value = fmt(selected)
+  showDateCalendar.value = false
   void loadPlans()
 }
 function pickType(t: QuickRecordType) {
@@ -234,7 +244,8 @@ async function loadPlans() {
   try {
     const view = await getWeekView(date.value, date.value)
     const unique = new Map<string, SalesPlan>()
-    for (const item of [...view.overdue, ...view.plans]) {
+    const candidates = date.value === today ? [...view.overdue, ...view.plans] : view.plans
+    for (const item of candidates) {
       if (item.status === 'pending') unique.set(item.id, item)
     }
     dayPlans.value = [...unique.values()].sort(
@@ -295,6 +306,11 @@ function planLabel(planItem: SalesPlan): string {
 function formatTime(value: string): string {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
+
+function displayDate(value: string): string {
+  const parsed = new Date(`${value}T00:00:00`)
+  return `${parsed.getMonth() + 1}月${parsed.getDate()}日`
+}
 </script>
 
 <style scoped>
@@ -305,6 +321,7 @@ function formatTime(value: string): string {
 }
 .quick-add__form,
 .quick-add__submit,
+.quick-add__date,
 .quick-add__plans,
 .quick-add__match {
   margin-top: var(--crm-spacing-md);

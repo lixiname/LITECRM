@@ -40,3 +40,34 @@ export function getWeekView(start: string, end: string, ownerId?: string): Promi
   if (ownerId) params.set('ownerId', ownerId)
   return apiGet<ActionWeekView>(`/week-view?${params.toString()}`)
 }
+
+/** 本地业务日工具：周视图统一以周一开始，不使用 UTC 截断日期。 */
+export function toLocalBusinessDate(value: string | Date): string {
+  const date = typeof value === 'string' ? new Date(`${value.slice(0, 10)}T00:00:00`) : value
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+export function isBusinessDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00`)
+  return !Number.isNaN(date.getTime()) && toLocalBusinessDate(date) === value
+}
+
+export function shiftBusinessDate(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00`)
+  date.setDate(date.getDate() + days)
+  return toLocalBusinessDate(date)
+}
+
+export function startOfBusinessWeek(value: string | Date): string {
+  const date =
+    typeof value === 'string' ? new Date(`${value.slice(0, 10)}T00:00:00`) : new Date(value)
+  const weekday = date.getDay() || 7
+  date.setDate(date.getDate() - weekday + 1)
+  return toLocalBusinessDate(date)
+}
+
+export function businessWeekRange(value: string | Date): { monday: string; sunday: string } {
+  const monday = startOfBusinessWeek(value)
+  return { monday, sunday: shiftBusinessDate(monday, 6) }
+}

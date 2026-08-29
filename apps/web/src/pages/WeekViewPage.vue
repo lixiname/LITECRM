@@ -2,11 +2,23 @@
   <div class="week-view">
     <AppPageHeader title="销售计划周视图" :description="weekLabel">
       <template #actions>
-        <el-button-group>
-          <el-button @click="shiftWeek(-1)">上一周</el-button>
-          <el-button @click="goToday">本周</el-button>
-          <el-button @click="shiftWeek(1)">下一周</el-button>
-        </el-button-group>
+        <div class="week-view__navigator">
+          <el-button-group>
+            <el-button aria-label="上一周" @click="shiftWeek(-1)">‹</el-button>
+            <el-date-picker
+              v-model="weekPickerDate"
+              type="week"
+              format="YYYY年 第ww周"
+              value-format="YYYY-MM-DD"
+              :clearable="false"
+              :editable="false"
+              aria-label="选择所在周"
+              class="week-view__week-picker"
+            />
+            <el-button aria-label="下一周" @click="shiftWeek(1)">›</el-button>
+          </el-button-group>
+          <el-button v-if="!isCurrentWeek" @click="goToday">回到本周</el-button>
+        </div>
       </template>
     </AppPageHeader>
 
@@ -229,7 +241,12 @@
       />
       <el-form label-width="80px">
         <el-form-item label="新日期" required>
-          <el-date-picker v-model="actionDialog.plannedAt" type="date" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="actionDialog.plannedAt"
+            type="date"
+            value-format="YYYY-MM-DD"
+            :disabled-date="disablePastDate"
+          />
         </el-form-item>
         <el-form-item label="改期原因" required>
           <el-input
@@ -343,6 +360,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
@@ -354,13 +372,17 @@ import ComplaintCommandDialog from '../components/complaints/ComplaintCommandDia
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
 import {
   createSalesPlan,
+  businessWeekRange,
   getComplaint,
   getOpportunity,
   getSalesPlanReschedules,
   getWeekView,
+  isBusinessDate,
   listCustomers,
   listOpportunities,
   rescheduleSalesPlan,
+  shiftBusinessDate,
+  startOfBusinessWeek,
   useQuery,
   type CustomerItem,
   type ComplaintDetail,
@@ -379,6 +401,8 @@ type ActualRecordVM = WeekBusinessRecord | WeekComplaintRecord
 type ActualRecordType = ActualRecordVM['type']
 
 const opportunityCreateDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
+const route = useRoute()
+const router = useRouter()
 const customerBusinessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
 const opportunityCommands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
 const complaintCommands = ref<InstanceType<typeof ComplaintCommandDialog>>()
@@ -392,19 +416,23 @@ const selectedActualPlan = ref<SalesPlan>()
 
 const today = new Date()
 const todayStr = fmt(today)
-const weekOffset = ref(0)
-
-const range = computed(() => {
-  const dow = (today.getDay() + 6) % 7
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - dow + weekOffset.value * 7)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return { monday: fmt(monday), sunday: fmt(sunday) }
-})
+const currentWeekStart = startOfBusinessWeek(today)
+const routeWeek = isBusinessDate(route.query.week) ? route.query.week : currentWeekStart
+const weekStart = ref(startOfBusinessWeek(routeWeek))
+const range = computed(() => businessWeekRange(weekStart.value))
 const weekLabel = computed(() => {
   const start = new Date(`${range.value.monday}T00:00:00`)
-  return `${start.getMonth() + 1}月${start.getDate()}日开始的一周`
+  const end = new Date(`${range.value.sunday}T00:00:00`)
+  const startText = `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日`
+  const endText = `${end.getFullYear() === start.getFullYear() ? '' : `${end.getFullYear()}年`}${end.getMonth() + 1}月${end.getDate()}日`
+  return `${startText}—${endText}`
+})
+const isCurrentWeek = computed(() => weekStart.value === currentWeekStart)
+const weekPickerDate = computed({
+  get: () => weekStart.value,
+  set: (value: string | null) => {
+    if (value) weekStart.value = startOfBusinessWeek(value)
+  },
 })
 
 const {
@@ -413,7 +441,20 @@ const {
   error,
   reload,
 } = useQuery('web-week-view', () => getWeekView(range.value.monday, range.value.sunday))
-watch(weekOffset, () => void reload())
+watch(weekStart, (value) => {
+  void reload()
+  if (route.query.week !== value) {
+    void router.push({ query: { ...route.query, week: value } })
+  }
+})
+watch(
+  () => route.query.week,
+  (value) => {
+    if (!isBusinessDate(value)) return
+    const normalized = startOfBusinessWeek(value)
+    if (normalized !== weekStart.value) weekStart.value = normalized
+  },
+)
 
 interface DayVM {
   date: string
@@ -467,14 +508,18 @@ const days = computed<DayVM[]>(() => {
 })
 
 function shiftWeek(offset: number) {
-  weekOffset.value += offset
+  weekStart.value = shiftBusinessDate(weekStart.value, offset * 7)
 }
 function goToday() {
-  weekOffset.value = 0
+  weekStart.value = currentWeekStart
 }
 
 function isOverdue(action: SalesPlan): boolean {
   return action.status === 'pending' && action.plannedAt.slice(0, 10) < todayStr
+}
+
+function disablePastDate(value: Date): boolean {
+  return fmt(value) < todayStr
 }
 
 const selectedAction = ref<SalesPlan>()
@@ -775,6 +820,14 @@ function formatDateTime(value: string): string {
 </script>
 
 <style scoped>
+.week-view__navigator {
+  display: flex;
+  gap: var(--crm-spacing-sm);
+  align-items: center;
+}
+.week-view__week-picker {
+  width: 170px;
+}
 .week-view__overdue {
   margin-bottom: var(--crm-spacing-md);
   padding: 0 var(--crm-spacing-md);

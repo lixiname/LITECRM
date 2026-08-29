@@ -1,9 +1,11 @@
 <template>
   <div class="week-view">
-    <van-nav-bar :title="weekLabel" />
+    <van-nav-bar title="计划" />
     <div class="week-view__nav">
       <van-icon name="arrow-left" size="18" @click="shiftWeek(-1)" />
-      <span class="week-view__thisweek" @click="goToday">本周</span>
+      <button type="button" class="week-view__range" @click="showWeekCalendar = true">
+        {{ weekNavigationLabel }} <van-icon name="arrow-down" />
+      </button>
       <van-icon name="arrow" size="18" @click="shiftWeek(1)" />
     </div>
 
@@ -157,8 +159,12 @@
         </details>
 
         <div v-if="!selectedDay.hasContent" class="day-card__empty">当天还没有安排或记录</div>
-        <div v-if="canWrite" class="day-card__add" @click="goQuickAdd(selectedDay.date)">
-          ＋ 记录当日实际
+        <div
+          v-if="canWrite && selectedDay.date <= todayText"
+          class="day-card__add"
+          @click="goQuickAdd(selectedDay.date)"
+        >
+          ＋ {{ selectedDay.date === todayText ? '记录今日实际' : '补录该日实际' }}
         </div>
       </article>
 
@@ -185,6 +191,22 @@
       </section>
     </template>
 
+    <van-calendar
+      v-model:show="showWeekCalendar"
+      title="选择所在周"
+      :show-confirm="false"
+      :default-date="calendarDefaultDate"
+      :min-date="calendarMinDate"
+      :max-date="calendarMaxDate"
+      @confirm="selectCalendarDate"
+    >
+      <template #footer>
+        <div class="week-calendar__footer">
+          <van-button block plain type="primary" @click="selectToday">今天</van-button>
+        </div>
+      </template>
+    </van-calendar>
+
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
         <h3>计划改期</h3>
@@ -194,7 +216,14 @@
           :scrollable="false"
           :text="`原计划：${formatDateTime(selectedAction.plannedAt)} · ${selectedAction.content}`"
         />
-        <van-field v-model="commandSheet.plannedAt" label="新日期" type="date" required />
+        <van-field
+          v-model="commandSheet.plannedAt"
+          label="新日期"
+          readonly
+          is-link
+          required
+          @click="showRescheduleCalendar = true"
+        />
         <van-field
           v-model="commandSheet.reason"
           label="改期原因"
@@ -230,17 +259,31 @@
         </div>
       </div>
     </van-popup>
+
+    <van-calendar
+      v-model:show="showRescheduleCalendar"
+      title="选择新的计划日期"
+      :show-confirm="false"
+      :default-date="rescheduleDefaultDate"
+      :min-date="today"
+      :max-date="rescheduleMaxDate"
+      @confirm="selectRescheduleDate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   getSalesPlanReschedules,
   getWeekView,
+  isBusinessDate,
+  businessWeekRange,
   rescheduleSalesPlan,
+  shiftBusinessDate,
+  startOfBusinessWeek,
   useAuthStore,
   useQuery,
   type SalesPlan,
@@ -257,26 +300,41 @@ import {
 } from '../libs/sales-workbench'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const canWrite = computed(() => auth.hasAbility('customer.write'))
 const today = new Date()
 const todayText = localDate(today)
-const weekOffset = ref(0)
+const currentWeekStart = startOfBusinessWeek(todayText)
+const routeWeek = isBusinessDate(route.query.week) ? route.query.week : currentWeekStart
+const weekStart = ref(startOfBusinessWeek(routeWeek))
 const viewMode = ref<'day' | 'week'>('day')
-const selectedDate = ref(todayText)
-const range = computed(() => {
-  const monday = new Date(today)
-  const day = monday.getDay() || 7
-  monday.setDate(today.getDate() - day + 1 + weekOffset.value * 7)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  return { monday: localDate(monday), sunday: localDate(sunday) }
-})
-const weekLabel = computed(() => {
+const selectedDate = ref(weekStart.value === currentWeekStart ? todayText : weekStart.value)
+const range = computed(() => businessWeekRange(weekStart.value))
+const weekRangeLabel = computed(() => {
   const start = new Date(`${range.value.monday}T00:00:00`)
   const end = new Date(`${range.value.sunday}T00:00:00`)
   return `${start.getMonth() + 1}/${start.getDate()} — ${end.getMonth() + 1}/${end.getDate()}`
 })
+const weekNavigationLabel = computed(() => {
+  const previous = shiftBusinessDate(currentWeekStart, -7)
+  const next = shiftBusinessDate(currentWeekStart, 7)
+  const relation =
+    weekStart.value === currentWeekStart
+      ? '本周'
+      : weekStart.value === previous
+        ? '上周'
+        : weekStart.value === next
+          ? '下周'
+          : ''
+  return relation ? `${relation} · ${weekRangeLabel.value}` : weekRangeLabel.value
+})
+const showWeekCalendar = ref(false)
+const calendarDefaultDate = computed(() => new Date(`${selectedDate.value}T00:00:00`))
+const calendarMinDate = new Date(today.getFullYear() - 2, 0, 1)
+const calendarMaxDate = new Date(today.getFullYear() + 2, 11, 31)
+const showRescheduleCalendar = ref(false)
+const rescheduleMaxDate = new Date(today.getFullYear() + 2, 11, 31)
 const {
   data: view,
   loading,
@@ -286,7 +344,33 @@ const {
 const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, view.value))
 const selectedDay = computed(() => days.value.find((day) => day.date === selectedDate.value))
 
-watch(weekOffset, () => void reload())
+watch(weekStart, (value) => {
+  void reload()
+  if (route.query.week !== value) {
+    void router.push({ query: { ...route.query, week: value } })
+  }
+})
+watch(
+  () => route.query.week,
+  (value) => {
+    if (!isBusinessDate(value)) return
+    const normalized = startOfBusinessWeek(value)
+    if (normalized === weekStart.value) return
+    const selectedIndex = Math.max(
+      0,
+      Math.min(
+        6,
+        Math.round(
+          (new Date(`${selectedDate.value}T00:00:00`).getTime() -
+            new Date(`${weekStart.value}T00:00:00`).getTime()) /
+            86_400_000,
+        ),
+      ),
+    )
+    weekStart.value = normalized
+    selectedDate.value = shiftBusinessDate(normalized, selectedIndex)
+  },
+)
 
 const selectedAction = ref<SalesPlan>()
 const commandSheet = reactive({
@@ -296,20 +380,47 @@ const commandSheet = reactive({
   history: [] as SalesPlanReschedule[],
   saving: false,
 })
+const rescheduleDefaultDate = computed(() =>
+  commandSheet.plannedAt ? new Date(`${commandSheet.plannedAt.slice(0, 10)}T00:00:00`) : today,
+)
 
 function shiftWeek(value: number, selectEdge?: 'start' | 'end') {
-  weekOffset.value += value
+  const selectedIndex = Math.max(
+    0,
+    Math.min(
+      6,
+      Math.round(
+        (new Date(`${selectedDate.value}T00:00:00`).getTime() -
+          new Date(`${weekStart.value}T00:00:00`).getTime()) /
+          86_400_000,
+      ),
+    ),
+  )
+  weekStart.value = shiftBusinessDate(weekStart.value, value * 7)
   selectedDate.value =
     selectEdge === 'end'
       ? range.value.sunday
-      : weekOffset.value === 0
-        ? todayText
-        : range.value.monday
+      : selectEdge === 'start'
+        ? range.value.monday
+        : shiftBusinessDate(range.value.monday, selectedIndex)
 }
-function goToday() {
-  weekOffset.value = 0
+function selectToday() {
+  weekStart.value = currentWeekStart
   selectedDate.value = todayText
   viewMode.value = 'day'
+  showWeekCalendar.value = false
+}
+function selectCalendarDate(value: Date | Date[]) {
+  const selected = Array.isArray(value) ? value[0] : value
+  selectedDate.value = localDate(selected)
+  weekStart.value = startOfBusinessWeek(selectedDate.value)
+  viewMode.value = 'day'
+  showWeekCalendar.value = false
+}
+function selectRescheduleDate(value: Date | Date[]) {
+  const selected = Array.isArray(value) ? value[0] : value
+  commandSheet.plannedAt = localDate(selected)
+  showRescheduleCalendar.value = false
 }
 function selectDay(date: string) {
   selectedDate.value = date
@@ -369,7 +480,7 @@ function formatDateTime(value: string) {
   return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function goQuickAdd(date: string) {
-  void router.push({ path: '/quick-add', query: { date } })
+  void router.push({ path: '/quick-add', query: { source: 'week', date } })
 }
 function openActualRecord(record: MobileActualRecord) {
   const plan = record.sourcePlanId
@@ -426,10 +537,22 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   border-bottom: 1px solid var(--crm-color-border);
   background: var(--crm-color-bg-card);
 }
-.week-view__thisweek,
 .day-card__add {
   color: var(--crm-color-primary);
   font-weight: 600;
+}
+.week-view__range {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 10px;
+  border: 0;
+  color: var(--crm-color-text-primary);
+  background: transparent;
+  font-weight: 600;
+}
+.week-calendar__footer {
+  padding: var(--crm-spacing-sm) var(--crm-spacing-md) var(--crm-spacing-md);
 }
 .week-view__loading {
   display: block;
