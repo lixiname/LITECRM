@@ -16,7 +16,7 @@ import type { CustomerImportField, PreviewCustomerImportDto } from './dto/custom
 const MAX_IMPORT_ROWS = 2000
 const MAX_HEADER_SCAN_ROWS = 10
 const TEMPLATE_INSTRUCTION =
-  '填写说明：第 2 行为字段名称，请勿删除或修改；请从第 3 行开始填写客户数据。客户名称必填，其余字段可按现有资料填写。'
+  '填写说明：第 2 行为字段名称，请勿删除或修改；请从第 3 行开始填写客户数据。客户名称始终必填；按 Excel 逐行指定客户属性时须填“是否存量客户”；导入在案客户且未设置默认负责人时须填“负责人账号”；其余字段可按现有资料填写。'
 
 const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   name: ['客户名称', '名称', '公司名称', 'name'],
@@ -38,6 +38,26 @@ const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   notes: ['备注', 'notes'],
 }
 
+const TEMPLATE_FIELD_ORDER: CustomerImportField[] = [
+  'name',
+  'preCrmDealConfirmed',
+  'ownerUsername',
+  'customerCode',
+  'unifiedSocialCreditCode',
+  'province',
+  'city',
+  'address',
+  'industry',
+  'subIndustry',
+  'customerType',
+  'source',
+  'grade',
+  'contactName',
+  'contactPhone',
+  'preCrmSalesAmount',
+  'notes',
+]
+
 type RawRow = Record<string, string | number | boolean | null>
 
 type ExistingCustomerImportMatch = {
@@ -55,7 +75,7 @@ export class CustomerImportService {
   async createTemplate(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('客户导入')
-    const headers = Object.values(HEADER_ALIASES).map((aliases) => aliases[0])
+    const headers = TEMPLATE_FIELD_ORDER.map((field) => HEADER_ALIASES[field][0])
     sheet.columns = headers.map((header) => ({ key: header, width: 18 }))
     sheet.mergeCells(1, 1, 1, headers.length)
     sheet.getCell('A1').value = TEMPLATE_INSTRUCTION

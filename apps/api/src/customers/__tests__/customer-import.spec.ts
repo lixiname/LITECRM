@@ -117,7 +117,11 @@ describe('客户 Excel 冷启动导入', () => {
     await workbook.xlsx.load(response.body as ExcelJS.Buffer)
     const sheet = workbook.getWorksheet('客户导入')
     expect(sheet?.getCell('A1').text).toContain('第 2 行为字段名称')
-    expect(sheet?.getCell('A2').text).toBe('客户名称')
+    expect(['A2', 'B2', 'C2'].map((cell) => sheet?.getCell(cell).text)).toEqual([
+      '客户名称',
+      '是否存量客户',
+      '负责人账号',
+    ])
     expect(sheet?.views[0]).toMatchObject({ state: 'frozen', ySplit: 2 })
   })
 
