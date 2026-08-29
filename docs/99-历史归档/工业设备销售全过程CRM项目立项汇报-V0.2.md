@@ -48,7 +48,7 @@
 
 前期已对 Salesforce、Microsoft Dynamics 365、SAP Sales Cloud、Oracle Sales、HubSpot、Zoho CRM、Pipedrive 和 Freshsales 等代表性 B2B CRM 进行了初步调研。调研不是为了照搬大型软件功能，而是识别成熟 CRM 长期稳定的产品骨架和移动端发展方向，避免内部设计偏离该类系统的基本规律。
 
-完整材料见《[B2B CRM 全球代表产品、核心功能与移动端体验趋势调研](./B2B-CRM全球代表产品与移动端体验调研.md)》。
+完整材料见《[B2B CRM 全球代表产品、核心功能与移动端体验趋势调研](../02-参考资料/B2B-CRM全球代表产品与移动端体验调研.md)》。
 
 ### 2. 成熟 B2B CRM 的共同骨架
 

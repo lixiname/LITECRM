@@ -1,6 +1,6 @@
 # Lite CRM Monorepo
 
-面向小团队、线下拜访型 B2B 销售的轻量 CRM。技术规格见 [`docs/重构架构决策与实施蓝图.md`](docs/重构架构决策与实施蓝图.md)。
+面向小团队、线下拜访型 B2B 销售的轻量 CRM。文档状态、阅读顺序和技术规格入口见 [`docs/README.md`](docs/README.md)。
 
 ## 环境准备清单（换机器可跑）
 
@@ -21,7 +21,7 @@ pnpm install
 
 # 2. 起本地数据库（PG16+，二选一，均需 pg_trgm 扩展）
 #    A. Docker（推荐）：docker compose up -d db
-#    B. 本机已装 PostgreSQL：三条命令分开跑（详见 docs/M0-工程骨架说明.md 步 9）
+#    B. 本机已装 PostgreSQL：三条命令分开跑（详见 docs/02-参考资料/M0-工程骨架说明.md 步 9）
 #       psql -U postgres -c "CREATE USER crm WITH PASSWORD 'crm_dev_password';"
 #       psql -U postgres -c "CREATE DATABASE litecrm OWNER crm;"
 #       psql -U postgres -d litecrm -c "CREATE EXTENSION IF NOT EXISTS pg_trgm;"

@@ -1,7 +1,7 @@
 {
   "name": "LITECRM",
   "version": "1.0.0",
-  "description": "Lite CRM monorepo（详见 docs/重构架构决策与实施蓝图.md）",
+  "description": "Lite CRM monorepo（文档入口见 docs/README.md）",
   "private": true,
   "main": "index.js",
   "scripts": {
