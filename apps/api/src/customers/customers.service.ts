@@ -23,6 +23,7 @@ import {
   complaints,
   contacts,
   customerGradeChanges,
+  customerTransfers,
   customers,
   deals,
   followUpActions,
@@ -48,6 +49,28 @@ import { CustomerAssigneeService } from './customer-assignee.service'
 import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
 import { GeographyService } from '../geography/geography.service'
 
+export interface ImportedCustomerInput {
+  name: string
+  customerCode?: string | null
+  unifiedSocialCreditCode?: string | null
+  province?: string | null
+  city?: string | null
+  address?: string | null
+  industry?: string | null
+  subIndustry?: string | null
+  customerType?: string | null
+  source?: string | null
+  grade?: 'S' | 'A' | 'B' | 'C'
+  ownerId?: string | null
+  status: 'active' | 'public'
+  contactName?: string | null
+  contactPhone?: string | null
+  preCrmDealConfirmed: boolean
+  preCrmSalesAmount?: string | null
+  notes?: string | null
+  importBatchId: string
+}
+
 // 客户域（§8.2/8.3）：建档、检索、详情、维护、联系人
 // 归属治理（transfer/release/claim）与查重管道在后续阶段接入
 @Injectable()
@@ -71,6 +94,56 @@ export class CustomersService {
       if (isUniqueViolation(e))
         throw new ConflictException('客户已存在（名称/编码/信用代码查重命中）')
       throw e
+    }
+  }
+
+  // 冷启动导入：允许联系人缺失；不伪造商机或成交，只写客户事实与可选期初金额。
+  async createImportedCustomer(input: ImportedCustomerInput, actor: AuthUser) {
+    try {
+      return await db.transaction(async (tx) => {
+        if (input.status === 'active') {
+          if (!input.ownerId) throw new BadRequestException('在案客户必须指定负责人')
+          await this.assigneeService.assertAssignable(tx, input.ownerId)
+          await this.gradeQuotaService.assertSlotAvailable(tx, input.ownerId, input.grade ?? 'C')
+        }
+        const [customer] = await tx
+          .insert(customers)
+          .values({
+            name: input.name,
+            normalizedKey: normalizeBusinessName(input.name),
+            customerCode: normalizeOptionalIdentifier(input.customerCode),
+            unifiedSocialCreditCode: normalizeOptionalIdentifier(input.unifiedSocialCreditCode),
+            province: input.province ?? null,
+            city: input.city ?? null,
+            address: input.address ?? null,
+            industry: input.industry ?? null,
+            subIndustry: input.subIndustry ?? null,
+            customerType: input.customerType ?? null,
+            source: input.source ?? null,
+            grade: input.grade ?? 'C',
+            status: input.status,
+            ownerId: input.status === 'active' ? input.ownerId : null,
+            createdById: actor.id,
+            preCrmDealConfirmed: input.preCrmDealConfirmed,
+            preCrmSalesAmount: input.preCrmSalesAmount ?? null,
+            importBatchId: input.importBatchId,
+            notes: input.notes ?? null,
+            entrySource: 'excel_import',
+          })
+          .returning()
+        if (input.contactName || input.contactPhone) {
+          await tx.insert(contacts).values({
+            customerId: customer.id,
+            name: input.contactName ?? null,
+            phone: input.contactPhone ?? null,
+            isKeyContact: true,
+          })
+        }
+        return customer
+      })
+    } catch (error) {
+      if (isUniqueViolation(error)) throw new ConflictException('客户编码或信用代码已存在')
+      throw error
     }
   }
 
@@ -216,6 +289,28 @@ export class CustomersService {
     if (query.city) conditions.push(eq(customers.city, query.city))
     if (query.industry) conditions.push(eq(customers.industry, query.industry))
     if (query.customerType) conditions.push(eq(customers.customerType, query.customerType))
+    if (query.relationshipStage) {
+      const yearStart = sql`date_trunc('year', now() at time zone 'Asia/Shanghai')::date`
+      if (query.relationshipStage === 'prospect') {
+        conditions.push(
+          and(eq(customers.preCrmDealConfirmed, false), isNull(customers.firstDealAt))!,
+        )
+      } else if (query.relationshipStage === 'new_customer') {
+        conditions.push(
+          and(
+            eq(customers.preCrmDealConfirmed, false),
+            sql`(${customers.firstDealAt} at time zone 'Asia/Shanghai')::date >= ${yearStart}`,
+          )!,
+        )
+      } else {
+        conditions.push(
+          or(
+            eq(customers.preCrmDealConfirmed, true),
+            sql`(${customers.firstDealAt} at time zone 'Asia/Shanghai')::date < ${yearStart}`,
+          )!,
+        )
+      }
+    }
 
     // 关键字（§7.3 检索排序）：完全 > 前缀 > 包含 > 别名 > trigram > 城市
     const kw = query.keyword?.trim()
@@ -254,6 +349,7 @@ export class CustomersService {
           ...getTableColumns(customers),
           ownerName: users.displayName,
           salesRegionName: salesRegions.name,
+          relationshipStage: customerRelationshipStageSql(),
           openOpportunityCount: sql<number>`(
             select count(*)::int from ${opportunities}
             where ${opportunities.customerId} = ${customers.id}
@@ -314,6 +410,7 @@ export class CustomersService {
       latestDeals,
       currentVisitPlanRows,
       customerSalesRegionRows,
+      ownershipRows,
     ] = await Promise.all([
       db
         .select({
@@ -373,7 +470,31 @@ export class CustomersService {
             .where(eq(salesRegions.id, customer.salesRegionId))
             .limit(1)
         : Promise.resolve([] as { name: string }[]),
+      db
+        .select()
+        .from(customerTransfers)
+        .where(eq(customerTransfers.customerId, customer.id))
+        .orderBy(desc(customerTransfers.occurredAt))
+        .limit(20),
     ])
+
+    const ownershipUserIds = [
+      ...new Set(
+        ownershipRows.flatMap((item) =>
+          [item.fromOwnerId, item.toOwnerId, item.operatedById].filter((value): value is string =>
+            Boolean(value),
+          ),
+        ),
+      ),
+    ]
+    const ownershipUsers = ownershipUserIds.length
+      ? await db
+          .select({ id: users.id, displayName: users.displayName })
+          .from(users)
+          .where(inArray(users.id, ownershipUserIds))
+      : []
+    const ownershipUserName = (userId: string | null) =>
+      userId ? (ownershipUsers.find((user) => user.id === userId)?.displayName ?? '未知人员') : null
 
     const opportunityIds = opportunitiesRows.map((item) => item.id)
     const complaintIds = complaintsRows.map((item) => item.id)
@@ -542,6 +663,25 @@ export class CustomersService {
         targetId: deal.sourceOpportunityId,
         metadata: { amount: deal.amount },
       })),
+      ...ownershipRows.map((event) => {
+        const fromOwnerName = ownershipUserName(event.fromOwnerId)
+        const toOwnerName = ownershipUserName(event.toOwnerId)
+        return {
+          type: 'ownership_event' as const,
+          id: event.id,
+          occurredAt: event.occurredAt,
+          title: ownershipEventTitle(event.eventType),
+          summary: ownershipEventSummary(event.eventType, fromOwnerName, toOwnerName, event.reason),
+          targetType: 'customer' as const,
+          targetId: customer.id,
+          metadata: {
+            eventType: event.eventType,
+            operatedByName: ownershipUserName(event.operatedById),
+            fromStatus: event.fromStatus,
+            toStatus: event.toStatus,
+          },
+        }
+      }),
     ]
       .map((item) => ({ ...item, occurredAt: new Date(item.occurredAt).toISOString() }))
       .sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
@@ -549,13 +689,19 @@ export class CustomersService {
 
     return {
       ...customer,
+      relationshipStage: deriveCustomerRelationshipStage(customer),
       salesRegionName: customerSalesRegionRows[0]?.name ?? null,
       contacts: contactList,
       opportunities: opportunitiesWithContext,
       complaints: complaintWithContext,
       dealSummary: {
         count: dealsSummary[0]?.totalCount ?? 0,
-        totalAmount: dealsSummary[0]?.totalAmount ?? '0',
+        crmAmount: dealsSummary[0]?.totalAmount ?? '0',
+        preCrmAmount: customer.preCrmSalesAmount,
+        referenceTotalAmount: addAmounts(
+          customer.preCrmSalesAmount,
+          dealsSummary[0]?.totalAmount ?? '0',
+        ),
       },
       currentVisitPlan: currentVisitPlanRows[0] ?? null,
       timeline,
@@ -843,6 +989,60 @@ function assertContactHasPhone(contactList: CreateContactDto[]): void {
 function normalizeOptionalIdentifier(value: string | null | undefined): string | null {
   const normalized = value?.trim()
   return normalized ? normalized : null
+}
+
+function customerRelationshipStageSql() {
+  return sql<'prospect' | 'new_customer' | 'existing_customer'>`case
+    when ${customers.preCrmDealConfirmed} then 'existing_customer'
+    when ${customers.firstDealAt} is null then 'prospect'
+    when (${customers.firstDealAt} at time zone 'Asia/Shanghai')::date >=
+      date_trunc('year', now() at time zone 'Asia/Shanghai')::date then 'new_customer'
+    else 'existing_customer'
+  end`
+}
+
+function deriveCustomerRelationshipStage(customer: typeof customers.$inferSelect) {
+  if (customer.preCrmDealConfirmed) return 'existing_customer' as const
+  if (!customer.firstDealAt) return 'prospect' as const
+  const firstDealYear = new Date(customer.firstDealAt).getFullYear()
+  return firstDealYear === new Date().getFullYear()
+    ? ('new_customer' as const)
+    : ('existing_customer' as const)
+}
+
+function addAmounts(left: string | null, right: string): string {
+  return (Number(left ?? 0) + Number(right)).toFixed(2)
+}
+
+function ownershipEventTitle(eventType: string): string {
+  const labels: Record<string, string> = {
+    transferred: '负责人移交',
+    released_to_pool: '释放至公海',
+    claimed_from_pool: '从公海认领',
+    marked_invalid: '标记无效',
+    restored_from_invalid: '恢复经营',
+    claim_approved: '接管审批通过',
+  }
+  return labels[eventType] ?? '客户归属变更'
+}
+
+function ownershipEventSummary(
+  eventType: string,
+  fromOwnerName: string | null,
+  toOwnerName: string | null,
+  reason: string,
+): string {
+  const change =
+    eventType === 'released_to_pool'
+      ? `${fromOwnerName ?? '原负责人'}释放客户`
+      : eventType === 'marked_invalid'
+        ? `${fromOwnerName ?? '原负责人'}停止经营客户`
+        : eventType === 'claimed_from_pool'
+          ? `${toOwnerName ?? '新负责人'}认领客户`
+          : eventType === 'restored_from_invalid'
+            ? `恢复并分配给${toOwnerName ?? '新负责人'}`
+            : `${fromOwnerName ?? '未分配'} → ${toOwnerName ?? '未分配'}`
+  return `${change}；${reason}`
 }
 
 // PostgreSQL 唯一约束冲突（SQLSTATE 23505）：外部权威标识/首要联系人等硬约束。

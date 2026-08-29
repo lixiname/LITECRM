@@ -19,6 +19,19 @@
         >
           <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
         </el-select>
+        <el-select
+          v-model="filters.relationshipStage"
+          placeholder="经营阶段"
+          clearable
+          style="width: 130px"
+        >
+          <el-option
+            v-for="item in CUSTOMER_RELATIONSHIP_STAGE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-button
           v-if="auth.hasAbility('customer.write') && filters.status === 'active'"
           type="primary"
@@ -44,6 +57,9 @@
               <span>{{ locationText(row as CustomerItem) }}</span>
               <el-tag size="small" effect="plain" :type="statusTag((row as CustomerItem).status)">
                 {{ statusLabel((row as CustomerItem).status) }}
+              </el-tag>
+              <el-tag size="small" effect="plain">
+                {{ relationshipLabel((row as CustomerItem).relationshipStage) }}
               </el-tag>
             </div>
           </template>
@@ -122,8 +138,10 @@ import {
   listDimensionOptions,
   CUSTOMER_GRADE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
+  CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
   type CustomerItem,
   type CustomerStatus,
+  type CustomerRelationshipStage,
   type DimensionOption,
 } from '@crm/domain'
 
@@ -177,7 +195,11 @@ onMounted(async () => {
 })
 
 const keyword = ref('')
-const filters = reactive<{ grade?: string; status: CustomerStatus }>({ status: 'active' })
+const filters = reactive<{
+  grade?: string
+  status: CustomerStatus
+  relationshipStage?: CustomerRelationshipStage
+}>({ status: 'active' })
 const pageNum = ref(1)
 const query = ref({
   page: 1,
@@ -185,6 +207,7 @@ const query = ref({
   keyword: '',
   grade: undefined as string | undefined,
   status: 'active' as CustomerStatus,
+  relationshipStage: undefined as CustomerRelationshipStage | undefined,
 })
 
 const {
@@ -205,7 +228,13 @@ function onSearch() {
 }
 
 watch(filters, () => {
-  query.value = { ...query.value, grade: filters.grade, status: filters.status, page: 1 }
+  query.value = {
+    ...query.value,
+    grade: filters.grade,
+    status: filters.status,
+    relationshipStage: filters.relationshipStage,
+    page: 1,
+  }
   pageNum.value = 1
   void reload()
 })
@@ -220,6 +249,9 @@ function statusTag(status: CustomerStatus): 'success' | 'warning' | 'info' {
 }
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
+}
+function relationshipLabel(stage: CustomerRelationshipStage): string {
+  return CUSTOMER_RELATIONSHIP_STAGE_OPTIONS.find((item) => item.value === stage)?.label ?? stage
 }
 function activityTime(value?: string | null): string {
   if (!value) return '暂无活动'

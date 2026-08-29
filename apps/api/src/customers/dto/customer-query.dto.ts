@@ -44,6 +44,14 @@ export class CustomerQueryDto {
   @IsIn(CUSTOMER_STATUSES)
   status?: CustomerStatus
 
+  @ApiPropertyOptional({
+    description: '客户经营阶段（由历史事实与首次成交自动计算）',
+    enum: ['prospect', 'new_customer', 'existing_customer'],
+  })
+  @IsOptional()
+  @IsIn(['prospect', 'new_customer', 'existing_customer'])
+  relationshipStage?: 'prospect' | 'new_customer' | 'existing_customer'
+
   @ApiPropertyOptional({ description: '页码（从 1 开始）' })
   @IsOptional()
   @Transform(({ value }) => Number(value))

@@ -9,6 +9,7 @@
     <el-descriptions :column="2" border>
       <el-descriptions-item label="名称">{{ customer.name }}</el-descriptions-item>
       <el-descriptions-item label="客户等级">{{ customer.grade }}</el-descriptions-item>
+      <el-descriptions-item label="经营阶段">{{ relationshipLabel }}</el-descriptions-item>
       <el-descriptions-item label="ERP 客户编码">{{
         customer.customerCode ?? '-'
       }}</el-descriptions-item>
@@ -58,6 +59,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
+  CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
   CUSTOMER_STATUS_OPTIONS,
   listDimensionOptions,
   type CustomerDetail,
@@ -93,6 +95,12 @@ const statusLabel = computed(
   () =>
     CUSTOMER_STATUS_OPTIONS.find((item) => item.value === props.customer.status)?.label ??
     props.customer.status,
+)
+const relationshipLabel = computed(
+  () =>
+    CUSTOMER_RELATIONSHIP_STAGE_OPTIONS.find(
+      (item) => item.value === props.customer.relationshipStage,
+    )?.label ?? props.customer.relationshipStage,
 )
 const productLineText = computed(
   () =>

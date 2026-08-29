@@ -2,10 +2,12 @@ import { sql } from 'drizzle-orm'
 import {
   boolean,
   check,
+  date,
   foreignKey,
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -23,6 +25,43 @@ import type { CustomerGrade } from '../../constants'
  * customer_transfers（移交历史）/ customer_claim_requests（接管申请）
  * 归属快照语义：子实体（商机/客诉/拜访）的 owner_id 为创建时快照，当前归属一律 JOIN 客户推导（§7.2 设计约定）
  */
+
+// 客户导入批次：保留冷启动数据口径、默认归属和处理结果；不保存原始文件。
+export const customerImportBatches = pgTable(
+  'customer_import_batches',
+  {
+    ...baseColumns,
+    fileName: text('file_name').notNull(),
+    status: text('status').notNull().default('uploaded'),
+    defaultRelationship: text('default_relationship').notNull(),
+    dataCutoffOn: date('data_cutoff_on'),
+    defaultOwnerId: uuid('default_owner_id').references(() => users.id),
+    targetStatus: text('target_status').notNull().default('active'),
+    createdById: uuid('created_by_id')
+      .notNull()
+      .references(() => users.id),
+    totalRows: integer('total_rows').notNull().default(0),
+    readyRows: integer('ready_rows').notNull().default(0),
+    importedRows: integer('imported_rows').notNull().default(0),
+    skippedRows: integer('skipped_rows').notNull().default(0),
+    failedRows: integer('failed_rows').notNull().default(0),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      'customer_import_batches_status_check',
+      sql`${table.status} in ('uploaded','previewed','importing','completed','failed')`,
+    ),
+    check(
+      'customer_import_batches_relationship_check',
+      sql`${table.defaultRelationship} in ('pre_crm_existing','prospect','per_row')`,
+    ),
+    check(
+      'customer_import_batches_target_status_check',
+      sql`${table.targetStatus} in ('active','public')`,
+    ),
+  ],
+)
 
 // 客户主表：ERP 编码/信用代码是可空硬唯一键；normalized_key 仅用于疑似重复检索。
 export const customers = pgTable(
@@ -56,6 +95,9 @@ export const customers = pgTable(
     firstVisitedAt: timestamp('first_visited_at', { withTimezone: true }), // 派生（M3 事件写入）
     firstDealAt: timestamp('first_deal_at', { withTimezone: true }), // 派生（M3 事件写入）
     lastActivityAt: timestamp('last_activity_at', { withTimezone: true }), // 派生
+    preCrmDealConfirmed: boolean('pre_crm_deal_confirmed').default(false).notNull(), // CRM 启用前已成交的历史事实
+    preCrmSalesAmount: numeric('pre_crm_sales_amount', { precision: 14, scale: 2 }), // 可空：未知不等于 0
+    importBatchId: uuid('import_batch_id').references(() => customerImportBatches.id),
     notes: text('notes'),
     entrySource: text('entry_source'), // AI 录入来源（§7.1 预留）
     entryRefId: uuid('entry_ref_id'), // AI 素材引用（§7.1 预留）
@@ -82,6 +124,32 @@ export const customers = pgTable(
       columns: [table.parentCustomerId],
       foreignColumns: [table.id],
     }),
+  ],
+)
+
+// 导入行：保存字段映射后的预览、查重结论和逐行结果，便于失败重试与审计。
+export const customerImportRows = pgTable(
+  'customer_import_rows',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    batchId: uuid('batch_id')
+      .notNull()
+      .references(() => customerImportBatches.id, { onDelete: 'cascade' }),
+    rowNumber: integer('row_number').notNull(),
+    rawData: jsonb('raw_data').$type<Record<string, string | number | boolean | null>>().notNull(),
+    normalizedData: jsonb('normalized_data').$type<Record<string, unknown>>(),
+    status: text('status').notNull().default('uploaded'),
+    error: text('error'),
+    duplicateCustomerId: uuid('duplicate_customer_id').references(() => customers.id),
+    customerId: uuid('customer_id').references(() => customers.id),
+  },
+  (table) => [
+    check(
+      'customer_import_rows_status_check',
+      sql`${table.status} in ('uploaded','ready','duplicate','invalid','imported','skipped','failed')`,
+    ),
+    uniqueIndex('customer_import_rows_batch_row_uq').on(table.batchId, table.rowNumber),
+    index('customer_import_rows_batch_status_idx').on(table.batchId, table.status),
   ],
 )
 
@@ -131,19 +199,39 @@ export const contacts = pgTable(
 )
 
 // 移交历史（§8.3：append-only，业务时间，归属快照语义）
-export const customerTransfers = pgTable('customer_transfers', {
-  ...baseColumns,
-  customerId: uuid('customer_id')
-    .notNull()
-    .references(() => customers.id),
-  fromOwnerId: uuid('from_owner_id').references(() => users.id), // 可空=从公海
-  toOwnerId: uuid('to_owner_id').references(() => users.id), // 可空=释放到公海
-  operatedById: uuid('operated_by_id')
-    .notNull()
-    .references(() => users.id),
-  reason: text('reason').notNull(),
-  occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(), // 业务时间
-})
+export const customerTransfers = pgTable(
+  'customer_transfers',
+  {
+    ...baseColumns,
+    customerId: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id),
+    fromOwnerId: uuid('from_owner_id').references(() => users.id), // 可空=从公海
+    toOwnerId: uuid('to_owner_id').references(() => users.id), // 可空=释放到公海
+    operatedById: uuid('operated_by_id')
+      .notNull()
+      .references(() => users.id),
+    reason: text('reason').notNull(),
+    eventType: text('event_type').notNull().default('transferred'),
+    fromStatus: text('from_status'),
+    toStatus: text('to_status'),
+    occurredAt: timestamp('occurred_at', { withTimezone: true }).defaultNow().notNull(), // 业务时间
+  },
+  (table) => [
+    check(
+      'customer_transfers_event_type_check',
+      sql`${table.eventType} in ('transferred','released_to_pool','claimed_from_pool','marked_invalid','restored_from_invalid','claim_approved')`,
+    ),
+    check(
+      'customer_transfers_from_status_check',
+      sql`${table.fromStatus} is null or ${table.fromStatus} in ('active','public','invalid')`,
+    ),
+    check(
+      'customer_transfers_to_status_check',
+      sql`${table.toStatus} is null or ${table.toStatus} in ('active','public','invalid')`,
+    ),
+  ],
+)
 
 // 接管申请（§8.3：状态机 pending→approved/rejected/withdrawn；current_owner_id 归属快照校验）
 export const customerClaimRequests = pgTable(

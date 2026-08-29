@@ -5,6 +5,7 @@ import type {
   CustomerDetail,
   CustomerItem,
   CustomerPage,
+  CustomerRelationshipStage,
   DedupHit,
 } from '../types/customer'
 
@@ -21,6 +22,7 @@ export interface CustomerListQuery {
   customerType?: string
   grade?: string
   status?: string
+  relationshipStage?: CustomerRelationshipStage
   page?: number
   pageSize?: number
 }

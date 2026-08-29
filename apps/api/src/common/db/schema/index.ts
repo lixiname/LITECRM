@@ -8,6 +8,8 @@ import {
   customerClaimRequests,
   customerDimensionOptions,
   customerGradeChanges,
+  customerImportBatches,
+  customerImportRows,
   customers,
   customerTransfers,
 } from './customers'
@@ -46,6 +48,8 @@ export {
   customerClaimRequests,
   customerDimensionOptions,
   customerGradeChanges,
+  customerImportBatches,
+  customerImportRows,
   visitRecords,
   opportunities,
   opportunityFollowUps,

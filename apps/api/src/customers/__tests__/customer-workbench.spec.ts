@@ -1,11 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { seedAccounts, seedDimensions, seedGeography } from '../../../scripts/seed'
 import { AppModule } from '../../app.module'
 import { db } from '../../common/db/db'
+import { customers } from '../../common/db/schema'
 
 describe('客户工作台（资料、联系人、最近活动与时间线）', () => {
   let app: INestApplication
@@ -175,6 +176,38 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
       .get('/api/customers?keyword=WB_活动时间线')
       .set('Authorization', `Bearer ${token}`)
     expect(list.body.items[0].lastActivityAt).toBeTruthy()
+  })
+
+  it('客户经营阶段由 CRM 前成交事实与首次成交自动派生', async () => {
+    const customer = await createCustomer('WB_客户经营阶段')
+    const prospect = await request(app.getHttpServer())
+      .get(`/api/customers/${customer.id}`)
+      .set('Authorization', `Bearer ${token}`)
+    expect(prospect.body.relationshipStage).toBe('prospect')
+
+    await db
+      .update(customers)
+      .set({ preCrmDealConfirmed: true, preCrmSalesAmount: '125000.00' })
+      .where(eq(customers.id, customer.id))
+
+    const existing = await request(app.getHttpServer())
+      .get(`/api/customers/${customer.id}`)
+      .set('Authorization', `Bearer ${token}`)
+    expect(existing.body.relationshipStage).toBe('existing_customer')
+    expect(existing.body.dealSummary).toMatchObject({
+      preCrmAmount: '125000.00',
+      crmAmount: '0',
+      referenceTotalAmount: '125000.00',
+    })
+
+    const filtered = await request(app.getHttpServer())
+      .get('/api/customers?relationshipStage=existing_customer&keyword=WB_客户经营阶段')
+      .set('Authorization', `Bearer ${token}`)
+    expect(filtered.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: customer.id, relationshipStage: 'existing_customer' }),
+      ]),
+    )
   })
 
   async function cleanup() {

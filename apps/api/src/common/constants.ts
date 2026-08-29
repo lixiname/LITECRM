@@ -11,6 +11,11 @@ export type DataScope = (typeof DATA_SCOPES)[number]
 export const ABILITIES = [
   'customer.write', // 基础填报：拜访/商机/客诉
   'customer.transfer', // 客户移交/接管申请
+  'customer.release', // 本人/管理范围内客户释放至公海
+  'customer.claim', // 从本销售区域公海认领给本人
+  'customer.invalidate', // 标记客户无效（区域负责人/管理员）
+  'customer.restore', // 恢复无效客户（区域负责人/管理员）
+  'customer.import', // 客户 Excel 批量导入（管理员）
   'approve.claim', // 接管审批
   'dashboard.view', // 经营看板（漏斗/储备/转化，方案 A 专属 executive）
   'stats.view', // 全量统计（只读）
@@ -21,8 +26,17 @@ export type Ability = (typeof ABILITIES)[number]
 
 // 角色 → 能力点（规格 §6.2 表格）
 export const ROLE_ABILITIES: Record<Role, readonly Ability[]> = {
-  sales: ['customer.write', 'customer.transfer'],
-  executive: ['customer.write', 'customer.transfer', 'approve.claim', 'dashboard.view'],
+  sales: ['customer.write', 'customer.transfer', 'customer.release', 'customer.claim'],
+  executive: [
+    'customer.write',
+    'customer.transfer',
+    'customer.release',
+    'customer.claim',
+    'customer.invalidate',
+    'customer.restore',
+    'approve.claim',
+    'dashboard.view',
+  ],
   assistant: ['stats.view', 'export'],
   admin: [...ABILITIES],
 }

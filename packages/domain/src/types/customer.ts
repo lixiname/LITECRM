@@ -13,6 +13,7 @@ export type CustomerGrade = components['schemas']['CustomerGrade']
 export type CustomerStatus = components['schemas']['CustomerStatus']
 export type ClaimStatus = components['schemas']['ClaimStatus']
 export type CustomerDimension = components['schemas']['CustomerDimension']
+export type CustomerRelationshipStage = 'prospect' | 'new_customer' | 'existing_customer'
 
 export interface CustomerItem {
   id: string
@@ -42,6 +43,10 @@ export interface CustomerItem {
   firstVisitedAt: string | null
   firstDealAt: string | null
   lastActivityAt: string | null
+  preCrmDealConfirmed: boolean
+  preCrmSalesAmount: string | null
+  importBatchId: string | null
+  relationshipStage: CustomerRelationshipStage
   notes: string | null
   createdAt: string
   updatedAt: string
@@ -74,7 +79,9 @@ export interface CustomerDetail extends CustomerItem {
   }[]
   dealSummary?: {
     count: number
-    totalAmount: string
+    crmAmount: string
+    preCrmAmount: string | null
+    referenceTotalAmount: string
   }
   timeline?: CustomerTimelineItem[]
   contacts: Contact[]
@@ -103,6 +110,7 @@ export interface CustomerTimelineItem {
     | 'complaint'
     | 'complaint_follow_up'
     | 'deal'
+    | 'ownership_event'
   id: string
   occurredAt: string
   title: string
@@ -111,6 +119,15 @@ export interface CustomerTimelineItem {
   targetId: string
   metadata?: Record<string, string | null>
 }
+
+export const CUSTOMER_RELATIONSHIP_STAGE_OPTIONS: {
+  value: CustomerRelationshipStage
+  label: string
+}[] = [
+  { value: 'prospect', label: '潜在客户' },
+  { value: 'new_customer', label: '本年新客' },
+  { value: 'existing_customer', label: '存量客户' },
+]
 
 export interface CustomerPage {
   items: CustomerItem[]

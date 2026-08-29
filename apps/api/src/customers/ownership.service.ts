@@ -62,6 +62,9 @@ export class OwnershipService {
         toOwnerId: dto.toOwnerId,
         operatedById: actor.id,
         reason: dto.reason,
+        eventType: 'transferred',
+        fromStatus: 'active',
+        toStatus: 'active',
       })
       await this.actionsService.reassignPendingForCustomer(tx, customer.id, dto.toOwnerId)
       // TODO(M3)：商机/客诉当前归属 JOIN 客户自动跟随，无需同步（§7.2 归属语义）
@@ -74,7 +77,7 @@ export class OwnershipService {
     const customer = await this.findOwned(customerId, actor)
     await this.assertCanContribute(customer, actor)
     if (customer.status !== 'active') throw new ConflictException('仅在案客户可释放')
-    if (dto.target === 'invalid' && actor.role === 'sales') {
+    if (dto.target === 'invalid' && !this.accessService.can(actor.role, 'customer.invalidate')) {
       throw new ForbiddenException('标记无效需由区域负责人或管理员处理')
     }
     const [openOpportunity] = await db
@@ -117,6 +120,9 @@ export class OwnershipService {
         toOwnerId: null,
         operatedById: actor.id,
         reason: dto.reason,
+        eventType: dto.target === 'pool' ? 'released_to_pool' : 'marked_invalid',
+        fromStatus: 'active',
+        toStatus: nextStatus,
       })
       await this.actionsService.cancelPendingCustomerVisits(
         tx,
@@ -163,6 +169,9 @@ export class OwnershipService {
         toOwnerId: actor.id,
         operatedById: actor.id,
         reason: '公海认领',
+        eventType: 'claimed_from_pool',
+        fromStatus: 'public',
+        toStatus: 'active',
       })
       await this.actionsService.reassignPendingForCustomer(tx, customer.id, actor.id)
       return updated
@@ -171,7 +180,7 @@ export class OwnershipService {
 
   // 无效档案恢复：仅区域负责人/管理员；重新指定负责人并重新占用客户等级名额。
   async restore(customerId: string, dto: RestoreCustomerDto, actor: AuthUser) {
-    if (actor.role !== 'executive' && actor.role !== 'admin') {
+    if (!this.accessService.can(actor.role, 'customer.restore')) {
       throw new ForbiddenException('仅区域负责人或管理员可恢复无效客户')
     }
     const [customer] = await db
@@ -215,6 +224,9 @@ export class OwnershipService {
         toOwnerId: dto.toOwnerId,
         operatedById: actor.id,
         reason: `恢复无效客户：${dto.reason.trim()}`,
+        eventType: 'restored_from_invalid',
+        fromStatus: 'invalid',
+        toStatus: 'active',
       })
       return updated
     })

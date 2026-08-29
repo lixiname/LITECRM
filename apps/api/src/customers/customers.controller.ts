@@ -1,5 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
+import { FileInterceptor } from '@nestjs/platform-express'
+import type { Response } from 'express'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
 import { PermissionsGuard } from '../access/permissions.guard'
@@ -17,6 +32,8 @@ import { ReleaseCustomerDto } from './dto/release-customer.dto'
 import { RestoreCustomerDto } from './dto/restore-customer.dto'
 import { AssigneeOptionDto } from './dto/assignee-option.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
+import { CustomerImportService } from './customer-import.service'
+import { PreviewCustomerImportDto } from './dto/customer-import.dto'
 
 // 客户域（§8.2/8.3）：建档（customer.write）/ 检索 / 详情 / 维护
 @ApiTags('customers')
@@ -27,6 +44,7 @@ export class CustomersController {
     private readonly customersService: CustomersService,
     private readonly ownershipService: OwnershipService,
     private readonly assigneeService: CustomerAssigneeService,
+    private readonly importService: CustomerImportService,
   ) {}
 
   @Post()
@@ -63,6 +81,55 @@ export class CustomersController {
     return this.assigneeService.list()
   }
 
+  @Get('imports/template')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.import')
+  async downloadImportTemplate(@Res() response: Response) {
+    const buffer = await this.importService.createTemplate()
+    response.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response.setHeader('Content-Disposition', "attachment; filename*=UTF-8''customer-import.xlsx")
+    response.send(buffer)
+  }
+
+  @Post('imports')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.import')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadImport(
+    @UploadedFile() file: { originalname: string; buffer: Buffer },
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.importService.upload(file, user)
+  }
+
+  @Post('imports/:batchId/preview')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.import')
+  previewImport(
+    @Param('batchId') batchId: string,
+    @Body() dto: PreviewCustomerImportDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.importService.preview(batchId, dto, user)
+  }
+
+  @Post('imports/:batchId/commit')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.import')
+  commitImport(@Param('batchId') batchId: string, @CurrentUser() user: AuthUser) {
+    return this.importService.commit(batchId, user)
+  }
+
+  @Get('imports/:batchId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.import')
+  getImport(@Param('batchId') batchId: string, @CurrentUser() user: AuthUser) {
+    return this.importService.get(batchId, user)
+  }
+
   @Get(':id')
   @ApiOkResponse({
     description: '客户详情（含联系人、商机摘要、历史成交、活动时间线）',
@@ -93,6 +160,8 @@ export class CustomersController {
 
   @Post(':id/release')
   @ApiOkResponse({ description: '主动释放（pool=公海 / invalid=无效）' })
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('customer.release')
   release(@Param('id') id: string, @Body() dto: ReleaseCustomerDto, @CurrentUser() user: AuthUser) {
     return this.ownershipService.release(id, dto, user)
   }
@@ -100,7 +169,7 @@ export class CustomersController {
   @Post(':id/claim')
   @ApiOkResponse({ description: '公海认领（分级名额校验，owner→本人）' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermission('customer.write')
+  @RequirePermission('customer.claim')
   claim(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.ownershipService.claim(id, user)
   }
@@ -108,7 +177,7 @@ export class CustomersController {
   @Post(':id/restore')
   @ApiOkResponse({ description: '恢复无效客户并重新指定负责人' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermission('customer.transfer')
+  @RequirePermission('customer.restore')
   restore(@Param('id') id: string, @Body() dto: RestoreCustomerDto, @CurrentUser() user: AuthUser) {
     return this.ownershipService.restore(id, dto, user)
   }

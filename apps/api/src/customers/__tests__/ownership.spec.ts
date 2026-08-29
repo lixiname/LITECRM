@@ -182,6 +182,11 @@ describe('归属治理与客户分级名额（§8.3）', () => {
       expect(transfers).toHaveLength(1)
       expect(transfers[0].fromOwnerId).toBe(sales1Id)
       expect(transfers[0].toOwnerId).toBe(sales2Id)
+      expect(transfers[0]).toMatchObject({
+        eventType: 'transferred',
+        fromStatus: 'active',
+        toStatus: 'active',
+      })
     })
 
     it('不能绕过选择器把客户移交给非销售岗位', async () => {
@@ -330,6 +335,16 @@ describe('归属治理与客户分级名额（§8.3）', () => {
       const [row] = await db.select().from(customers).where(eq(customers.id, customer.id)).limit(1)
       expect(row.status).toBe('active')
       expect(row.ownerId).toBe(await getUserId('sales2'))
+
+      const detail = await request(app.getHttpServer())
+        .get(`/api/customers/${customer.id}`)
+        .set('Authorization', `Bearer ${sales2.accessToken}`)
+      expect(detail.body.timeline).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'ownership_event', title: '释放至公海' }),
+          expect.objectContaining({ type: 'ownership_event', title: '从公海认领' }),
+        ]),
+      )
     })
 
     it('销售不能标记无效；经理可标记并恢复给团队负责人', async () => {

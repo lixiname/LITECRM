@@ -120,8 +120,19 @@
     </van-cell-group>
 
     <van-cell-group v-if="detail" inset title="经营结果" class="detail__result">
-      <van-cell title="历史成交次数" :value="detail.dealSummary?.count ?? 0" />
-      <van-cell title="历史成交总额" :value="moneyText(detail.dealSummary?.totalAmount)" />
+      <van-cell title="CRM内成交次数" :value="detail.dealSummary?.count ?? 0" />
+      <van-cell
+        title="CRM前历史成交"
+        :value="
+          detail.dealSummary?.preCrmAmount == null
+            ? detail.preCrmDealConfirmed
+              ? '金额未知'
+              : '不适用'
+            : moneyText(detail.dealSummary.preCrmAmount)
+        "
+      />
+      <van-cell title="CRM内成交" :value="moneyText(detail.dealSummary?.crmAmount)" />
+      <van-cell title="累计参考成交" :value="moneyText(detail.dealSummary?.referenceTotalAmount)" />
       <van-cell
         title="最近成交"
         :value="detail.latestDeals?.[0] ? moneyText(detail.latestDeals[0].amount) : '-'"
@@ -137,6 +148,7 @@
       <van-cell title="客户行业" :value="dimensionLabel('industry', detail.industry)" />
       <van-cell title="具体领域" :value="dimensionLabel('sub_industry', detail.subIndustry)" />
       <van-cell title="等级" :value="detail.grade" />
+      <van-cell title="经营阶段" :value="relationshipLabel(detail.relationshipStage)" />
       <van-cell title="状态" :value="statusLabel(detail.status)" />
       <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
       <van-cell title="地址" :value="detail.address ?? '-'" />
@@ -152,11 +164,13 @@ import {
   listDimensionOptions,
   useAuthStore,
   CUSTOMER_STATUS_OPTIONS,
+  CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
   OPPORTUNITY_STAGE_OPTIONS,
   OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS,
   type Opportunity,
   type CustomerStatus,
   type OpportunityInitialAmountBasis,
+  type CustomerRelationshipStage,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -172,6 +186,10 @@ const { data: industries } = useQuery('catalog:customer-profile', async () => [
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
+}
+
+function relationshipLabel(stage: CustomerRelationshipStage): string {
+  return CUSTOMER_RELATIONSHIP_STAGE_OPTIONS.find((item) => item.value === stage)?.label ?? stage
 }
 
 function stageTag(stage: Opportunity['stage']): 'primary' | 'warning' | 'success' | 'danger' {

@@ -3,7 +3,7 @@
     <template #header>
       <div class="activity-card__header">
         <span>客户活动时间线</span>
-        <span class="activity-card__hint">拜访、商机、报价、客诉与成交统一查看</span>
+        <span class="activity-card__hint">业务活动、经营结果与归属变化统一查看</span>
       </div>
     </template>
     <el-empty v-if="!items.length" description="还没有客户活动" :image-size="72" />
@@ -71,6 +71,7 @@ function typeLabel(type: CustomerTimelineItem['type']): string {
     complaint: '客诉',
     complaint_follow_up: '客诉跟进',
     deal: '成交',
+    ownership_event: '归属与状态',
   }
   return labels[type]
 }
@@ -81,6 +82,7 @@ function timelineType(
   if (type === 'complaint' || type === 'complaint_follow_up') return 'danger'
   if (type === 'quote') return 'warning'
   if (type === 'visit') return 'primary'
+  if (type === 'ownership_event') return 'info'
   return 'info'
 }
 function metadataText(item: CustomerTimelineItem): string {
@@ -103,6 +105,7 @@ function metadataText(item: CustomerTimelineItem): string {
   }
   if (item.type === 'quote')
     return item.metadata?.quoteNo ? `报价单号：${item.metadata.quoteNo}` : ''
+  if (item.type === 'ownership_event') return item.metadata?.operatedByName ?? ''
   return ''
 }
 </script>

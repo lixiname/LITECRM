@@ -260,6 +260,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/imports/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_downloadImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_uploadImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/imports/{batchId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_previewImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/imports/{batchId}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CustomersController_commitImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/imports/{batchId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomersController_getImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/{id}": {
         parameters: {
             query?: never;
@@ -1009,7 +1089,7 @@ export interface components {
          * @description 能力点快照
          * @enum {string}
          */
-        Ability: "customer.write" | "customer.transfer" | "approve.claim" | "dashboard.view" | "stats.view" | "export" | "user.manage";
+        Ability: "customer.write" | "customer.transfer" | "customer.release" | "customer.claim" | "customer.invalidate" | "customer.restore" | "customer.import" | "approve.claim" | "dashboard.view" | "stats.view" | "export" | "user.manage";
         /**
          * @description 数据范围快照
          * @enum {string}
@@ -1216,6 +1296,26 @@ export interface components {
             role: components["schemas"]["Role"];
             /** @description 所属区域 */
             region?: string | null;
+        };
+        PreviewCustomerImportDto: {
+            /** @description 目标字段到 Excel 列名的映射；name 必须映射 */
+            mapping: {
+                [key: string]: string;
+            };
+            /**
+             * @description 批次默认客户属性
+             * @enum {string}
+             */
+            defaultRelationship: "pre_crm_existing" | "prospect" | "per_row";
+            /**
+             * @description 导入为在案客户或公海客户
+             * @enum {string}
+             */
+            targetStatus: "active" | "public";
+            /** @description 在案客户的批次默认负责人 */
+            defaultOwnerId?: string;
+            /** @description 历史累计金额的数据截止日期，YYYY-MM-DD */
+            dataCutoffOn?: string;
         };
         UpdateCustomerDto: {
             /** @description 读取客户时获得的版本号，用于防止覆盖他人更新 */
@@ -1984,6 +2084,8 @@ export interface operations {
                 grade?: "S" | "A" | "B" | "C";
                 /** @description 状态筛选 */
                 status?: components["schemas"]["CustomerStatus"];
+                /** @description 客户经营阶段（由历史事实与首次成交自动计算） */
+                relationshipStage?: "prospect" | "new_customer" | "existing_customer";
                 /** @description 页码（从 1 开始） */
                 page?: number;
                 /** @description 每页条数（默认 20，最大 50） */
@@ -2065,6 +2167,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AssigneeOptionDto"][];
                 };
+            };
+        };
+    };
+    CustomersController_downloadImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_uploadImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_previewImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewCustomerImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_commitImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomersController_getImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

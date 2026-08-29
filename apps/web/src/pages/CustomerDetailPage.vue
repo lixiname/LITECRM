@@ -53,11 +53,11 @@
           <div class="detail__metrics">
             <div>
               <strong>{{ detail.dealSummary?.count ?? 0 }}</strong
-              ><span>历史成交</span>
+              ><span>CRM成交</span>
             </div>
             <div>
-              <strong>{{ moneyText(detail.dealSummary?.totalAmount) }}</strong
-              ><span>成交总额</span>
+              <strong>{{ moneyText(detail.dealSummary?.referenceTotalAmount) }}</strong
+              ><span>累计参考成交</span>
             </div>
             <div>
               <strong>{{
@@ -283,11 +283,12 @@ const claimReason = ref('')
 const isOwner = computed(() => detail.value?.ownerId === auth.user?.id)
 const isPublic = computed(() => detail.value?.status === 'public')
 const isManager = computed(() => auth.user?.role === 'executive' || auth.user?.role === 'admin')
-const canClaim = computed(
-  () => isPublic.value && (auth.user?.role === 'sales' || auth.user?.role === 'executive'),
-)
+const canClaim = computed(() => isPublic.value && auth.hasAbility('customer.claim'))
 const canRelease = computed(
-  () => detail.value?.status === 'active' && (isOwner.value || isManager.value),
+  () =>
+    detail.value?.status === 'active' &&
+    auth.hasAbility('customer.release') &&
+    (isOwner.value || isManager.value),
 )
 const openOpportunityCount = computed(
   () =>
@@ -309,8 +310,10 @@ const releaseBlockReason = computed(() => {
   }
   return `暂不能变更客户状态：存在${blockers.join('、')}，请先处理或移交客户`
 })
-const canMarkInvalid = computed(() => isManager.value)
-const canRestore = computed(() => detail.value?.status === 'invalid' && isManager.value)
+const canMarkInvalid = computed(() => auth.hasAbility('customer.invalidate'))
+const canRestore = computed(
+  () => detail.value?.status === 'invalid' && auth.hasAbility('customer.restore'),
+)
 const canEdit = computed(() =>
   Boolean(detail.value?.status === 'active' && auth.hasAbility('customer.write')),
 )

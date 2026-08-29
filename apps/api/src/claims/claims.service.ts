@@ -89,6 +89,9 @@ export class ClaimsService {
         toOwnerId: claim.applicantId,
         operatedById: actor.id,
         reason: `接管审批通过：${claim.reason}`,
+        eventType: 'claim_approved',
+        fromStatus: customer.status,
+        toStatus: 'active',
       })
       await this.actionsService.reassignPendingForCustomer(tx, customer.id, claim.applicantId)
 

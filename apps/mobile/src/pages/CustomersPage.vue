@@ -21,6 +21,7 @@
           <div class="customers__meta">
             <span>{{ locationText(c) }}</span>
             <span>{{ c.grade }} 级</span>
+            <span>{{ relationshipLabel(c.relationshipStage) }}</span>
             <span>{{ statusLabel(c.status) }}</span>
           </div>
           <div :class="['customers__action', { 'is-overdue': isOverdue(c.nextActionAt) }]">
@@ -38,9 +39,11 @@ import { useRouter } from 'vue-router'
 import {
   listCustomers,
   CUSTOMER_STATUS_OPTIONS,
+  CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
   listDimensionOptions,
   type CustomerItem,
   type CustomerStatus,
+  type CustomerRelationshipStage,
   type DimensionOption,
 } from '@crm/domain'
 
@@ -89,6 +92,10 @@ function onSearch() {
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
+}
+
+function relationshipLabel(stage: CustomerRelationshipStage): string {
+  return CUSTOMER_RELATIONSHIP_STAGE_OPTIONS.find((item) => item.value === stage)?.label ?? stage
 }
 
 function labelOf(dimension: string, value?: string | null): string {

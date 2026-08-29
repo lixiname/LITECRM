@@ -8,11 +8,18 @@ import { GradeQuotaService } from './grade-quota.service'
 import { CustomerAssigneeService } from './customer-assignee.service'
 import { SalesPlansModule } from '../follow-up-actions/follow-up-actions.module'
 import { GeographyModule } from '../geography/geography.module'
+import { CustomerImportService } from './customer-import.service'
 
 @Module({
   imports: [AuthModule, AccessModule, SalesPlansModule, GeographyModule],
   controllers: [CustomersController],
-  providers: [CustomersService, OwnershipService, GradeQuotaService, CustomerAssigneeService],
+  providers: [
+    CustomersService,
+    OwnershipService,
+    GradeQuotaService,
+    CustomerAssigneeService,
+    CustomerImportService,
+  ],
   exports: [CustomersService, OwnershipService, GradeQuotaService, CustomerAssigneeService],
 })
 export class CustomersModule {}

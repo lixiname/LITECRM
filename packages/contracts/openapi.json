@@ -511,6 +511,16 @@
             }
           },
           {
+            "name": "relationshipStage",
+            "required": false,
+            "in": "query",
+            "description": "客户经营阶段（由历史事实与首次成交自动计算）",
+            "schema": {
+              "type": "string",
+              "enum": ["prospect", "new_customer", "existing_customer"]
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -576,6 +586,103 @@
                 }
               }
             }
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/imports/template": {
+      "get": {
+        "operationId": "CustomersController_downloadImportTemplate",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/imports": {
+      "post": {
+        "operationId": "CustomersController_uploadImport",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/imports/{batchId}/preview": {
+      "post": {
+        "operationId": "CustomersController_previewImport",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewCustomerImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/imports/{batchId}/commit": {
+      "post": {
+        "operationId": "CustomersController_commitImport",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["customers"]
+      }
+    },
+    "/customers/imports/{batchId}": {
+      "get": {
+        "operationId": "CustomersController_getImport",
+        "parameters": [
+          {
+            "name": "batchId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "tags": ["customers"]
@@ -2201,6 +2308,11 @@
         "enum": [
           "customer.write",
           "customer.transfer",
+          "customer.release",
+          "customer.claim",
+          "customer.invalidate",
+          "customer.restore",
+          "customer.import",
           "approve.claim",
           "dashboard.view",
           "stats.view",
@@ -2680,6 +2792,37 @@
           }
         },
         "required": ["id", "displayName", "role"]
+      },
+      "PreviewCustomerImportDto": {
+        "type": "object",
+        "properties": {
+          "mapping": {
+            "type": "object",
+            "description": "目标字段到 Excel 列名的映射；name 必须映射",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "defaultRelationship": {
+            "type": "string",
+            "enum": ["pre_crm_existing", "prospect", "per_row"],
+            "description": "批次默认客户属性"
+          },
+          "targetStatus": {
+            "type": "string",
+            "enum": ["active", "public"],
+            "description": "导入为在案客户或公海客户"
+          },
+          "defaultOwnerId": {
+            "type": "string",
+            "description": "在案客户的批次默认负责人"
+          },
+          "dataCutoffOn": {
+            "type": "string",
+            "description": "历史累计金额的数据截止日期，YYYY-MM-DD"
+          }
+        },
+        "required": ["mapping", "defaultRelationship", "targetStatus"]
       },
       "UpdateCustomerDto": {
         "type": "object",
