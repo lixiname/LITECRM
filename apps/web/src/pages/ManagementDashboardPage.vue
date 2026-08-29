@@ -1,6 +1,9 @@
 <template>
   <div class="management-dashboard">
-    <AppPageHeader title="管理看板" description="从销售储备、团队执行、重点客户和费用发现需要介入的事项" />
+    <AppPageHeader
+      title="管理看板"
+      description="从销售储备、团队执行、重点客户和费用发现需要介入的事项"
+    />
 
     <el-card class="management-dashboard__filters" shadow="never">
       <div class="management-dashboard__filter-row">
@@ -17,7 +20,12 @@
           range-separator="至"
           @change="applyFilters"
         />
-        <el-select v-model="filters.ownerId" clearable placeholder="全部下辖人员" @change="applyFilters">
+        <el-select
+          v-model="filters.ownerId"
+          clearable
+          placeholder="全部下辖人员"
+          @change="applyFilters"
+        >
           <el-option
             v-for="member in members"
             :key="member.id"
@@ -31,7 +39,12 @@
           placeholder="全部销售大区"
           @change="applyFilters"
         >
-          <el-option v-for="region in regions" :key="region.id" :label="region.name" :value="region.id" />
+          <el-option
+            v-for="region in regions"
+            :key="region.id"
+            :label="region.name"
+            :value="region.id"
+          />
         </el-select>
         <el-select
           v-model="filters.productLine"
@@ -48,13 +61,15 @@
         </el-select>
         <el-button :loading="loading" @click="reload">刷新</el-button>
       </div>
-      <small>销售大区和产品线仅影响商机与重点客户；费用与团队活动按人员和日期统计。</small>
+      <small
+        >当前商机池按今日存量统计，不受日期范围影响；日期用于期间推进、成交、团队活动和费用。销售大区和产品线仅影响商机与重点客户。</small
+      >
     </el-card>
 
     <el-card class="management-dashboard__body" shadow="never">
       <el-tabs v-model="activeTab" @tab-change="loadActiveTab">
         <el-tab-pane label="管理概览" name="overview" />
-        <el-tab-pane label="销售漏斗" name="pipeline" />
+        <el-tab-pane label="商机经营" name="pipeline" />
         <el-tab-pane label="团队动态" name="team" />
         <el-tab-pane label="重点客户" name="customers" />
         <el-tab-pane label="团队费用" name="expenses" />
@@ -64,19 +79,12 @@
       <div v-if="!error" v-loading="loading" class="management-dashboard__content">
         <ReportingOverviewPanel v-if="activeTab === 'overview' && overview" :data="overview" />
         <PipelineReportPanel v-else-if="activeTab === 'pipeline' && pipeline" :data="pipeline" />
-        <TeamReportPanel
-          v-else-if="activeTab === 'team' && team"
-          :data="team"
-          :filters="filters"
-        />
+        <TeamReportPanel v-else-if="activeTab === 'team' && team" :data="team" :filters="filters" />
         <KeyCustomerReportPanel
           v-else-if="activeTab === 'customers' && keyCustomers"
           :data="keyCustomers"
         />
-        <ExpenseReportPanel
-          v-else-if="activeTab === 'expenses' && expenses"
-          :data="expenses"
-        />
+        <ExpenseReportPanel v-else-if="activeTab === 'expenses' && expenses" :data="expenses" />
       </div>
     </el-card>
   </div>

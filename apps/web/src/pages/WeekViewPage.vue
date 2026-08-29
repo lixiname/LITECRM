@@ -22,6 +22,8 @@
       </template>
     </AppPageHeader>
 
+    <MyPipelineSummaryCard />
+
     <AppQueryState :error="error" @retry="reload" />
 
     <el-collapse v-if="!error && view?.overdue.length" class="week-view__overdue">
@@ -364,6 +366,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
+import MyPipelineSummaryCard from '../components/reporting/MyPipelineSummaryCard.vue'
 import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'

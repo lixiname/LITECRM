@@ -1012,6 +1012,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reporting/my-pipeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ReportingController_myPipeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reporting/team": {
         parameters: {
             query?: never;
@@ -3340,7 +3356,25 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 销售漏斗、当前报价池、期间转化与下辖人员拆分 */
+            /** @description 当前商机池、期间推进结果与下辖人员拆分 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReportingController_myPipeline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前登录人的开放商机金额构成与健康度摘要 */
             200: {
                 headers: {
                     [name: string]: unknown;

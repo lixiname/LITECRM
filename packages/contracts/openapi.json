@@ -2067,7 +2067,19 @@
         ],
         "responses": {
           "200": {
-            "description": "销售漏斗、当前报价池、期间转化与下辖人员拆分"
+            "description": "当前商机池、期间推进结果与下辖人员拆分"
+          }
+        },
+        "tags": ["reporting"]
+      }
+    },
+    "/reporting/my-pipeline": {
+      "get": {
+        "operationId": "ReportingController_myPipeline",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "当前登录人的开放商机金额构成与健康度摘要"
           }
         },
         "tags": ["reporting"]

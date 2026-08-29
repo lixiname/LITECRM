@@ -86,12 +86,9 @@ export class ReportingService {
     return {
       range: pipeline.range,
       pipeline: {
-        openCount: pipeline.pool.totalCount,
-        openAmount: pipeline.pool.totalAmount,
-        formalQuoteAmount:
-          pipeline.pool.buckets.find((item) => item.key === 'formal_quote')?.amount ?? 0,
+        pool: pipeline.pool,
         wonAmount: pipeline.flow.won.amount,
-        stagnantAmount: pipeline.byOwner.reduce((sum, item) => sum + item.stagnantAmount, 0),
+        closedWinRate: pipeline.flow.closedWinRate,
       },
       team: {
         actualRecordCount: team.members.reduce((sum, item) => sum + item.actualRecordCount, 0),
@@ -136,6 +133,8 @@ export class ReportingService {
           formalQuoteAmount: 0,
           stagnantCount: 0,
           stagnantAmount: 0,
+          overdueActionCount: 0,
+          noNextActionCount: 0,
           wonCount: 0,
           wonAmount: 0,
         },
@@ -170,6 +169,8 @@ export class ReportingService {
           owner.stagnantCount += 1
           owner.stagnantAmount += referenceAmount
         }
+        if (risk.riskFlags.includes('action_overdue')) owner.overdueActionCount += 1
+        if (risk.riskFlags.includes('no_pending_action')) owner.noNextActionCount += 1
       }
 
       const deal = context.dealByOpportunity.get(opportunity.id)
@@ -221,18 +222,31 @@ export class ReportingService {
     flow.closedWinRate = closedCount ? flow.won.count / closedCount : null
 
     const buckets = [...poolBuckets.values()]
+    const owners = [...byOwner.values()]
+      .filter((item) => memberById.has(item.ownerId))
+      .sort((a, b) => b.openAmount - a.openAmount || a.ownerName.localeCompare(b.ownerName))
     return {
       range,
       pool: {
+        asOf: this.businessDate(new Date()),
         totalCount: buckets.reduce((sum, item) => sum + item.count, 0),
         totalAmount: buckets.reduce((sum, item) => sum + item.amount, 0),
         buckets,
+        health: {
+          stagnantCount: owners.reduce((sum, item) => sum + item.stagnantCount, 0),
+          stagnantAmount: owners.reduce((sum, item) => sum + item.stagnantAmount, 0),
+          overdueActionCount: owners.reduce((sum, item) => sum + item.overdueActionCount, 0),
+          noNextActionCount: owners.reduce((sum, item) => sum + item.noNextActionCount, 0),
+        },
       },
       flow,
-      byOwner: [...byOwner.values()]
-        .filter((item) => memberById.has(item.ownerId))
-        .sort((a, b) => b.openAmount - a.openAmount || a.ownerName.localeCompare(b.ownerName)),
+      byOwner: owners,
     }
+  }
+
+  async myPipeline(actor: AuthUser) {
+    const pipeline = await this.pipeline({ ownerId: actor.id }, actor)
+    return { pool: pipeline.pool }
   }
 
   async team(query: ReportingQueryDto, actor: AuthUser) {

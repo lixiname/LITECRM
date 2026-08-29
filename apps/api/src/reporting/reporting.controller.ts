@@ -28,9 +28,16 @@ export class ReportingController {
   }
 
   @Get('pipeline')
-  @ApiOkResponse({ description: '销售漏斗、当前报价池、期间转化与下辖人员拆分' })
+  @ApiOkResponse({ description: '当前商机池、期间推进结果与下辖人员拆分' })
   pipeline(@Query() query: ReportingQueryDto, @CurrentUser() user: AuthUser) {
     return this.reportingService.pipeline(query, user)
+  }
+
+  @Get('my-pipeline')
+  @RequirePermission()
+  @ApiOkResponse({ description: '当前登录人的开放商机金额构成与健康度摘要' })
+  myPipeline(@CurrentUser() user: AuthUser) {
+    return this.reportingService.myPipeline(user)
   }
 
   @Get('team')

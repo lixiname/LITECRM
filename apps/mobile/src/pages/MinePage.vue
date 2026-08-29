@@ -26,6 +26,8 @@
         </button>
       </section>
 
+      <MyPipelineSummaryCard />
+
       <van-cell-group v-if="overdue.length" inset title="需先处理的逾期计划">
         <van-cell
           v-for="plan in overdue.slice(0, 5)"
@@ -88,6 +90,7 @@ import {
   type SalesPlanKind,
 } from '@crm/domain'
 import { localDate, salesPlanExecutionRoute } from '../libs/sales-workbench'
+import MyPipelineSummaryCard from '../components/MyPipelineSummaryCard.vue'
 
 const router = useRouter()
 const auth = useAuthStore()

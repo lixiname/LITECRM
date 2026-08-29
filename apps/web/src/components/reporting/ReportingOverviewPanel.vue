@@ -1,30 +1,26 @@
 <template>
   <div class="overview-panel">
-    <section class="overview-panel__metrics">
-      <ReportingMetricCard
-        label="当前开放商机池"
-        :value="money(data.pipeline.openAmount)"
-        :hint="`${data.pipeline.openCount} 个开放商机`"
-        tone="primary"
-      />
-      <ReportingMetricCard
-        label="其中正式报价"
-        :value="money(data.pipeline.formalQuoteAmount)"
-        hint="每个商机仅计最新有效金额"
-        tone="success"
-      />
-      <ReportingMetricCard
-        label="本期成交"
-        :value="money(data.pipeline.wonAmount)"
-        hint="CRM 确认成交金额"
-        tone="success"
-      />
-      <ReportingMetricCard
-        label="停滞商机金额"
-        :value="money(data.pipeline.stagnantAmount)"
-        hint="逾期、无下一步或长期无动作"
-        tone="warning"
-      />
+    <section class="overview-panel__headline">
+      <PipelineCompositionCard :pool="data.pipeline.pool" compact />
+      <div class="overview-panel__period-results">
+        <div class="overview-panel__period-label">
+          期间结果 · {{ data.range.start }} 至 {{ data.range.end }}
+        </div>
+        <ReportingMetricCard
+          label="本期成交"
+          :value="money(data.pipeline.wonAmount)"
+          hint="CRM 确认成交金额"
+          tone="success"
+        />
+        <ReportingMetricCard
+          label="结案赢单率"
+          :value="
+            data.pipeline.closedWinRate === null ? '暂无样本' : percent(data.pipeline.closedWinRate)
+          "
+          hint="赢单 ÷（赢单 + 失败结案）"
+          tone="primary"
+        />
+      </div>
     </section>
 
     <section class="overview-panel__columns">
@@ -42,7 +38,9 @@
             type="button"
             @click="router.push(`/customers/${customer.id}`)"
           >
-            <span><b>{{ customer.grade }}</b> · {{ customer.name }}</span>
+            <span
+              ><b>{{ customer.grade }}</b> · {{ customer.name }}</span
+            >
             <small>{{ customer.ownerName }} · {{ riskText(customer.reasons[0]) }}</small>
           </button>
         </div>
@@ -70,6 +68,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import type { ReportingOverview } from '@crm/domain'
+import PipelineCompositionCard from './PipelineCompositionCard.vue'
 import ReportingMetricCard from './ReportingMetricCard.vue'
 
 defineProps<{ data: ReportingOverview }>()
@@ -90,6 +89,9 @@ function riskText(value?: string): string {
 function money(value: number): string {
   return `¥${value.toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
 }
+function percent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`
+}
 </script>
 
 <style scoped>
@@ -99,10 +101,21 @@ function money(value: number): string {
   display: grid;
   gap: var(--crm-spacing-md);
 }
-.overview-panel__metrics {
+.overview-panel__headline {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
   gap: var(--crm-spacing-md);
+}
+.overview-panel__period-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--crm-spacing-md);
+}
+.overview-panel__period-label {
+  grid-column: 1 / -1;
+  align-self: end;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
 }
 .overview-panel__columns {
   display: grid;
@@ -137,8 +150,8 @@ function money(value: number): string {
   color: var(--crm-color-text-secondary);
 }
 @media (max-width: 1100px) {
-  .overview-panel__metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .overview-panel__headline {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -1,26 +1,11 @@
 <template>
   <div class="pipeline-panel">
-    <section class="pipeline-panel__metrics">
-      <ReportingMetricCard
-        v-for="bucket in data.pool.buckets"
-        :key="bucket.key"
-        :label="bucket.label"
-        :value="money(bucket.amount)"
-        :hint="`${bucket.count} 个开放商机`"
-        :tone="bucket.key === 'formal_quote' ? 'success' : bucket.key === 'oral_quote' ? 'primary' : undefined"
-      />
-      <ReportingMetricCard
-        label="开放商机池合计"
-        :value="money(data.pool.totalAmount)"
-        :hint="`${data.pool.totalCount} 个商机，每个商机只计一次`"
-        tone="primary"
-      />
-    </section>
+    <PipelineCompositionCard :pool="data.pool" />
 
     <el-card shadow="never">
       <template #header>
         <div class="pipeline-panel__title">
-          <span>期间转化</span>
+          <span>期间推进与结果</span>
           <small>{{ data.range.start }} 至 {{ data.range.end }}</small>
         </div>
       </template>
@@ -33,13 +18,20 @@
       </div>
       <div class="pipeline-panel__rate">
         结案赢单率：
-        <strong>{{ data.flow.closedWinRate === null ? '暂无可计算结案' : percent(data.flow.closedWinRate) }}</strong>
+        <strong>{{
+          data.flow.closedWinRate === null ? '暂无可计算结案' : percent(data.flow.closedWinRate)
+        }}</strong>
         <small>赢单 ÷（赢单 + 丢失/需求消失）</small>
       </div>
     </el-card>
 
     <el-card shadow="never">
-      <template #header>下辖人员商机与报价池</template>
+      <template #header>
+        <div class="pipeline-panel__title">
+          <span>下辖人员商机分布</span>
+          <small>商机池为当前存量，本期成交按所选期间统计</small>
+        </div>
+      </template>
       <el-table
         :data="data.byOwner"
         border
@@ -48,18 +40,46 @@
       >
         <el-table-column prop="ownerName" label="负责人" min-width="110" fixed />
         <el-table-column prop="openCount" label="开放商机" width="95" align="right" />
-        <el-table-column label="商机池" min-width="130" align="right">
+        <el-table-column label="商机池总额" min-width="135" align="right">
           <template #default="{ row }">{{ money((row as PipelineOwnerRow).openAmount) }}</template>
         </el-table-column>
-        <el-table-column label="口头报价" min-width="130" align="right">
-          <template #default="{ row }">{{ money((row as PipelineOwnerRow).oralQuoteAmount) }}</template>
-        </el-table-column>
-        <el-table-column label="正式报价" min-width="130" align="right">
-          <template #default="{ row }">{{ money((row as PipelineOwnerRow).formalQuoteAmount) }}</template>
+        <el-table-column label="当前金额依据构成" min-width="260">
+          <template #default="{ row }">
+            <div
+              class="pipeline-panel__mini-bar"
+              role="img"
+              :aria-label="ownerCompositionLabel(row)"
+            >
+              <span
+                v-for="bucket in ownerBuckets(row as PipelineOwnerRow)"
+                :key="bucket.key"
+                :class="`is-${bucket.key}`"
+                :style="{ width: `${ownerPercentage(row as PipelineOwnerRow, bucket.amount)}%` }"
+                :title="`${bucket.label}：${money(bucket.amount)}`"
+              />
+            </div>
+            <small class="pipeline-panel__composition-copy">
+              预估
+              {{
+                ownerPercentage(row as PipelineOwnerRow, (row as PipelineOwnerRow).estimateAmount)
+              }}% · 口头
+              {{
+                ownerPercentage(row as PipelineOwnerRow, (row as PipelineOwnerRow).oralQuoteAmount)
+              }}% · 正式
+              {{
+                ownerPercentage(
+                  row as PipelineOwnerRow,
+                  (row as PipelineOwnerRow).formalQuoteAmount,
+                )
+              }}%
+            </small>
+          </template>
         </el-table-column>
         <el-table-column label="停滞金额" min-width="130" align="right">
           <template #default="{ row }">
-            <span :class="{ 'pipeline-panel__danger': (row as PipelineOwnerRow).stagnantAmount > 0 }">
+            <span
+              :class="{ 'pipeline-panel__danger': (row as PipelineOwnerRow).stagnantAmount > 0 }"
+            >
               {{ money((row as PipelineOwnerRow).stagnantAmount) }}
             </span>
           </template>
@@ -76,7 +96,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { PipelineOwnerRow, PipelineReport } from '@crm/domain'
-import ReportingMetricCard from './ReportingMetricCard.vue'
+import PipelineCompositionCard from './PipelineCompositionCard.vue'
 
 const props = defineProps<{ data: PipelineReport }>()
 const router = useRouter()
@@ -93,6 +113,22 @@ function money(value: number): string {
 function percent(value: number): string {
   return `${(value * 100).toFixed(1)}%`
 }
+function ownerBuckets(row: PipelineOwnerRow) {
+  return [
+    { key: 'estimate', label: '仅预估', amount: row.estimateAmount },
+    { key: 'oral_quote', label: '口头报价', amount: row.oralQuoteAmount },
+    { key: 'formal_quote', label: '正式报价', amount: row.formalQuoteAmount },
+  ] as const
+}
+function ownerPercentage(row: PipelineOwnerRow, amount: number): number {
+  if (!row.openAmount) return 0
+  return Math.round((amount / row.openAmount) * 100)
+}
+function ownerCompositionLabel(row: PipelineOwnerRow): string {
+  return ownerBuckets(row)
+    .map((bucket) => `${bucket.label}${ownerPercentage(row, bucket.amount)}%`)
+    .join('，')
+}
 function openOwnerOpportunities(row: PipelineOwnerRow) {
   void router.push({ path: '/opportunities', query: { ownerId: row.ownerId } })
 }
@@ -101,11 +137,6 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
 <style scoped>
 .pipeline-panel {
   display: grid;
-  gap: var(--crm-spacing-md);
-}
-.pipeline-panel__metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--crm-spacing-md);
 }
 .pipeline-panel__title,
@@ -142,6 +173,31 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
 .pipeline-panel__danger {
   color: var(--el-color-danger);
   font-weight: 600;
+}
+.pipeline-panel__mini-bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--crm-color-bg-page);
+}
+.pipeline-panel__mini-bar span + span {
+  border-left: 1px solid #fff;
+}
+.pipeline-panel__composition-copy {
+  display: block;
+  margin-top: 6px;
+  color: var(--crm-color-text-secondary);
+  white-space: nowrap;
+}
+.is-estimate {
+  background: #94a3b8;
+}
+.is-oral_quote {
+  background: var(--crm-color-primary);
+}
+.is-formal_quote {
+  background: var(--el-color-success);
 }
 :deep(.pipeline-panel__row) {
   cursor: pointer;

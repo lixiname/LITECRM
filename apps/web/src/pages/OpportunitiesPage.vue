@@ -21,7 +21,7 @@
         class="opps__scope-alert"
       >
         <template #title>
-          已应用管理看板下钻筛选
+          已按指定经营范围筛选
           <el-button link type="primary" @click="clearManagementScope">清除</el-button>
         </template>
       </el-alert>

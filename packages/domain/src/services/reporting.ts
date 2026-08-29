@@ -24,6 +24,21 @@ export interface PipelineBucket extends MetricValue {
   label: string
 }
 
+export interface PipelineHealth {
+  stagnantCount: number
+  stagnantAmount: number
+  overdueActionCount: number
+  noNextActionCount: number
+}
+
+export interface PipelinePool {
+  asOf: string
+  totalCount: number
+  totalAmount: number
+  buckets: PipelineBucket[]
+  health: PipelineHealth
+}
+
 export interface PipelineOwnerRow {
   ownerId: string
   ownerName: string
@@ -34,13 +49,15 @@ export interface PipelineOwnerRow {
   formalQuoteAmount: number
   stagnantCount: number
   stagnantAmount: number
+  overdueActionCount: number
+  noNextActionCount: number
   wonCount: number
   wonAmount: number
 }
 
 export interface PipelineReport {
   range: { start: string; end: string }
-  pool: { totalCount: number; totalAmount: number; buckets: PipelineBucket[] }
+  pool: PipelinePool
   flow: {
     created: MetricValue
     firstQuoted: MetricValue
@@ -50,6 +67,10 @@ export interface PipelineReport {
     closedWinRate: number | null
   }
   byOwner: PipelineOwnerRow[]
+}
+
+export interface MyPipelineSummary {
+  pool: PipelinePool
 }
 
 export interface TeamMemberReport {
@@ -124,11 +145,9 @@ export interface ExpenseReport {
 export interface ReportingOverview {
   range: { start: string; end: string }
   pipeline: {
-    openCount: number
-    openAmount: number
-    formalQuoteAmount: number
+    pool: PipelinePool
     wonAmount: number
-    stagnantAmount: number
+    closedWinRate: number | null
   }
   team: { actualRecordCount: number; pendingCount: number; overdueCount: number }
   keyCustomers: {
@@ -157,6 +176,10 @@ export function getReportingOverview(filters: ReportingFilters): Promise<Reporti
 
 export function getPipelineReport(filters: ReportingFilters): Promise<PipelineReport> {
   return apiGet(reportingPath('pipeline', filters))
+}
+
+export function getMyPipelineSummary(): Promise<MyPipelineSummary> {
+  return apiGet('/reporting/my-pipeline')
 }
 
 export function getTeamReport(filters: ReportingFilters): Promise<TeamReport> {

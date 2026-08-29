@@ -38,14 +38,16 @@ describe('管理看板 reporting 域', () => {
   let app: INestApplication
   let managerId: string
   let assistantId: string
+  let managerPasswordHash: string
 
   beforeAll(async () => {
     await seedAccounts()
     const rows = await db
-      .select({ id: users.id, username: users.username })
+      .select({ id: users.id, username: users.username, passwordHash: users.passwordHash })
       .from(users)
       .where(sql`${users.username} in ('manager','assistant')`)
     managerId = rows.find((item) => item.username === 'manager')!.id
+    managerPasswordHash = rows.find((item) => item.username === 'manager')!.passwordHash
     assistantId = rows.find((item) => item.username === 'assistant')!.id
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
@@ -105,7 +107,7 @@ describe('管理看板 reporting 域', () => {
         id: ids.reportSales,
         username: 'report_sales',
         displayName: '看板测试销售',
-        passwordHash: 'not-used',
+        passwordHash: managerPasswordHash,
         role: 'sales',
         reportsToId: managerId,
       })
@@ -242,6 +244,12 @@ describe('管理看板 reporting 域', () => {
     expect(pipeline.status).toBe(200)
     expect(pipeline.body.pool.totalCount).toBe(1)
     expect(pipeline.body.pool.totalAmount).toBe(125000)
+    expect(pipeline.body.pool.health).toMatchObject({
+      stagnantCount: 1,
+      stagnantAmount: 125000,
+      overdueActionCount: 1,
+      noNextActionCount: 0,
+    })
     expect(
       pipeline.body.pool.buckets.find((item: { key: string }) => item.key === 'formal_quote'),
     ).toMatchObject({
@@ -307,6 +315,24 @@ describe('管理看板 reporting 域', () => {
       .get(`/api/week-view?start=${start}&end=${end}&ownerId=${assistantId}`)
       .set('Authorization', `Bearer ${managerToken}`)
     expect(outsideScope.status).toBe(403)
+  })
+
+  it('销售可读取强制本人范围的商机摘要，但不能借此访问管理看板', async () => {
+    const token = await login('report_sales')
+    const auth = { Authorization: `Bearer ${token}` }
+
+    const summary = await request(app.getHttpServer()).get('/api/reporting/my-pipeline').set(auth)
+    expect(summary.status).toBe(200)
+    expect(summary.body.pool.totalAmount).toBe(125000)
+    expect(summary.body.pool.buckets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'formal_quote', count: 1, amount: 125000 }),
+      ]),
+    )
+    expect(summary.body.pool.health.overdueActionCount).toBe(1)
+
+    const management = await request(app.getHttpServer()).get('/api/reporting/pipeline').set(auth)
+    expect(management.status).toBe(403)
   })
 })
 
