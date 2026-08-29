@@ -39,6 +39,12 @@
         >
           新建客户
         </el-button>
+        <el-button
+          v-if="auth.hasAbility('customer.import')"
+          @click="router.push('/customers/import')"
+        >
+          批量导入
+        </el-button>
       </template>
     </AppPageHeader>
 

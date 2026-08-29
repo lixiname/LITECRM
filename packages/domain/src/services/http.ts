@@ -88,9 +88,9 @@ async function parseResponse<T>(res: Response): Promise<T> {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init.headers as Record<string, string>),
+  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) }
+  if (!(init.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json'
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
 
@@ -110,6 +110,23 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return parseResponse<T>(res)
 }
 
+async function requestBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {}
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+  let res = await fetch(`${baseURL}${path}`, { method: 'GET', headers })
+  if (res.status === 401 && isRetryable(path) && refreshToken) {
+    const ok = await tryRefresh()
+    if (ok && accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
+      res = await fetch(`${baseURL}${path}`, { method: 'GET', headers })
+    } else {
+      onSessionExpired?.()
+    }
+  }
+  if (!res.ok) return parseResponse<Blob>(res)
+  return res.blob()
+}
+
 export function apiGet<T>(path: string): Promise<T> {
   return request<T>(path, { method: 'GET' })
 }
@@ -119,6 +136,14 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
     method: 'POST',
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+}
+
+export function apiPostForm<T>(path: string, body: FormData): Promise<T> {
+  return request<T>(path, { method: 'POST', body })
+}
+
+export function apiGetBlob(path: string): Promise<Blob> {
+  return requestBlob(path)
 }
 
 export function apiPatch<T>(path: string, body?: unknown): Promise<T> {

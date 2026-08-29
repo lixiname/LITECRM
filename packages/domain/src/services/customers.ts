@@ -1,5 +1,5 @@
 import type { components } from '@crm/contracts'
-import { apiDelete, apiGet, apiPatch, apiPost } from './http'
+import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPostForm } from './http'
 import type {
   Contact,
   CustomerDetail,
@@ -14,6 +14,69 @@ export type UpdateCustomerInput = components['schemas']['UpdateCustomerDto']
 export type CreateContactInput = components['schemas']['CreateContactDto']
 export type DedupCheckInput = components['schemas']['DedupCheckDto']
 export type AssigneeOption = components['schemas']['AssigneeOptionDto']
+
+export const CUSTOMER_IMPORT_FIELD_OPTIONS = [
+  { value: 'name', label: '客户名称', required: true },
+  { value: 'customerCode', label: 'ERP 客户编码' },
+  { value: 'unifiedSocialCreditCode', label: '统一社会信用代码' },
+  { value: 'province', label: '省份' },
+  { value: 'city', label: '城市' },
+  { value: 'address', label: '详细地址' },
+  { value: 'industry', label: '客户行业' },
+  { value: 'subIndustry', label: '具体领域' },
+  { value: 'customerType', label: '客户类型' },
+  { value: 'source', label: '客户来源' },
+  { value: 'grade', label: '客户等级' },
+  { value: 'ownerUsername', label: '负责人账号/姓名' },
+  { value: 'contactName', label: '联系人' },
+  { value: 'contactPhone', label: '联系电话' },
+  { value: 'preCrmDealConfirmed', label: '是否存量客户' },
+  { value: 'preCrmSalesAmount', label: 'CRM 前累计成交金额' },
+  { value: 'notes', label: '备注' },
+] as const
+
+export type CustomerImportField = (typeof CUSTOMER_IMPORT_FIELD_OPTIONS)[number]['value']
+export type CustomerImportMapping = Partial<Record<CustomerImportField, string>>
+
+export interface CustomerImportUploadResult {
+  id: string
+  fileName: string
+  headers: string[]
+  suggestedMapping: CustomerImportMapping
+  sampleRows: { rowNumber: number; rawData: Record<string, string | number | boolean | null> }[]
+  totalRows: number
+}
+
+export interface CustomerImportPreviewInput {
+  mapping: CustomerImportMapping
+  defaultRelationship: 'pre_crm_existing' | 'prospect' | 'per_row'
+  targetStatus: 'active' | 'public'
+  defaultOwnerId?: string
+  dataCutoffOn?: string
+}
+
+export interface CustomerImportPreviewRow {
+  rowNumber: number
+  status: 'ready' | 'duplicate' | 'invalid'
+  error?: string | null
+  data?: { name?: string; customerCode?: string | null; ownerId?: string | null }
+}
+
+export interface CustomerImportPreviewResult {
+  batchId: string
+  totalRows: number
+  readyRows: number
+  duplicateRows: number
+  failedRows: number
+  rows: CustomerImportPreviewRow[]
+}
+
+export interface CustomerImportCommitResult {
+  batchId: string
+  importedRows: number
+  skippedRows: number
+  failedRows: number
+}
 
 export interface CustomerListQuery {
   keyword?: string
@@ -45,6 +108,27 @@ export function getCustomer(id: string): Promise<CustomerDetail> {
 /** 客户移交选择器：只返回可承担客户归属的 active 用户。 */
 export function listCustomerAssignees(): Promise<AssigneeOption[]> {
   return apiGet<AssigneeOption[]>('/customers/assignees')
+}
+
+export function downloadCustomerImportTemplate(): Promise<Blob> {
+  return apiGetBlob('/customers/imports/template')
+}
+
+export function uploadCustomerImport(file: File): Promise<CustomerImportUploadResult> {
+  const form = new FormData()
+  form.append('file', file)
+  return apiPostForm<CustomerImportUploadResult>('/customers/imports', form)
+}
+
+export function previewCustomerImport(
+  batchId: string,
+  input: CustomerImportPreviewInput,
+): Promise<CustomerImportPreviewResult> {
+  return apiPost<CustomerImportPreviewResult>(`/customers/imports/${batchId}/preview`, input)
+}
+
+export function commitCustomerImport(batchId: string): Promise<CustomerImportCommitResult> {
+  return apiPost<CustomerImportCommitResult>(`/customers/imports/${batchId}/commit`)
 }
 
 /** 建档：名称疑似重复只提示，ERP 编码/信用代码冲突才硬拦截。 */

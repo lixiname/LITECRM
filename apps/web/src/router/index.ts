@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { title: '新建客户', requiresAbility: 'customer.write' },
         },
         {
+          path: 'customers/import',
+          name: 'customer-import',
+          component: () => import('@/pages/CustomerImportPage.vue'),
+          meta: { title: '批量导入客户', requiresAbility: 'customer.import' },
+        },
+        {
           path: 'customers/:id',
           name: 'customer-detail',
           component: () => import('@/pages/CustomerDetailPage.vue'),
@@ -121,7 +127,9 @@ router.beforeEach((to) => {
   if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility))
     return { name: 'customers' }
   if (to.meta.guestOnly && auth.isLoggedIn)
-    return auth.hasAbility('dashboard.view') ? { name: 'management-dashboard' } : { name: 'customers' }
+    return auth.hasAbility('dashboard.view')
+      ? { name: 'management-dashboard' }
+      : { name: 'customers' }
   return true
 })
 

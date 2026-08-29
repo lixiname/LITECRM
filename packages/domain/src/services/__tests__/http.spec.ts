@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, apiGet, configureHttp, setSessionExpiredHandler, setTokens } from '../http'
+import {
+  ApiError,
+  apiGet,
+  apiGetBlob,
+  apiPostForm,
+  configureHttp,
+  setSessionExpiredHandler,
+  setTokens,
+} from '../http'
 
 const mockFetch = vi.fn()
 
@@ -100,5 +108,31 @@ describe('http client（§6.5 无感刷新链路）', () => {
       String(url).includes('/auth/refresh'),
     )
     expect(refreshCalls).toHaveLength(1)
+  })
+
+  it('上传 FormData 时不手工设置 Content-Type，交由浏览器写入 multipart boundary', async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ id: 'batch-1' }))
+    const form = new FormData()
+    form.append('file', new Blob(['xlsx']), 'customers.xlsx')
+
+    await apiPostForm('/customers/imports', form)
+
+    const [, init] = mockFetch.mock.calls[0]
+    const headers = (init as RequestInit & { headers: Record<string, string> }).headers
+    expect(headers['Content-Type']).toBeUndefined()
+    expect((init as RequestInit).body).toBe(form)
+  })
+
+  it('可在保留鉴权的情况下下载二进制模板', async () => {
+    setTokens('access-1', 'refresh-1')
+    mockFetch.mockResolvedValueOnce(new Response(new Blob(['template']), { status: 200 }))
+
+    const result = await apiGetBlob('/customers/imports/template')
+
+    expect(result).toBeInstanceOf(Blob)
+    const [, init] = mockFetch.mock.calls[0]
+    expect((init as RequestInit & { headers: Record<string, string> }).headers.Authorization).toBe(
+      'Bearer access-1',
+    )
   })
 })
