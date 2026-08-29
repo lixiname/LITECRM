@@ -40,13 +40,26 @@ describe('mobile sales workbench projection', () => {
           sourcePlanId: plan.id,
         },
       ],
-      complaintRecords: [],
+      complaintRecords: [
+        {
+          id: 'complaint-1',
+          type: 'complaint_registered',
+          occurredAt: '2026-08-24',
+          customerId: 'customer-1',
+          customerName: '测试客户',
+          complaintId: 'complaint-1',
+          summary: '登记漏液问题',
+          sourcePlanId: null,
+        },
+      ],
     }
 
     const monday = buildMobileWeekDays('2026-08-24', '2026-08-24', view)[0]
     expect(monday.pendingPlans).toHaveLength(0)
     expect(monday.closedPlans).toHaveLength(1)
-    expect(monday.actualRecords).toHaveLength(1)
+    expect(monday.businessRecords).toHaveLength(1)
+    expect(monday.complaintRecords).toHaveLength(1)
+    expect(monday.actualRecords).toHaveLength(2)
     expect(monday.actualRecords[0]?.sourcePlanId).toBe(plan.id)
   })
 

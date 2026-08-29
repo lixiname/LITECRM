@@ -14,6 +14,8 @@ export interface MobileWeekDay {
   isToday: boolean
   pendingPlans: SalesPlan[]
   closedPlans: SalesPlan[]
+  businessRecords: WeekBusinessRecord[]
+  complaintRecords: WeekComplaintRecord[]
   actualRecords: MobileActualRecord[]
   hasContent: boolean
 }
@@ -24,10 +26,8 @@ export function buildMobileWeekDays(
   view?: ActionWeekView | null,
 ): MobileWeekDay[] {
   const plansByDate = groupByDate(view?.plans ?? [], (item) => item.plannedAt)
-  const actualByDate = groupByDate(
-    [...(view?.businessRecords ?? []), ...(view?.complaintRecords ?? [])],
-    (item) => item.occurredAt,
-  )
+  const businessByDate = groupByDate(view?.businessRecords ?? [], (item) => item.occurredAt)
+  const complaintByDate = groupByDate(view?.complaintRecords ?? [], (item) => item.occurredAt)
 
   return Array.from({ length: 7 }, (_, index) => {
     const value = new Date(`${monday}T00:00:00`)
@@ -36,9 +36,13 @@ export function buildMobileWeekDays(
     const plans = plansByDate.get(date) ?? []
     const pendingPlans = plans.filter((item) => item.status === 'pending')
     const closedPlans = plans.filter((item) => item.status !== 'pending')
-    const actualRecords = (actualByDate.get(date) ?? []).sort(
+    const businessRecords = (businessByDate.get(date) ?? []).sort(
       (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
     )
+    const complaintRecords = (complaintByDate.get(date) ?? []).sort(
+      (a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+    )
+    const actualRecords: MobileActualRecord[] = [...businessRecords, ...complaintRecords]
     return {
       date,
       weekday: `周${'一二三四五六日'[(value.getDay() + 6) % 7]}`,
@@ -46,6 +50,8 @@ export function buildMobileWeekDays(
       isToday: date === today,
       pendingPlans,
       closedPlans,
+      businessRecords,
+      complaintRecords,
       actualRecords,
       hasContent: plans.length > 0 || actualRecords.length > 0,
     }
@@ -84,7 +90,7 @@ export function actualRecordRoute(record: MobileActualRecord, plan?: SalesPlan):
 function groupByDate<T>(items: T[], value: (item: T) => string): Map<string, T[]> {
   const result = new Map<string, T[]>()
   for (const item of items) {
-    const date = localDate(new Date(value(item)))
+    const date = value(item).slice(0, 10)
     result.set(date, [...(result.get(date) ?? []), item])
   }
   return result
