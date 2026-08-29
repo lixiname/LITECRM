@@ -16,16 +16,22 @@ export function rescheduleSalesPlan(
   id: string,
   version: number,
   plannedAt: string,
+  reason: string,
 ): Promise<SalesPlan> {
-  return apiPost(`/sales-plans/${id}/reschedule`, { version, plannedAt })
+  return apiPost(`/sales-plans/${id}/reschedule`, { version, plannedAt, reason })
 }
 
-export function replaceSalesPlan(
-  id: string,
-  version: number,
-  plannedAt: string,
-  content: string,
-  reason: string,
-): Promise<{ replaced: SalesPlan; replacement: SalesPlan }> {
-  return apiPost(`/sales-plans/${id}/replace`, { version, plannedAt, content, reason })
+export interface SalesPlanReschedule {
+  id: string
+  salesPlanId: string
+  fromPlannedAt: string
+  toPlannedAt: string
+  reason: string
+  changedById: string
+  changedByName: string
+  occurredAt: string
+}
+
+export function getSalesPlanReschedules(id: string): Promise<SalesPlanReschedule[]> {
+  return apiGet(`/sales-plans/${id}/reschedules`)
 }

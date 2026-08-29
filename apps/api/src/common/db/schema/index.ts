@@ -27,6 +27,7 @@ import {
   dailyExpenses,
   followUpActions,
   managementComments,
+  salesPlanReschedules,
   weeklyPlans,
 } from './planning'
 
@@ -57,6 +58,7 @@ export {
   businessWeeks,
   weeklyPlans,
   followUpActions,
+  salesPlanReschedules,
   managementComments,
   dailyExpenses,
 }

@@ -420,6 +420,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sales-plans/{id}/reschedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SalesPlansController_reschedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sales-plans/{id}/reschedule": {
         parameters: {
             query?: never;
@@ -430,22 +446,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SalesPlansController_reschedule"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/sales-plans/{id}/replace": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["SalesPlansController_replace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1299,14 +1299,7 @@ export interface components {
             version: number;
             /** @description 新的计划执行时间 */
             plannedAt: string;
-        };
-        ReplaceSalesPlanDto: {
-            version: number;
-            /** @description 替代计划的执行时间 */
-            plannedAt: string;
-            /** @description 替代计划的内容 */
-            content: string;
-            /** @description 替换原因 */
+            /** @description 改期原因 */
             reason: string;
         };
         CreateClaimDto: {
@@ -2342,6 +2335,26 @@ export interface operations {
             };
         };
     };
+    SalesPlansController_reschedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 读取计划改期历史 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SalesPlansController_reschedule: {
         parameters: {
             query?: never;
@@ -2354,29 +2367,6 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["RescheduleSalesPlanDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    SalesPlansController_replace: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReplaceSalesPlanDto"];
             };
         };
         responses: {

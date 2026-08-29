@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { AppModule } from '../../app.module'
 import { seedAccounts } from '../../../scripts/seed'
 import { db } from '../../common/db/db'
-import { followUpActions } from '../../common/db/schema'
+import { followUpActions, salesPlanReschedules } from '../../common/db/schema'
 
 // M4 验收（里程碑：统一行动周视图、费用作废不改总额）
 describe('M4 计划费用域（§8.7/§8.8）', () => {
@@ -49,6 +49,11 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
 
   async function cleanup() {
     await db.execute(sql`DELETE FROM management_comments`).catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM sales_plan_reschedules WHERE sales_plan_id IN (SELECT id FROM follow_up_actions WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%'))`,
+      )
+      .catch(() => {})
     await db
       .execute(
         sql`DELETE FROM follow_up_actions WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
@@ -179,6 +184,60 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         (item: { sourcePlanId: string }) => item.sourcePlanId === plan.body.id,
       )?.type,
     ).toBe('customer_visit')
+  })
+
+  it('计划改期保持同一计划并追加不可变的日期、原因与操作人历史', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M4_改期留痕客户')
+    const plan = await request(app.getHttpServer())
+      .post('/api/sales-plans')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        planKind: 'customer_visit',
+        customerId: customer.id,
+        plannedAt: '2026-09-15T09:00:00+08:00',
+        content: '拜访设备负责人',
+      })
+    expect(plan.status).toBe(201)
+
+    const rescheduled = await request(app.getHttpServer())
+      .post(`/api/sales-plans/${plan.body.id}/reschedule`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        version: plan.body.version,
+        plannedAt: '2026-09-18T09:00:00+08:00',
+        reason: '客户临时安排设备检修',
+      })
+    expect(rescheduled.status).toBe(201)
+    expect(rescheduled.body.id).toBe(plan.body.id)
+    expect(rescheduled.body.content).toBe('拜访设备负责人')
+    expect(new Date(rescheduled.body.plannedAt).toISOString()).toBe(
+      new Date('2026-09-18T09:00:00+08:00').toISOString(),
+    )
+
+    const history = await request(app.getHttpServer())
+      .get(`/api/sales-plans/${plan.body.id}/reschedules`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(history.status).toBe(200)
+    expect(history.body).toHaveLength(1)
+    expect(history.body[0]).toMatchObject({
+      salesPlanId: plan.body.id,
+      reason: '客户临时安排设备检修',
+      changedByName: '销售甲',
+    })
+    expect(await db.select().from(salesPlanReschedules)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ salesPlanId: plan.body.id })]),
+    )
+
+    const sameDay = await request(app.getHttpServer())
+      .post(`/api/sales-plans/${plan.body.id}/reschedule`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        version: rescheduled.body.version,
+        plannedAt: '2026-09-18T15:00:00+08:00',
+        reason: '只修改同一天的时刻',
+      })
+    expect(sameDay.status).toBe(409)
   })
 
   it('直接登记不执行已有计划；下一安排相同则沿用，变化则留痕调整', async () => {

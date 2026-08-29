@@ -218,36 +218,48 @@
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="actionDialog.visible"
-      :title="actionDialog.mode === 'reschedule' ? '计划改期' : '替换计划'"
-      width="420px"
-    >
+    <el-dialog v-model="actionDialog.visible" title="计划改期" width="420px">
+      <el-alert
+        v-if="selectedAction"
+        :title="`原计划：${formatDateTime(selectedAction.plannedAt)} · ${selectedAction.content}`"
+        type="info"
+        :closable="false"
+        show-icon
+      />
       <el-form label-width="80px">
-        <el-form-item v-if="actionDialog.mode === 'reschedule'" label="新日期" required>
+        <el-form-item label="新日期" required>
           <el-input v-model="actionDialog.plannedAt" type="date" />
         </el-form-item>
-        <template v-else>
-          <el-form-item label="新日期" required>
-            <el-input v-model="actionDialog.plannedAt" type="date" />
-          </el-form-item>
-          <el-form-item label="新内容" required>
-            <el-input v-model="actionDialog.content" maxlength="150" />
-          </el-form-item>
-          <el-form-item label="替换原因" required>
-            <el-input
-              v-model="actionDialog.reason"
-              type="textarea"
-              :rows="3"
-              placeholder="说明为什么改成另一项安排"
-            />
-          </el-form-item>
-        </template>
+        <el-form-item label="改期原因" required>
+          <el-input
+            v-model="actionDialog.reason"
+            type="textarea"
+            :rows="2"
+            maxlength="150"
+            show-word-limit
+            placeholder="例如：客户临时调整时间"
+          />
+        </el-form-item>
       </el-form>
+      <div v-if="actionDialog.historyLoading || actionDialog.history.length" class="plan-history">
+        <div class="plan-history__title">历史改期</div>
+        <div v-loading="actionDialog.historyLoading">
+          <div v-for="item in actionDialog.history" :key="item.id" class="plan-history__item">
+            <span
+              >{{ formatDateTime(item.fromPlannedAt) }} →
+              {{ formatDateTime(item.toPlannedAt) }}</span
+            >
+            <small
+              >{{ item.reason }} · {{ item.changedByName }} ·
+              {{ formatDateTime(item.occurredAt) }}</small
+            >
+          </div>
+        </div>
+      </div>
       <template #footer>
         <el-button @click="actionDialog.visible = false">返回</el-button>
         <el-button type="primary" :loading="actionDialog.saving" @click="submitActionCommand">
-          {{ actionDialog.mode === 'replace' ? '确认替换' : '确认改期' }}
+          确认改期
         </el-button>
       </template>
     </el-dialog>
@@ -314,21 +326,22 @@ import OpportunityCreateDialog from '../components/opportunities/OpportunityCrea
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
 import {
   createSalesPlan,
+  getSalesPlanReschedules,
   getWeekView,
   listCustomers,
   listOpportunities,
-  replaceSalesPlan,
   rescheduleSalesPlan,
   useQuery,
   type CustomerItem,
   type Opportunity,
   type SalesPlan,
   type SalesPlanKind,
+  type SalesPlanReschedule,
   type WeekBusinessRecord,
   type WeekComplaintRecord,
 } from '@crm/domain'
 
-type ActionCommand = 'execute' | 'reschedule' | 'replace'
+type ActionCommand = 'execute' | 'reschedule'
 type AddCommand = 'plan' | 'record' | 'complaint'
 type ActualRecordVM = WeekBusinessRecord | WeekComplaintRecord
 type ActualRecordType = ActualRecordVM['type']
@@ -425,11 +438,11 @@ function goToday() {
 const selectedAction = ref<SalesPlan>()
 const actionDialog = reactive({
   visible: false,
-  mode: 'reschedule' as 'reschedule' | 'replace',
   plannedAt: '',
-  content: '',
   reason: '',
   saving: false,
+  historyLoading: false,
+  history: [] as SalesPlanReschedule[],
 })
 
 function handleActionCommand(command: ActionCommand, action: SalesPlan) {
@@ -438,38 +451,37 @@ function handleActionCommand(command: ActionCommand, action: SalesPlan) {
     return
   }
   selectedAction.value = action
-  actionDialog.mode = command
   actionDialog.plannedAt = localDateInput(action.plannedAt)
-  actionDialog.content = action.content
   actionDialog.reason = ''
+  actionDialog.history = []
   actionDialog.visible = true
+  actionDialog.historyLoading = true
+  void getSalesPlanReschedules(action.id)
+    .then((history) => {
+      if (selectedAction.value?.id === action.id) actionDialog.history = history
+    })
+    .catch((error) => {
+      ElMessage.error(error instanceof Error ? error.message : '改期历史加载失败')
+    })
+    .finally(() => {
+      if (selectedAction.value?.id === action.id) actionDialog.historyLoading = false
+    })
 }
 
 async function submitActionCommand() {
   const action = selectedAction.value
   if (!action) return
-  if (actionDialog.mode === 'reschedule' && !actionDialog.plannedAt)
-    return ElMessage.warning('请选择新的计划日期')
-  if (
-    actionDialog.mode === 'replace' &&
-    (!actionDialog.content.trim() || !actionDialog.reason.trim())
-  )
-    return ElMessage.warning('请填写新计划内容和替换原因')
+  if (!actionDialog.plannedAt) return ElMessage.warning('请选择新的计划日期')
+  if (!actionDialog.reason.trim()) return ElMessage.warning('请填写改期原因')
   actionDialog.saving = true
   try {
-    if (actionDialog.mode === 'reschedule') {
-      await rescheduleSalesPlan(action.id, action.version, toPlannedAt(actionDialog.plannedAt))
-      ElMessage.success('计划已改期')
-    } else {
-      await replaceSalesPlan(
-        action.id,
-        action.version,
-        toPlannedAt(actionDialog.plannedAt),
-        actionDialog.content.trim(),
-        actionDialog.reason.trim(),
-      )
-      ElMessage.success('计划已替换，跟进链保持连续')
-    }
+    await rescheduleSalesPlan(
+      action.id,
+      action.version,
+      toPlannedAt(actionDialog.plannedAt),
+      actionDialog.reason.trim(),
+    )
+    ElMessage.success('计划已改期并保留记录')
     actionDialog.visible = false
     await reload()
   } catch (error) {
@@ -861,5 +873,25 @@ function formatDateTime(value: string): string {
 }
 .week-view__add-trigger .el-button {
   white-space: nowrap;
+}
+.plan-history {
+  margin-top: var(--crm-spacing-md);
+  padding-top: var(--crm-spacing-md);
+  border-top: 1px solid var(--crm-color-border);
+}
+.plan-history__title {
+  margin-bottom: var(--crm-spacing-sm);
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-sm);
+  font-weight: 600;
+}
+.plan-history__item {
+  display: grid;
+  gap: 2px;
+  padding: var(--crm-spacing-sm) 0;
+  font-size: var(--crm-font-size-sm);
+}
+.plan-history__item small {
+  color: var(--crm-color-text-secondary);
 }
 </style>

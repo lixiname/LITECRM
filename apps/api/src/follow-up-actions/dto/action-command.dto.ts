@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsInt, IsISO8601, IsString, Min, MinLength } from 'class-validator'
+import { IsInt, IsISO8601, IsString, MaxLength, Min, MinLength } from 'class-validator'
 
 export class SalesPlanVersionDto {
   @ApiProperty({ minimum: 1 })
@@ -12,20 +12,10 @@ export class RescheduleSalesPlanDto extends SalesPlanVersionDto {
   @ApiProperty({ description: '新的计划执行时间' })
   @IsISO8601()
   plannedAt!: string
-}
 
-export class ReplaceSalesPlanDto extends SalesPlanVersionDto {
-  @ApiProperty({ description: '替代计划的执行时间' })
-  @IsISO8601()
-  plannedAt!: string
-
-  @ApiProperty({ description: '替代计划的内容' })
+  @ApiProperty({ description: '改期原因', maxLength: 150 })
   @IsString()
   @MinLength(1)
-  content!: string
-
-  @ApiProperty({ description: '替换原因' })
-  @IsString()
-  @MinLength(1)
+  @MaxLength(150)
   reason!: string
 }

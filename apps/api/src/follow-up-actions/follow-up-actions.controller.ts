@@ -3,7 +3,7 @@ import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
-import { ReplaceSalesPlanDto, RescheduleSalesPlanDto } from './dto/action-command.dto'
+import { RescheduleSalesPlanDto } from './dto/action-command.dto'
 import { CreateSalesPlanDto } from './dto/create-follow-up-action.dto'
 import { SalesPlansService } from './follow-up-actions.service'
 
@@ -31,21 +31,18 @@ export class SalesPlansController {
     return this.plansService.findOne(id, actor)
   }
 
+  @Get(':id/reschedules')
+  @ApiOkResponse({ description: '读取计划改期历史' })
+  reschedules(@Param('id') id: string, @CurrentUser() actor: AuthUser) {
+    return this.plansService.rescheduleHistory(id, actor)
+  }
+
   @Post(':id/reschedule')
   reschedule(
     @Param('id') id: string,
     @Body() dto: RescheduleSalesPlanDto,
     @CurrentUser() actor: AuthUser,
   ) {
-    return this.plansService.reschedule(id, dto.version, dto.plannedAt, actor)
-  }
-
-  @Post(':id/replace')
-  replace(
-    @Param('id') id: string,
-    @Body() dto: ReplaceSalesPlanDto,
-    @CurrentUser() actor: AuthUser,
-  ) {
-    return this.plansService.replace(id, dto, actor)
+    return this.plansService.reschedule(id, dto, actor)
   }
 }

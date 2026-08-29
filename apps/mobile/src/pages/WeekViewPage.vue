@@ -118,7 +118,37 @@
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
         <h3>计划改期</h3>
+        <van-notice-bar
+          v-if="selectedAction"
+          wrapable
+          :scrollable="false"
+          :text="`原计划：${formatDateTime(selectedAction.plannedAt)} · ${selectedAction.content}`"
+        />
         <van-field v-model="commandSheet.plannedAt" label="新日期" type="date" required />
+        <van-field
+          v-model="commandSheet.reason"
+          label="改期原因"
+          type="textarea"
+          rows="2"
+          maxlength="150"
+          show-word-limit
+          required
+          placeholder="例如：客户临时调整时间"
+        />
+        <div v-if="commandSheet.history.length" class="command-sheet__history">
+          <strong>历史改期</strong>
+          <div
+            v-for="item in commandSheet.history"
+            :key="item.id"
+            class="command-sheet__history-item"
+          >
+            <span
+              >{{ formatDateTime(item.fromPlannedAt) }} →
+              {{ formatDateTime(item.toPlannedAt) }}</span
+            >
+            <small>{{ item.reason }} · {{ item.changedByName }}</small>
+          </div>
+        </div>
         <div class="command-sheet__actions">
           <van-button block @click="commandSheet.visible = false">返回</van-button>
           <van-button block type="primary" :loading="commandSheet.saving" @click="submitReschedule">
@@ -135,12 +165,14 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
+  getSalesPlanReschedules,
   getWeekView,
   rescheduleSalesPlan,
   useAuthStore,
   useQuery,
   type SalesPlan,
   type SalesPlanKind,
+  type SalesPlanReschedule,
 } from '@crm/domain'
 import {
   actualRecordRoute,
@@ -180,7 +212,13 @@ const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, v
 watch(weekOffset, () => void reload())
 
 const selectedAction = ref<SalesPlan>()
-const commandSheet = reactive({ visible: false, plannedAt: '', saving: false })
+const commandSheet = reactive({
+  visible: false,
+  plannedAt: '',
+  reason: '',
+  history: [] as SalesPlanReschedule[],
+  saving: false,
+})
 
 function shiftWeek(value: number) {
   weekOffset.value += value
@@ -194,19 +232,30 @@ function executePlan(action: SalesPlan) {
 function openReschedule(action: SalesPlan) {
   selectedAction.value = action
   commandSheet.plannedAt = localDate(new Date(action.plannedAt))
+  commandSheet.reason = ''
+  commandSheet.history = []
   commandSheet.visible = true
+  void getSalesPlanReschedules(action.id)
+    .then((history) => {
+      if (selectedAction.value?.id === action.id) commandSheet.history = history
+    })
+    .catch((historyError) => {
+      showToast(historyError instanceof Error ? historyError.message : '改期历史加载失败')
+    })
 }
 async function submitReschedule() {
   const action = selectedAction.value
   if (!action || !commandSheet.plannedAt) return showToast('请选择新的计划日期')
+  if (!commandSheet.reason.trim()) return showToast('请填写改期原因')
   commandSheet.saving = true
   try {
     await rescheduleSalesPlan(
       action.id,
       action.version,
-      new Date(`${commandSheet.plannedAt}T00:00:00`).toISOString(),
+      new Date(`${commandSheet.plannedAt}T09:00:00`).toISOString(),
+      commandSheet.reason.trim(),
     )
-    showToast('计划已改期')
+    showToast('计划已改期并保留记录')
     commandSheet.visible = false
     await reload()
   } catch (commandError) {
@@ -214,6 +263,9 @@ async function submitReschedule() {
   } finally {
     commandSheet.saving = false
   }
+}
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function goQuickAdd(date: string) {
   void router.push({ path: '/quick-add', query: { date } })
@@ -407,6 +459,22 @@ function formatTime(value: string): string {
 .command-sheet h3 {
   margin-top: 0;
   text-align: center;
+}
+.command-sheet__history {
+  display: grid;
+  gap: var(--crm-spacing-xs);
+  margin-top: var(--crm-spacing-md);
+  padding-top: var(--crm-spacing-md);
+  border-top: 1px solid var(--crm-color-border);
+  font-size: var(--crm-font-size-sm);
+}
+.command-sheet__history-item {
+  display: grid;
+  gap: 2px;
+  padding: var(--crm-spacing-xs) 0;
+}
+.command-sheet__history-item small {
+  color: var(--crm-color-text-secondary);
 }
 .command-sheet__actions {
   display: grid;

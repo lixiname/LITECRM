@@ -3,10 +3,17 @@ import { and, asc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
 import { db, type DbClient } from '../common/db/db'
-import { complaints, customers, followUpActions, opportunities } from '../common/db/schema'
+import {
+  complaints,
+  customers,
+  followUpActions,
+  opportunities,
+  salesPlanReschedules,
+  users,
+} from '../common/db/schema'
 import type { FollowUpActionSourceType, SalesPlanKind } from '../common/constants'
 import type { CreateSalesPlanDto } from './dto/create-follow-up-action.dto'
-import type { ReplaceSalesPlanDto } from './dto/action-command.dto'
+import type { RescheduleSalesPlanDto } from './dto/action-command.dto'
 
 export interface NewLinkedAction {
   ownerId: string
@@ -110,35 +117,31 @@ export class SalesPlansService {
     }
   }
 
-  async reschedule(id: string, version: number, plannedAt: string, actor: AuthUser) {
-    await this.assertVisible(id, actor)
-    const [updated] = await db
-      .update(followUpActions)
-      .set({
-        plannedAt: new Date(plannedAt),
-        updatedAt: new Date(),
-        version: sql`${followUpActions.version} + 1`,
-      })
-      .where(
-        and(
-          eq(followUpActions.id, id),
-          eq(followUpActions.status, 'pending'),
-          eq(followUpActions.version, version),
-        ),
-      )
-      .returning()
-    if (!updated) throw new ConflictException('行动已变化，请刷新后重试')
-    return updated
-  }
-
-  async replace(id: string, dto: ReplaceSalesPlanDto, actor: AuthUser) {
+  async reschedule(id: string, dto: RescheduleSalesPlanDto, actor: AuthUser) {
     await this.assertVisible(id, actor)
     return db.transaction(async (tx) => {
-      const [replaced] = await tx
+      const [current] = await tx
+        .select({ plannedAt: followUpActions.plannedAt })
+        .from(followUpActions)
+        .where(
+          and(
+            eq(followUpActions.id, id),
+            eq(followUpActions.status, 'pending'),
+            eq(followUpActions.version, dto.version),
+          ),
+        )
+        .limit(1)
+      if (!current) throw new ConflictException('行动已变化，请刷新后重试')
+
+      const nextPlannedAt = new Date(dto.plannedAt)
+      if (businessDate(current.plannedAt) === businessDate(nextPlannedAt)) {
+        throw new ConflictException('新日期与当前计划日期相同')
+      }
+
+      const [updated] = await tx
         .update(followUpActions)
         .set({
-          status: 'cancelled',
-          cancelReason: `计划已替换：${dto.reason.trim()}`,
+          plannedAt: nextPlannedAt,
           updatedAt: new Date(),
           version: sql`${followUpActions.version} + 1`,
         })
@@ -150,19 +153,36 @@ export class SalesPlansService {
           ),
         )
         .returning()
-      if (!replaced) throw new ConflictException('计划已变化，请刷新后重试')
-      const replacement = await this.createLinked(tx, {
-        ownerId: replaced.ownerId,
-        customerId: replaced.customerId,
-        opportunityId: replaced.opportunityId,
-        complaintId: replaced.complaintId,
-        planKind: replaced.planKind as SalesPlanKind,
-        originType: 'manual',
-        plannedAt: new Date(dto.plannedAt),
-        content: dto.content,
+      if (!updated) throw new ConflictException('行动已变化，请刷新后重试')
+
+      await tx.insert(salesPlanReschedules).values({
+        salesPlanId: id,
+        fromPlannedAt: current.plannedAt,
+        toPlannedAt: nextPlannedAt,
+        reason: dto.reason.trim(),
+        changedById: actor.id,
       })
-      return { replaced, replacement }
+      return updated
     })
+  }
+
+  async rescheduleHistory(id: string, actor: AuthUser) {
+    await this.assertVisible(id, actor)
+    return db
+      .select({
+        id: salesPlanReschedules.id,
+        salesPlanId: salesPlanReschedules.salesPlanId,
+        fromPlannedAt: salesPlanReschedules.fromPlannedAt,
+        toPlannedAt: salesPlanReschedules.toPlannedAt,
+        reason: salesPlanReschedules.reason,
+        changedById: salesPlanReschedules.changedById,
+        changedByName: users.displayName,
+        occurredAt: salesPlanReschedules.occurredAt,
+      })
+      .from(salesPlanReschedules)
+      .innerJoin(users, eq(salesPlanReschedules.changedById, users.id))
+      .where(eq(salesPlanReschedules.salesPlanId, id))
+      .orderBy(asc(salesPlanReschedules.occurredAt))
   }
 
   async fulfillLinked(tx: DbClient, planId: string | undefined, target: LinkedActionTarget) {
@@ -380,4 +400,13 @@ function isUniqueViolation(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const value = error as { code?: string; cause?: { code?: string } }
   return value.code === '23505' || value.cause?.code === '23505'
+}
+
+function businessDate(value: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value)
 }

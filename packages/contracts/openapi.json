@@ -898,6 +898,27 @@
         "tags": ["sales-plans"]
       }
     },
+    "/sales-plans/{id}/reschedules": {
+      "get": {
+        "operationId": "SalesPlansController_reschedules",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "读取计划改期历史"
+          }
+        },
+        "tags": ["sales-plans"]
+      }
+    },
     "/sales-plans/{id}/reschedule": {
       "post": {
         "operationId": "SalesPlansController_reschedule",
@@ -917,37 +938,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RescheduleSalesPlanDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": ["sales-plans"]
-      }
-    },
-    "/sales-plans/{id}/replace": {
-      "post": {
-        "operationId": "SalesPlansController_replace",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReplaceSalesPlanDto"
               }
             }
           }
@@ -2882,31 +2872,14 @@
           "plannedAt": {
             "type": "string",
             "description": "新的计划执行时间"
-          }
-        },
-        "required": ["version", "plannedAt"]
-      },
-      "ReplaceSalesPlanDto": {
-        "type": "object",
-        "properties": {
-          "version": {
-            "type": "number",
-            "minimum": 1
-          },
-          "plannedAt": {
-            "type": "string",
-            "description": "替代计划的执行时间"
-          },
-          "content": {
-            "type": "string",
-            "description": "替代计划的内容"
           },
           "reason": {
             "type": "string",
-            "description": "替换原因"
+            "description": "改期原因",
+            "maxLength": 150
           }
         },
-        "required": ["version", "plannedAt", "content", "reason"]
+        "required": ["version", "plannedAt", "reason"]
       },
       "CreateClaimDto": {
         "type": "object",

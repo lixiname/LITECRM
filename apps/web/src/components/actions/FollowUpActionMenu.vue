@@ -5,7 +5,6 @@
       <el-dropdown-menu>
         <el-dropdown-item v-if="!hideExecute" command="execute">填写执行结果</el-dropdown-item>
         <el-dropdown-item command="reschedule">改期</el-dropdown-item>
-        <el-dropdown-item v-if="showReplace" command="replace" divided>替换计划（高级）</el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -14,11 +13,10 @@
 <script setup lang="ts">
 import type { SalesPlan } from '@crm/domain'
 
-type ActionCommand = 'execute' | 'reschedule' | 'replace'
+type ActionCommand = 'execute' | 'reschedule'
 
-const props = withDefaults(defineProps<{ action: SalesPlan; hideExecute?: boolean; showReplace?: boolean }>(), {
+const props = withDefaults(defineProps<{ action: SalesPlan; hideExecute?: boolean }>(), {
   hideExecute: false,
-  showReplace: false,
 })
 const emit = defineEmits<{
   command: [command: ActionCommand, action: SalesPlan]

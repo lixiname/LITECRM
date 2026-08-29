@@ -99,6 +99,13 @@
       "when": 1788004000000,
       "tag": "0013_vengeful_tombstone",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788005000000,
+      "tag": "0014_fancy_jazinda",
+      "breakpoints": true
     }
   ]
 }
