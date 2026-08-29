@@ -3,33 +3,38 @@
     <van-nav-bar title="客户" left-arrow @click-left="router.push('/')" />
     <van-search v-model="keyword" placeholder="搜索名称/城市" @search="onSearch" />
 
-    <van-list
-      v-model:loading="loading"
-      :finished="finished"
-      finished-text="没有更多了"
-      @load="onLoad"
-    >
-      <van-cell
-        v-for="c in items"
-        :key="c.id"
-        :title="c.name"
-        is-link
-        @click="router.push(`/customers/${c.id}`)"
+    <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+      <van-list
+        v-model:loading="loading"
+        v-model:error="loadError"
+        :finished="finished"
+        error-text="加载失败，点击重试"
+        finished-text="没有更多了"
+        @load="onLoad"
       >
-        <template #label>
-          <div class="customers__profile">{{ businessProfile(c) }}</div>
-          <div class="customers__meta">
-            <span>{{ locationText(c) }}</span>
-            <span>{{ c.grade }} 级</span>
-            <span>{{ relationshipLabel(c.relationshipStage) }}</span>
-            <span>{{ statusLabel(c.status) }}</span>
-          </div>
-          <div :class="['customers__action', { 'is-overdue': isOverdue(c.nextActionAt) }]">
-            下一步：{{ nextActionText(c) }}
-          </div>
-        </template>
-      </van-cell>
-    </van-list>
+        <van-cell
+          v-for="c in items"
+          :key="c.id"
+          :title="c.name"
+          is-link
+          @click="router.push(`/customers/${c.id}`)"
+        >
+          <template #label>
+            <div class="customers__profile">{{ businessProfile(c) }}</div>
+            <div class="customers__meta">
+              <span>{{ locationText(c) }}</span>
+              <span>{{ c.grade }} 级</span>
+              <span>{{ relationshipLabel(c.relationshipStage) }}</span>
+              <span>{{ statusLabel(c.status) }}</span>
+            </div>
+            <div :class="['customers__action', { 'is-overdue': isOverdue(c.nextActionAt) }]">
+              下一步：{{ nextActionText(c) }}
+            </div>
+          </template>
+        </van-cell>
+        <van-empty v-if="finished && !items.length" description="没有符合条件的客户" />
+      </van-list>
+    </van-pull-refresh>
   </div>
 </template>
 
@@ -52,10 +57,13 @@ const router = useRouter()
 const keyword = ref('')
 const items = ref<CustomerItem[]>([])
 const loading = ref(false)
+const refreshing = ref(false)
+const loadError = ref(false)
 const finished = ref(false)
 const page = ref(1)
 const PAGE_SIZE = 20
 const labels = ref<Record<string, string>>({})
+let queryRevision = 0
 
 onMounted(async () => {
   const groups = await Promise.all([
@@ -68,27 +76,48 @@ onMounted(async () => {
 })
 
 async function onLoad() {
+  const revision = queryRevision
+  const requestedPage = page.value
+  loadError.value = false
   try {
     const res = await listCustomers({
       keyword: keyword.value.trim(),
-      page: page.value,
+      page: requestedPage,
       pageSize: PAGE_SIZE,
     })
-    items.value.push(...res.items)
+    if (revision !== queryRevision) return
+    const existingIds = new Set(items.value.map((item) => item.id))
+    items.value.push(...res.items.filter((item) => !existingIds.has(item.id)))
     finished.value = items.value.length >= res.total
-    page.value += 1
+    page.value = requestedPage + 1
   } catch {
-    finished.value = true
+    if (revision === queryRevision) loadError.value = true
   } finally {
-    loading.value = false
+    if (revision === queryRevision) {
+      loading.value = false
+      refreshing.value = false
+    }
   }
 }
 
 function onSearch() {
+  resetList()
+  loading.value = true
+  void onLoad()
+}
+
+function onRefresh() {
+  resetList()
+  refreshing.value = true
+  void onLoad()
+}
+
+function resetList() {
+  queryRevision += 1
   items.value = []
   page.value = 1
   finished.value = false
-  void onLoad()
+  loadError.value = false
 }
 
 function statusLabel(status: CustomerStatus): string {

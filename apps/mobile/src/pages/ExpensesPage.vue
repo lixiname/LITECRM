@@ -34,7 +34,11 @@
       </div>
     </van-form>
 
-    <van-cell-group inset title="本月记录">
+    <van-loading v-if="loading" class="exp__loading" />
+    <van-empty v-else-if="loadError" :description="loadError">
+      <van-button size="small" type="primary" @click="load">重新加载</van-button>
+    </van-empty>
+    <van-cell-group v-else inset :title="`${currentMonthLabel}记录`">
       <van-cell
         v-for="e in items"
         :key="e.id"
@@ -55,6 +59,7 @@
           >
         </template>
       </van-cell>
+      <van-empty v-if="!items.length" description="本月暂无费用记录" :image-size="56" />
     </van-cell-group>
   </div>
 </template>
@@ -84,9 +89,21 @@ const form = reactive({
 })
 const items = ref<Expense[]>([])
 const saving = ref(false)
+const loading = ref(false)
+const loadError = ref('')
+const currentMonth = localBusinessDate().slice(0, 7)
+const currentMonthLabel = `${Number(currentMonth.slice(5))} 月`
 
 async function load() {
-  items.value = await listExpenses().catch(() => [])
+  loading.value = true
+  loadError.value = ''
+  try {
+    items.value = await listExpenses(currentMonth)
+  } catch (error) {
+    loadError.value = error instanceof Error ? error.message : '费用记录加载失败'
+  } finally {
+    loading.value = false
+  }
 }
 onMounted(load)
 
@@ -122,17 +139,31 @@ async function handleSave() {
 }
 
 async function submit(id: string) {
-  await submitExpense(id).catch((e) => showToast(e.message))
-  await load()
+  try {
+    await submitExpense(id)
+    showToast('费用已提交')
+    await load()
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '提交失败')
+  }
 }
 async function remove(id: string) {
-  await voidExpense(id).catch((e) => showToast(e.message))
-  await load()
+  try {
+    await voidExpense(id)
+    showToast('费用已作废')
+    await load()
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '作废失败')
+  }
 }
 </script>
 
 <style scoped>
 .exp__submit {
   margin: var(--crm-spacing-lg) var(--crm-spacing-md);
+}
+.exp__loading {
+  display: block;
+  margin: var(--crm-spacing-xl) auto;
 }
 </style>

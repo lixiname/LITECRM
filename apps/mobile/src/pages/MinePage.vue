@@ -59,6 +59,16 @@
       <van-cell title="数据范围" :value="DATA_SCOPE_LABELS[auth.dataScope ?? 'self']" />
     </van-cell-group>
 
+    <van-cell-group v-if="canWrite" inset title="业务工具" class="mine__tools">
+      <van-cell
+        title="费用管理"
+        label="记录并查看本月销售费用"
+        icon="balance-list-o"
+        is-link
+        to="/expenses"
+      />
+    </van-cell-group>
+
     <div class="mine__logout">
       <van-button round block type="danger" plain @click="handleLogout">退出登录</van-button>
     </div>
@@ -124,7 +134,7 @@ function planLabel(kind: SalesPlanKind): string {
   }[kind]
 }
 function dateTime(value: string): string {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+  return value
 }
 </script>
 
@@ -160,7 +170,8 @@ function dateTime(value: string): string {
   color: var(--crm-color-text-secondary);
   font-size: 11px;
 }
-.mine__profile {
+.mine__profile,
+.mine__tools {
   margin-top: var(--crm-spacing-md);
 }
 .mine__logout {
