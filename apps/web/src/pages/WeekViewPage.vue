@@ -84,6 +84,7 @@
                   v-for="action in day.pendingPlans"
                   :key="action.id"
                   class="week-view__item"
+                  :class="{ 'week-view__item--overdue': isOverdue(action) }"
                   role="button"
                   tabindex="0"
                   @click="handleActionCommand('execute', action)"
@@ -91,7 +92,7 @@
                 >
                   <div class="week-view__item-head">
                     <span>{{ planLabel(action.planKind) }}</span>
-                    <small>待办</small>
+                    <small>{{ isOverdue(action) ? '逾期' : '待办' }}</small>
                   </div>
                   <strong class="week-view__customer">{{ action.customerName }}</strong>
                   <small v-if="action.opportunityName">{{ action.opportunityName }}</small>
@@ -470,6 +471,10 @@ function shiftWeek(offset: number) {
 }
 function goToday() {
   weekOffset.value = 0
+}
+
+function isOverdue(action: SalesPlan): boolean {
+  return action.status === 'pending' && action.plannedAt.slice(0, 10) < todayStr
 }
 
 const selectedAction = ref<SalesPlan>()
@@ -871,6 +876,14 @@ function formatDateTime(value: string): string {
   font-size: var(--crm-font-size-sm);
   word-break: break-word;
   cursor: pointer;
+}
+.week-view__item--overdue {
+  border-color: var(--el-color-danger-light-5);
+  background: var(--el-color-danger-light-9);
+}
+.week-view__item--overdue .week-view__item-head small {
+  color: var(--crm-color-danger);
+  font-weight: 600;
 }
 .week-view__item-actions {
   display: flex;

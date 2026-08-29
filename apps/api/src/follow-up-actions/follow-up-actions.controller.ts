@@ -20,7 +20,7 @@ export class SalesPlansController {
   }
 
   @Get('week')
-  @ApiOkResponse({ description: '范围内全部计划 + 更早逾期待办' })
+  @ApiOkResponse({ description: '范围内全部计划 + 截至今天的全部逾期待办' })
   week(@Query('start') start: string, @Query('end') end: string, @CurrentUser() actor: AuthUser) {
     return this.plansService.week(actor, start, end)
   }

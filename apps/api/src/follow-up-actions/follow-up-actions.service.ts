@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { and, asc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
@@ -136,6 +141,9 @@ export class SalesPlansService {
       if (!current) throw new ConflictException('行动已变化，请刷新后重试')
 
       const nextPlannedAt = businessDate(dto.plannedAt)
+      if (nextPlannedAt < todayBusinessDate()) {
+        throw new BadRequestException('改期日期不能早于今天')
+      }
       if (current.plannedAt === nextPlannedAt) {
         throw new ConflictException('新日期与当前计划日期相同')
       }
@@ -350,7 +358,6 @@ export class SalesPlansService {
           and(
             ownerCondition,
             eq(followUpActions.status, 'pending'),
-            sql`${followUpActions.plannedAt} < ${start}`,
             sql`${followUpActions.plannedAt} < ${today}`,
           ),
         )

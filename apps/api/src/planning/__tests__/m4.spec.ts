@@ -7,6 +7,7 @@ import { AppModule } from '../../app.module'
 import { seedAccounts } from '../../../scripts/seed'
 import { db } from '../../common/db/db'
 import { followUpActions, salesPlanReschedules } from '../../common/db/schema'
+import { businessDate, todayBusinessDate } from '../../common/business-date'
 
 // M4 验收（里程碑：统一行动周视图、费用作废不改总额）
 describe('M4 计划费用域（§8.7/§8.8）', () => {
@@ -236,6 +237,64 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         reason: '只修改同一天的时刻',
       })
     expect(sameDay.status).toBe(409)
+  })
+
+  it('周视图将本周已经过去的待执行计划同时归入逾期队列', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M4_本周逾期客户')
+    const yesterday = businessDate(new Date(Date.now() - 86_400_000))
+    const rangeStart = businessDate(new Date(Date.now() - 3 * 86_400_000))
+    const rangeEnd = businessDate(new Date(Date.now() + 3 * 86_400_000))
+    const plan = await request(app.getHttpServer())
+      .post('/api/sales-plans')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        planKind: 'customer_visit',
+        customerId: customer.id,
+        plannedAt: yesterday,
+        content: '处理本周已经逾期的计划',
+      })
+    expect(plan.status).toBe(201)
+
+    const view = await request(app.getHttpServer())
+      .get(`/api/week-view?start=${rangeStart}&end=${rangeEnd}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(view.status).toBe(200)
+    expect(view.body.plans).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: plan.body.id })]),
+    )
+    expect(view.body.overdue).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: plan.body.id })]),
+    )
+  })
+
+  it('改期只允许今天或未来日期', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M4_改期日期约束客户')
+    const tomorrow = businessDate(new Date(Date.now() + 86_400_000))
+    const yesterday = businessDate(new Date(Date.now() - 86_400_000))
+    const plan = await request(app.getHttpServer())
+      .post('/api/sales-plans')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        planKind: 'customer_visit',
+        customerId: customer.id,
+        plannedAt: tomorrow,
+        content: '等待改期',
+      })
+
+    const rejected = await request(app.getHttpServer())
+      .post(`/api/sales-plans/${plan.body.id}/reschedule`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({ version: plan.body.version, plannedAt: yesterday, reason: '错误地改到过去' })
+    expect(rejected.status).toBe(400)
+    expect(rejected.body.message).toBe('改期日期不能早于今天')
+
+    const accepted = await request(app.getHttpServer())
+      .post(`/api/sales-plans/${plan.body.id}/reschedule`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({ version: plan.body.version, plannedAt: todayBusinessDate(), reason: '调整到今天' })
+    expect(accepted.status).toBe(201)
   })
 
   it('直接登记不执行已有计划；下一安排相同则沿用，变化则留痕调整', async () => {

@@ -86,10 +86,12 @@
             v-for="action in selectedDay.pendingPlans"
             :key="action.id"
             class="plan-row"
+            :class="{ 'plan-row--overdue': isOverdue(action) }"
             @click="executePlan(action)"
           >
             <div>
               <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
+              <small v-if="isOverdue(action)">已逾期</small>
               <strong>{{ action.customerName }}</strong>
               <span>{{ action.content }}</span>
             </div>
@@ -324,6 +326,9 @@ function moveSelectedDay(offset: -1 | 1) {
 }
 function executePlan(action: SalesPlan) {
   if (canWrite.value) void router.push(salesPlanExecutionRoute(action))
+}
+function isOverdue(action: SalesPlan): boolean {
+  return action.status === 'pending' && action.plannedAt.slice(0, 10) < todayText
 }
 function openReschedule(action: SalesPlan) {
   selectedAction.value = action
