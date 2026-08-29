@@ -202,7 +202,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="计划日期" required>
-          <el-input v-model="planForm.plannedAt" type="date" />
+          <el-date-picker v-model="planForm.plannedAt" type="date" value-format="YYYY-MM-DD" />
         </el-form-item>
         <el-form-item label="计划内容" required>
           <el-input
@@ -228,7 +228,7 @@
       />
       <el-form label-width="80px">
         <el-form-item label="新日期" required>
-          <el-input v-model="actionDialog.plannedAt" type="date" />
+          <el-date-picker v-model="actionDialog.plannedAt" type="date" value-format="YYYY-MM-DD" />
         </el-form-item>
         <el-form-item label="改期原因" required>
           <el-input
@@ -306,7 +306,29 @@
       </template>
     </el-dialog>
 
-    <OpportunityCreateDialog ref="opportunityCreateDialog" @created="openCreatedOpportunity" />
+    <OpportunityCreateDialog ref="opportunityCreateDialog" @created="handleRecordChanged" />
+    <CustomerBusinessDialogs
+      v-if="dialogCustomerId"
+      :key="dialogCustomerId"
+      ref="customerBusinessDialogs"
+      :customer-id="dialogCustomerId"
+      :customer-name="dialogCustomerName"
+      @changed="handleRecordChanged"
+    />
+    <OpportunityCommandDialogs
+      v-if="dialogOpportunity"
+      :key="dialogOpportunity.id"
+      ref="opportunityCommands"
+      :opportunity="dialogOpportunity"
+      @changed="handleRecordChanged"
+    />
+    <ComplaintCommandDialog
+      v-if="dialogComplaint"
+      :key="dialogComplaint.id"
+      ref="complaintCommands"
+      :complaint="dialogComplaint"
+      @changed="handleRecordChanged"
+    />
     <ActualRecordDetailDrawer
       v-model="actualDetailVisible"
       :record="selectedActualRecord"
@@ -316,16 +338,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
 import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
+import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
+import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
+import ComplaintCommandDialog from '../components/complaints/ComplaintCommandDialog.vue'
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
 import {
   createSalesPlan,
+  getComplaint,
+  getOpportunity,
   getSalesPlanReschedules,
   getWeekView,
   listCustomers,
@@ -333,7 +359,9 @@ import {
   rescheduleSalesPlan,
   useQuery,
   type CustomerItem,
+  type ComplaintDetail,
   type Opportunity,
+  type OpportunityDetail,
   type SalesPlan,
   type SalesPlanKind,
   type SalesPlanReschedule,
@@ -346,8 +374,14 @@ type AddCommand = 'plan' | 'record' | 'complaint'
 type ActualRecordVM = WeekBusinessRecord | WeekComplaintRecord
 type ActualRecordType = ActualRecordVM['type']
 
-const router = useRouter()
 const opportunityCreateDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
+const customerBusinessDialogs = ref<InstanceType<typeof CustomerBusinessDialogs>>()
+const opportunityCommands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
+const complaintCommands = ref<InstanceType<typeof ComplaintCommandDialog>>()
+const dialogCustomerId = ref('')
+const dialogCustomerName = ref('')
+const dialogOpportunity = ref<OpportunityDetail>()
+const dialogComplaint = ref<ComplaintDetail>()
 const actualDetailVisible = ref(false)
 const selectedActualRecord = ref<ActualRecordVM>()
 const selectedActualPlan = ref<SalesPlan>()
@@ -447,7 +481,7 @@ const actionDialog = reactive({
 
 function handleActionCommand(command: ActionCommand, action: SalesPlan) {
   if (command === 'execute') {
-    void router.push(executionRoute(action))
+    void openPlanExecution(action)
     return
   }
   selectedAction.value = action
@@ -491,14 +525,6 @@ async function submitActionCommand() {
   }
 }
 
-function executionRoute(plan: SalesPlan) {
-  if (plan.planKind === 'opportunity_follow_up')
-    return `/opportunities/${plan.opportunityId}?executePlan=${plan.id}`
-  if (plan.planKind === 'complaint_follow_up')
-    return `/complaints/${plan.complaintId}?executePlan=${plan.id}`
-  return `/customers/${plan.customerId}?executePlan=${plan.id}`
-}
-
 function localDateInput(value: string): string {
   return new Date(value).toLocaleDateString('sv-SE')
 }
@@ -539,7 +565,7 @@ async function loadRecordOpportunities() {
   )
 }
 
-function continueRecord() {
+async function continueRecord() {
   if (!recordDialog.customerId) return ElMessage.warning('请选择客户')
   if (recordDialog.type === 'opportunity_created') {
     const customer = customerOptions.value.find((item) => item.id === recordDialog.customerId)
@@ -553,17 +579,18 @@ function continueRecord() {
   }
   if (recordDialog.type === 'customer_visit' || recordDialog.type === 'complaint_registered') {
     recordDialog.visible = false
-    const record = recordDialog.type === 'customer_visit' ? 'visit' : 'complaint'
-    void router.push(
-      `/customers/${recordDialog.customerId}?record=${record}&date=${recordDialog.date}`,
-    )
+    const customer = customerOptions.value.find((item) => item.id === recordDialog.customerId)
+    await prepareCustomerDialog(recordDialog.customerId, customer?.name ?? '')
+    if (recordDialog.type === 'customer_visit') {
+      customerBusinessDialogs.value?.openVisit(undefined, recordDialog.date)
+    } else {
+      customerBusinessDialogs.value?.openComplaint(recordDialog.date)
+    }
     return
   }
   if (!recordDialog.opportunityId) return ElMessage.warning('请选择商机')
   recordDialog.visible = false
-  void router.push(
-    `/opportunities/${recordDialog.opportunityId}?record=progress&date=${recordDialog.date}`,
-  )
+  await openOpportunityProgress(recordDialog.opportunityId, undefined, recordDialog.date)
 }
 
 function openActualRecord(record: ActualRecordVM) {
@@ -586,8 +613,47 @@ function openClosedPlan(action: SalesPlan) {
   actualDetailVisible.value = true
 }
 
-function openCreatedOpportunity(opportunityId: string) {
-  void router.push(`/opportunities/${opportunityId}`)
+async function handleRecordChanged() {
+  await reload()
+}
+
+async function openPlanExecution(plan: SalesPlan) {
+  try {
+    if (plan.planKind === 'customer_visit' && plan.customerId) {
+      await prepareCustomerDialog(plan.customerId, plan.customerName ?? '')
+      customerBusinessDialogs.value?.openVisit(plan)
+      return
+    }
+    if (plan.planKind === 'opportunity_follow_up' && plan.opportunityId) {
+      await openOpportunityProgress(plan.opportunityId, plan)
+      return
+    }
+    if (plan.planKind === 'complaint_follow_up' && plan.complaintId) {
+      dialogComplaint.value = await getComplaint(plan.complaintId)
+      await nextTick()
+      complaintCommands.value?.open(plan)
+      return
+    }
+    ElMessage.error('计划缺少对应的业务对象，无法执行')
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '业务表单加载失败')
+  }
+}
+
+async function prepareCustomerDialog(customerId: string, customerName: string) {
+  dialogCustomerId.value = customerId
+  dialogCustomerName.value = customerName
+  await nextTick()
+}
+
+async function openOpportunityProgress(
+  opportunityId: string,
+  plan?: SalesPlan,
+  occurredDate?: string,
+) {
+  dialogOpportunity.value = await getOpportunity(opportunityId)
+  await nextTick()
+  opportunityCommands.value?.openProgress(plan, occurredDate)
 }
 
 function handleAddCommand(command: AddCommand, day: DayVM) {
