@@ -32,11 +32,12 @@
     <div class="pipeline-composition__legend">
       <div v-for="bucket in pool.buckets" :key="bucket.key" class="pipeline-composition__item">
         <i :class="`is-${bucket.key}`" />
-        <span>
-          <b>{{ bucket.label }}</b>
-          <small>{{ bucket.count }} 个 · {{ percentage(bucket.amount) }}%</small>
+        <b>{{ bucket.label }}</b>
+        <small>{{ bucket.count }} 个</small>
+        <span class="pipeline-composition__item-value">
+          <strong>{{ money(bucket.amount) }}</strong>
+          <em>{{ percentage(bucket.amount) }}%</em>
         </span>
-        <strong>{{ money(bucket.amount) }}</strong>
       </div>
     </div>
 
@@ -147,26 +148,39 @@ function money(value: number): string {
 }
 .pipeline-composition__legend {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--crm-spacing-md);
+  gap: 2px;
 }
 .pipeline-composition__item {
+  display: grid;
+  grid-template-columns: 10px minmax(90px, 1fr) 58px minmax(150px, auto);
+  gap: 10px;
   min-width: 0;
-  gap: 8px;
+  padding: 7px 0;
 }
 .pipeline-composition__item i {
   width: 8px;
-  height: 30px;
+  height: 8px;
   flex: 0 0 auto;
-  border-radius: 4px;
+  border-radius: 50%;
 }
-.pipeline-composition__item span {
-  min-width: 0;
-  flex: 1;
+.pipeline-composition__item small {
+  margin: 0;
+  text-align: right;
 }
 .pipeline-composition__item b,
 .pipeline-composition__item strong {
   font-size: 13px;
+}
+.pipeline-composition__item-value {
+  display: grid;
+  grid-template-columns: minmax(95px, 1fr) 42px;
+  gap: 10px;
+  text-align: right;
+}
+.pipeline-composition__item-value em {
+  color: var(--crm-color-text-secondary);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
 }
 .pipeline-composition__health {
   flex-wrap: wrap;
@@ -202,12 +216,12 @@ function money(value: number): string {
 .pipeline-composition--compact .pipeline-composition__bar {
   height: 10px;
 }
-.pipeline-composition--compact .pipeline-composition__item i {
-  height: 22px;
-}
 @media (max-width: 900px) {
-  .pipeline-composition__legend {
-    grid-template-columns: 1fr;
+  .pipeline-composition__item {
+    grid-template-columns: 10px minmax(80px, 1fr) minmax(130px, auto);
+  }
+  .pipeline-composition__item > small {
+    display: none;
   }
 }
 </style>

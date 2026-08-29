@@ -30,7 +30,9 @@
         <span v-for="bucket in summary.pool.buckets" :key="bucket.key">
           <i :class="`is-${bucket.key}`" />
           <b>{{ bucket.label }}</b>
-          <small>{{ money(bucket.amount) }} · {{ percentage(bucket.amount) }}%</small>
+          <small>{{ bucket.count }} 个</small>
+          <strong>{{ money(bucket.amount) }}</strong>
+          <em>{{ percentage(bucket.amount) }}%</em>
         </span>
       </div>
       <div class="my-pipeline-card__health">
@@ -118,24 +120,41 @@ function money(value: number): string {
 }
 .my-pipeline-card__legend {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 2px;
 }
 .my-pipeline-card__legend span {
   display: grid;
+  grid-template-columns: 8px minmax(76px, 1fr) 36px minmax(76px, auto) 34px;
+  align-items: center;
+  gap: 7px;
   min-width: 0;
+  padding: 6px 0;
 }
 .my-pipeline-card__legend i {
-  width: 18px;
-  height: 4px;
-  margin-bottom: 5px;
-  border-radius: 999px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
 }
 .my-pipeline-card__legend b {
   overflow: hidden;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.my-pipeline-card__legend small {
+  margin: 0;
+  text-align: right;
+}
+.my-pipeline-card__legend strong,
+.my-pipeline-card__legend em {
+  font-size: 11px;
+  text-align: right;
+  white-space: nowrap;
+}
+.my-pipeline-card__legend em {
+  color: var(--crm-color-text-secondary);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
 }
 .my-pipeline-card__health {
   justify-content: flex-start;
