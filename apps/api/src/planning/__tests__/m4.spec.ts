@@ -287,13 +287,27 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .select()
       .from(followUpActions)
       .where(sql`${followUpActions.customerId} = ${customer.id}`)
-    expect(rows.find((item) => item.id === plan.body.id)?.status).toBe('cancelled')
-    expect(rows.find((item) => item.id === plan.body.id)?.cancelReason).toBe(
-      '记录新事实后已调整下一计划',
+    expect(rows).toHaveLength(1)
+    expect(rows[0].id).toBe(plan.body.id)
+    expect(rows[0].status).toBe('pending')
+    expect(rows[0].plannedAt).toBe('2026-09-18')
+    expect(rows[0].content).toBe('改为拜访技术负责人')
+
+    const history = await request(app.getHttpServer())
+      .get(`/api/sales-plans/${plan.body.id}/reschedules`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(history.status).toBe(200)
+    expect(history.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fromPlannedAt: '2026-09-15',
+          toPlannedAt: '2026-09-18',
+          fromContent: '原定客户拜访',
+          toContent: '改为拜访技术负责人',
+          reason: '记录计划外事实后调整下一安排',
+        }),
+      ]),
     )
-    const replacement = rows.find((item) => item.status === 'pending')
-    expect(replacement?.content).toBe('改为拜访技术负责人')
-    expect(replacement?.sourceId).toBe(adjustedVisit.body.id)
   })
 
   it('商机推进可原子记录报价，周视图只显示一条组合事实', async () => {

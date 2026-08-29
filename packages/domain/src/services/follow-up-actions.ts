@@ -26,6 +26,8 @@ export interface SalesPlanReschedule {
   salesPlanId: string
   fromPlannedAt: string
   toPlannedAt: string
+  fromContent: string | null
+  toContent: string | null
   reason: string
   changedById: string
   changedByName: string

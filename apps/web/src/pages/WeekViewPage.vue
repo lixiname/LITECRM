@@ -242,7 +242,7 @@
         </el-form-item>
       </el-form>
       <div v-if="actionDialog.historyLoading || actionDialog.history.length" class="plan-history">
-        <div class="plan-history__title">历史改期</div>
+        <div class="plan-history__title">计划调整历史</div>
         <div v-loading="actionDialog.historyLoading">
           <div v-for="item in actionDialog.history" :key="item.id" class="plan-history__item">
             <span
@@ -253,6 +253,9 @@
               >{{ item.reason }} · {{ item.changedByName }} ·
               {{ formatDateTime(item.occurredAt) }}</small
             >
+            <small v-if="item.fromContent !== item.toContent">
+              {{ item.fromContent || '未填写' }} → {{ item.toContent || '未填写' }}
+            </small>
           </div>
         </div>
       </div>

@@ -126,6 +126,7 @@ export class ComplaintsService {
           },
           {
             ownerId: complaint.currentOwnerId ?? actor.id,
+            changedById: actor.id,
             customerId: complaint.customerId,
             complaintId: id,
             planKind: 'complaint_follow_up',

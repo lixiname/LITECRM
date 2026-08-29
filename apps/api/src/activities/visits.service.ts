@@ -51,6 +51,7 @@ export class VisitsService {
         },
         {
           ownerId: customer.ownerId ?? actor.id,
+          changedById: actor.id,
           customerId: dto.customerId,
           planKind: 'customer_visit',
           originType: 'visit',

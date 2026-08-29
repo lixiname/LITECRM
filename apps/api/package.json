@@ -17,6 +17,7 @@
     "test:watch": "vitest",
     "generate:openapi": "ts-node scripts/generate-openapi.ts",
     "db:generate": "drizzle-kit generate",
+    "db:generate:windows": "node scripts/drizzle-kit-windows.cjs generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:runtime": "ts-node scripts/migrate-runtime.ts",
     "db:seed": "ts-node scripts/seed.ts",

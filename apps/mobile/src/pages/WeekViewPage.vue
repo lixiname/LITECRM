@@ -204,7 +204,7 @@
           placeholder="例如：客户临时调整时间"
         />
         <div v-if="commandSheet.history.length" class="command-sheet__history">
-          <strong>历史改期</strong>
+          <strong>计划调整历史</strong>
           <div
             v-for="item in commandSheet.history"
             :key="item.id"
@@ -215,6 +215,9 @@
               {{ formatDateTime(item.toPlannedAt) }}</span
             >
             <small>{{ item.reason }} · {{ item.changedByName }}</small>
+            <small v-if="item.fromContent !== item.toContent">
+              {{ item.fromContent || '未填写' }} → {{ item.toContent || '未填写' }}
+            </small>
           </div>
         </div>
         <div class="command-sheet__actions">

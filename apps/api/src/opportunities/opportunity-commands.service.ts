@@ -70,6 +70,7 @@ export class OpportunityCommandsService {
         },
         {
           ownerId: opportunity.currentOwnerId ?? actor.id,
+          changedById: actor.id,
           customerId: opportunity.customerId,
           opportunityId: id,
           planKind: 'opportunity_follow_up',

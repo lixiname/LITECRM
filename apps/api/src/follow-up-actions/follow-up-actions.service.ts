@@ -18,6 +18,7 @@ import { businessDate, todayBusinessDate } from '../common/business-date'
 
 export interface NewLinkedAction {
   ownerId: string
+  changedById?: string
   customerId?: string | null
   opportunityId?: string | null
   complaintId?: string | null
@@ -175,6 +176,8 @@ export class SalesPlansService {
         salesPlanId: salesPlanReschedules.salesPlanId,
         fromPlannedAt: salesPlanReschedules.fromPlannedAt,
         toPlannedAt: salesPlanReschedules.toPlannedAt,
+        fromContent: salesPlanReschedules.fromContent,
+        toContent: salesPlanReschedules.toContent,
         reason: salesPlanReschedules.reason,
         changedById: salesPlanReschedules.changedById,
         changedByName: users.displayName,
@@ -213,7 +216,7 @@ export class SalesPlansService {
   /**
    * 业务事实发生后接续下一计划：
    * - 从计划进入：完成明确的来源计划，再创建下一计划；
-   * - 直接登记：不把现有计划算作已执行。下一安排未变化时沿用，变化时留痕取消旧计划再创建新计划。
+   * - 直接登记：不把现有计划算作已执行。下一安排未变化时沿用，变化时原地调整并留痕。
    */
   async continueWithNext(
     tx: DbClient,
@@ -253,15 +256,24 @@ export class SalesPlansService {
     const [adjusted] = await tx
       .update(followUpActions)
       .set({
-        status: 'cancelled',
-        cancelReason: '记录新事实后已调整下一计划',
+        plannedAt: next.plannedAt,
+        content: nextContent,
         updatedAt: new Date(),
         version: sql`${followUpActions.version} + 1`,
       })
       .where(and(eq(followUpActions.id, existing.id), eq(followUpActions.status, 'pending')))
-      .returning({ id: followUpActions.id })
+      .returning()
     if (!adjusted) throw new ConflictException('当前计划已变化，请刷新后重试')
-    return this.createLinked(tx, next)
+    await tx.insert(salesPlanReschedules).values({
+      salesPlanId: existing.id,
+      fromPlannedAt: existing.plannedAt,
+      toPlannedAt: next.plannedAt,
+      fromContent: existing.content,
+      toContent: nextContent,
+      reason: '记录计划外事实后调整下一安排',
+      changedById: next.changedById ?? next.ownerId,
+    })
+    return adjusted
   }
 
   async cancelPendingForOpportunity(tx: DbClient, opportunityId: string, reason: string) {

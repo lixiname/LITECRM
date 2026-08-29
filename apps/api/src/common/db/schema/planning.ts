@@ -121,7 +121,7 @@ export const followUpActions = pgTable(
   ],
 )
 
-// 计划改期历史：append-only；当前执行日期仍以 follow_up_actions.planned_at 为准。
+// 计划调整历史：append-only；当前日期和内容仍以 follow_up_actions 为准。
 export const salesPlanReschedules = pgTable(
   'sales_plan_reschedules',
   {
@@ -131,6 +131,8 @@ export const salesPlanReschedules = pgTable(
       .references(() => followUpActions.id),
     fromPlannedAt: date('from_planned_at').notNull(),
     toPlannedAt: date('to_planned_at').notNull(),
+    fromContent: text('from_content'),
+    toContent: text('to_content'),
     reason: text('reason').notNull(),
     changedById: uuid('changed_by_id')
       .notNull()
@@ -140,7 +142,7 @@ export const salesPlanReschedules = pgTable(
   (table) => [
     check(
       'sales_plan_reschedules_changed_check',
-      sql`${table.fromPlannedAt} <> ${table.toPlannedAt}`,
+      sql`${table.fromPlannedAt} <> ${table.toPlannedAt} or ${table.fromContent} is distinct from ${table.toContent}`,
     ),
     check('sales_plan_reschedules_reason_check', sql`length(trim(${table.reason})) > 0`),
     index('sales_plan_reschedules_plan_occurred_idx').on(table.salesPlanId, table.occurredAt),
