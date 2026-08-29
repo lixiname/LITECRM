@@ -128,6 +128,15 @@ export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }
   { dimension: 'product_line', name: 'pump', label: '泵浦' },
   { dimension: 'product_line', name: 'filtration_system', label: '成套过滤设备' },
   { dimension: 'product_line', name: 'consumables', label: '滤材与耗材' },
+  // 联系人岗位类别（原始职务仍保存为自由文本）
+  { dimension: 'contact_function', name: 'business_owner', label: '企业负责人' },
+  { dimension: 'contact_function', name: 'procurement', label: '采购／商务' },
+  { dimension: 'contact_function', name: 'technical', label: '技术／工艺' },
+  { dimension: 'contact_function', name: 'equipment_engineering', label: '设备／工程' },
+  { dimension: 'contact_function', name: 'production_user', label: '生产／使用' },
+  { dimension: 'contact_function', name: 'ehs', label: '环保／安环' },
+  { dimension: 'contact_function', name: 'finance', label: '财务' },
+  { dimension: 'contact_function', name: 'other', label: '其他' },
 ]
 
 // 幂等：维度 + 稳定值已存在时刷新默认展示名，便于测试库升级后直接使用

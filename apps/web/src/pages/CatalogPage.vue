@@ -92,7 +92,7 @@ import {
   type CustomerDimension,
 } from '@crm/domain'
 
-// 9 类维度（§7.2 customer_dimension_options）
+// 可配置业务维度（§7.2 customer_dimension_options）
 const DIMENSIONS: { value: CustomerDimension; label: string }[] = [
   { value: 'industry', label: '客户行业' },
   { value: 'sub_industry', label: '具体领域' },
@@ -103,6 +103,7 @@ const DIMENSIONS: { value: CustomerDimension; label: string }[] = [
   { value: 'trade_type', label: '交易性质' },
   { value: 'opportunity_source', label: '商机渠道' },
   { value: 'visit_type', label: '拜访类型' },
+  { value: 'contact_function', label: '联系人岗位类别' },
 ]
 
 const dimension = ref<CustomerDimension>('industry')

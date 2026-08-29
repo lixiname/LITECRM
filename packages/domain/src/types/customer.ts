@@ -64,6 +64,7 @@ export interface Contact {
   customerId: string
   name: string | null
   title: string | null
+  functionRole: string | null
   phone: string | null
   isKeyContact: boolean
 }

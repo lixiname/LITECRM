@@ -8,6 +8,30 @@ vi.mock('@crm/domain', () => ({
   addContact: vi.fn(),
   updateContact: vi.fn(),
   removeContact: vi.fn(),
+  listDimensionOptions: vi.fn().mockResolvedValue([
+    {
+      id: 'function-1',
+      dimension: 'contact_function',
+      name: 'equipment_engineering',
+      label: '设备／工程',
+      sortOrder: 0,
+      isActive: true,
+    },
+  ]),
+  useQuery: vi.fn(() => ({
+    data: {
+      value: [
+        {
+          id: 'function-1',
+          dimension: 'contact_function',
+          name: 'equipment_engineering',
+          label: '设备／工程',
+          sortOrder: 0,
+          isActive: true,
+        },
+      ],
+    },
+  })),
 }))
 
 beforeAll(() => {
@@ -32,6 +56,7 @@ describe('CustomerContactsCard', () => {
             customerId: 'customer-1',
             name: '张工',
             title: '设备主管',
+            functionRole: 'equipment_engineering',
             phone: '13800001001',
             isKeyContact: true,
           },
@@ -42,6 +67,7 @@ describe('CustomerContactsCard', () => {
 
     expect(wrapper.findAll('.contacts-card__item')).toHaveLength(1)
     expect(wrapper.text()).toContain('张工')
+    expect(wrapper.text()).toContain('设备／工程')
     expect(wrapper.text()).toContain('138****1001')
     expect(maskPhone('13800001001')).toBe('138****1001')
 

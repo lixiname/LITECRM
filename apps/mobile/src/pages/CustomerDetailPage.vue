@@ -146,6 +146,22 @@
       />
     </van-cell-group>
 
+    <van-cell-group v-if="detail?.contacts.length" inset title="联系人" class="detail__contacts">
+      <van-cell
+        v-for="contact in detail.contacts"
+        :key="contact.id"
+        :title="contact.name || '未命名联系人'"
+        :value="maskPhone(contact.phone)"
+        :label="contactDescription(contact.title, contact.functionRole)"
+      >
+        <template #icon>
+          <van-tag v-if="contact.isKeyContact" plain type="success" class="detail__contact-tag">
+            首要
+          </van-tag>
+        </template>
+      </van-cell>
+    </van-cell-group>
+
     <van-cell-group v-if="detail" inset title="客户档案" class="detail__profile">
       <van-cell
         title="省 / 地级市"
@@ -178,6 +194,7 @@ import {
   type CustomerStatus,
   type OpportunityInitialAmountBasis,
   type CustomerRelationshipStage,
+  type Contact,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -186,9 +203,10 @@ const auth = useAuthStore()
 const customerId = route.params.id as string
 
 const { data: detail } = useQuery(`customer:detail:${customerId}`, () => getCustomer(customerId))
-const { data: industries } = useQuery('catalog:customer-profile', async () => [
+const { data: dimensions } = useQuery('catalog:customer-profile', async () => [
   ...(await listDimensionOptions('industry')),
   ...(await listDimensionOptions('sub_industry')),
+  ...(await listDimensionOptions('contact_function')),
 ])
 
 function statusLabel(status: CustomerStatus): string {
@@ -238,9 +256,27 @@ function timeText(v: string): string {
 function dimensionLabel(dimension: string, value?: string | null): string {
   if (!value) return '-'
   return (
-    industries.value?.find((item) => item.dimension === dimension && item.name === value)?.label ??
+    dimensions.value?.find((item) => item.dimension === dimension && item.name === value)?.label ??
     value
   )
+}
+
+function contactDescription(
+  title: Contact['title'],
+  functionRole: Contact['functionRole'],
+): string {
+  return (
+    [title, dimensionLabel('contact_function', functionRole)]
+      .filter((value) => value && value !== '-')
+      .join(' · ') || '未填写职务和岗位类别'
+  )
+}
+
+function maskPhone(phone?: string | null): string {
+  if (!phone) return '-'
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 11) return `${digits.slice(0, 3)}****${digits.slice(-4)}`
+  return phone
 }
 
 function openVisit() {
@@ -252,6 +288,9 @@ function openVisit() {
 .detail {
   display: flex;
   flex-direction: column;
+}
+.detail__contact-tag {
+  margin-right: var(--crm-spacing-xs);
 }
 .customer-detail__line {
   display: flex;

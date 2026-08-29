@@ -9,9 +9,10 @@ import { CustomerAssigneeService } from './customer-assignee.service'
 import { SalesPlansModule } from '../follow-up-actions/follow-up-actions.module'
 import { GeographyModule } from '../geography/geography.module'
 import { CustomerImportService } from './customer-import.service'
+import { CatalogModule } from '../catalog/catalog.module'
 
 @Module({
-  imports: [AuthModule, AccessModule, SalesPlansModule, GeographyModule],
+  imports: [AuthModule, AccessModule, SalesPlansModule, GeographyModule, CatalogModule],
   controllers: [CustomersController],
   providers: [
     CustomersService,

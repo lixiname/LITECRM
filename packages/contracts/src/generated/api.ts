@@ -1180,7 +1180,7 @@ export interface components {
          * @description 维度
          * @enum {string}
          */
-        CustomerDimension: "industry" | "sub_industry" | "customer_type" | "product_line" | "source" | "complaint_type" | "trade_type" | "opportunity_source" | "visit_type";
+        CustomerDimension: "industry" | "sub_industry" | "customer_type" | "product_line" | "source" | "complaint_type" | "trade_type" | "opportunity_source" | "visit_type" | "contact_function";
         CreateDimensionOptionDto: {
             /** @description 维度 */
             dimension: components["schemas"]["CustomerDimension"];
@@ -1226,6 +1226,8 @@ export interface components {
             name?: string;
             /** @description 职位 */
             title?: string;
+            /** @description 岗位类别（字典：contact_function） */
+            functionRole?: string;
             /** @description 电话（每个客户至少一个联系人含电话） */
             phone?: string;
             /** @description 是否首要联系人（每客户至多一个） */
@@ -2497,7 +2499,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 范围内全部计划 + 更早逾期待办 */
+            /** @description 范围内全部计划 + 截至今天的全部逾期待办 */
             200: {
                 headers: {
                     [name: string]: unknown;

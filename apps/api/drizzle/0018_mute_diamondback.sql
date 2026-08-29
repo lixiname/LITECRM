@@ -1,0 +1,3 @@
+ALTER TABLE "customer_dimension_options" DROP CONSTRAINT "dimension_check";--> statement-breakpoint
+ALTER TABLE "contacts" ADD COLUMN "function_role" text;--> statement-breakpoint
+ALTER TABLE "customer_dimension_options" ADD CONSTRAINT "dimension_check" CHECK ("customer_dimension_options"."dimension" in ('industry','sub_industry','customer_type','product_line','source','complaint_type','trade_type','opportunity_source','visit_type','contact_function'));

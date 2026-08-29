@@ -13,6 +13,11 @@ export class CreateContactDto {
   @IsString()
   title?: string
 
+  @ApiPropertyOptional({ description: '岗位类别（字典：contact_function）' })
+  @IsOptional()
+  @IsString()
+  functionRole?: string
+
   @ApiPropertyOptional({ description: '电话（每个客户至少一个联系人含电话）' })
   @IsOptional()
   @IsString()

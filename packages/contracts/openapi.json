@@ -978,7 +978,7 @@
         ],
         "responses": {
           "200": {
-            "description": "范围内全部计划 + 更早逾期待办"
+            "description": "范围内全部计划 + 截至今天的全部逾期待办"
           }
         },
         "tags": ["sales-plans"]
@@ -2534,7 +2534,8 @@
           "complaint_type",
           "trade_type",
           "opportunity_source",
-          "visit_type"
+          "visit_type",
+          "contact_function"
         ],
         "description": "维度"
       },
@@ -2636,6 +2637,10 @@
           "title": {
             "type": "string",
             "description": "职位"
+          },
+          "functionRole": {
+            "type": "string",
+            "description": "岗位类别（字典：contact_function）"
           },
           "phone": {
             "type": "string",

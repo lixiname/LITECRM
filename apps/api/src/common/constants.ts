@@ -74,6 +74,7 @@ export const CUSTOMER_DIMENSIONS = [
   'trade_type', // 成交交易性质（§7.2 字典）
   'opportunity_source', // 商机发现渠道
   'visit_type', // 拜访类型
+  'contact_function', // 联系人岗位类别
 ] as const
 export type CustomerDimension = (typeof CUSTOMER_DIMENSIONS)[number]
 

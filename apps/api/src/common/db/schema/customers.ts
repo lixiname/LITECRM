@@ -187,6 +187,7 @@ export const contacts = pgTable(
       .references(() => customers.id, { onDelete: 'cascade' }),
     name: text('name'), // 可空（裸电话）
     title: text('title'),
+    functionRole: text('function_role'), // 可配置岗位类别；原始职务仍保存在 title
     phone: text('phone'), // 脱敏展示由前端处理
     isKeyContact: boolean('is_key_contact').default(false).notNull(), // 首要联系人（承担客户主电话角色）
   },
@@ -277,7 +278,7 @@ export const customerDimensionOptions = pgTable(
   (table) => [
     check(
       'dimension_check',
-      sql`${table.dimension} in ('industry','sub_industry','customer_type','product_line','source','complaint_type','trade_type','opportunity_source','visit_type')`,
+      sql`${table.dimension} in ('industry','sub_industry','customer_type','product_line','source','complaint_type','trade_type','opportunity_source','visit_type','contact_function')`,
     ),
     uniqueIndex('dimension_name_uq').on(table.dimension, table.name),
   ],

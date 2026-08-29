@@ -143,6 +143,43 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     ).toHaveLength(1)
   })
 
+  it('联系人同时保留原始职务与字典化岗位类别', async () => {
+    const customer = await createCustomer('WB_联系人岗位类别')
+    const created = await request(app.getHttpServer())
+      .post(`/api/customers/${customer.id}/contacts`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: '张工',
+        title: '动力设备科副科长',
+        functionRole: 'equipment_engineering',
+        phone: '13800004008',
+      })
+    expect(created.status).toBe(201)
+    expect(created.body).toMatchObject({
+      title: '动力设备科副科长',
+      functionRole: 'equipment_engineering',
+    })
+
+    const invalid = await request(app.getHttpServer())
+      .patch(`/api/customers/contacts/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ functionRole: 'unknown_function' })
+    expect(invalid.status).toBe(400)
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/customers/${customer.id}`)
+      .set('Authorization', `Bearer ${token}`)
+    expect(detail.body.contacts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: created.body.id,
+          title: '动力设备科副科长',
+          functionRole: 'equipment_engineering',
+        }),
+      ]),
+    )
+  })
+
   it('新增拜访后同步客户最近活动，并进入活动时间线', async () => {
     const customer = await createCustomer('WB_活动时间线')
     const occurredAt = new Date().toISOString().slice(0, 10)

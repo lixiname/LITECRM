@@ -50,6 +50,7 @@ import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagna
 import { GeographyService } from '../geography/geography.service'
 import { businessDate } from '../common/business-date'
 import { buildOpportunityActivity } from '../opportunities/opportunity-activity-projection'
+import { CatalogService } from '../catalog/catalog.service'
 
 export interface ImportedCustomerInput {
   name: string
@@ -82,12 +83,20 @@ export class CustomersService {
     private readonly gradeQuotaService: GradeQuotaService,
     private readonly assigneeService: CustomerAssigneeService,
     private readonly geographyService: GeographyService,
+    private readonly catalogService: CatalogService,
   ) {}
 
   // 建档：默认 owner=建档人；名额校验与写入处于同一事务。
   // 仅 ERP 编码/信用代码唯一冲突硬拦截；名称归一化只做疑似重复提示。
   async create(dto: CreateCustomerDto, actor: AuthUser) {
     assertContactHasPhone(dto.contacts)
+    await Promise.all(
+      dto.contacts
+        .filter((contact) => contact.functionRole)
+        .map((contact) =>
+          this.catalogService.assertDimensionValue('contact_function', contact.functionRole!),
+        ),
+    )
     const ownerId = dto.ownerId ?? actor.id
 
     try {
@@ -274,6 +283,7 @@ export class CustomersService {
             customerId: customer.id,
             name: c.name ?? null,
             title: c.title ?? null,
+            functionRole: c.functionRole ?? null,
             phone: c.phone ?? null,
             isKeyContact: c.isKeyContact ?? false,
           })),
@@ -825,6 +835,9 @@ export class CustomersService {
   async addContact(customerId: string, dto: CreateContactDto, actor: AuthUser) {
     const customer = await this.findVisible(customerId, actor)
     await this.assertCanContribute(customer, actor)
+    if (dto.functionRole) {
+      await this.catalogService.assertDimensionValue('contact_function', dto.functionRole)
+    }
     return db.transaction(async (tx) => {
       if (dto.isKeyContact) {
         await tx
@@ -838,6 +851,7 @@ export class CustomersService {
           customerId: customer.id,
           name: dto.name ?? null,
           title: dto.title ?? null,
+          functionRole: dto.functionRole ?? null,
           phone: dto.phone ?? null,
           isKeyContact: dto.isKeyContact ?? false,
         })
@@ -851,6 +865,9 @@ export class CustomersService {
     if (!contact) throw new NotFoundException('联系人不存在')
     const customer = await this.findVisible(contact.customerId, actor)
     await this.assertCanContribute(customer, actor)
+    if (dto.functionRole) {
+      await this.catalogService.assertDimensionValue('contact_function', dto.functionRole)
+    }
 
     return db.transaction(async (tx) => {
       await this.lockCustomerContacts(tx, contact.customerId)
@@ -875,6 +892,8 @@ export class CustomersService {
         .set({
           name: dto.name === undefined ? contact.name : dto.name,
           title: dto.title === undefined ? contact.title : dto.title,
+          functionRole:
+            dto.functionRole === undefined ? contact.functionRole : dto.functionRole || null,
           phone: nextPhone,
           isKeyContact: dto.isKeyContact ?? contact.isKeyContact,
           updatedAt: new Date(),

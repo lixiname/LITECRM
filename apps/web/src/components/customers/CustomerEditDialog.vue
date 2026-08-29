@@ -176,6 +176,7 @@ const options = reactive<Record<CustomerDimension, DimensionOption[]>>({
   opportunity_source: [],
   complaint_type: [],
   trade_type: [],
+  contact_function: [],
 })
 const form = reactive({
   name: '',

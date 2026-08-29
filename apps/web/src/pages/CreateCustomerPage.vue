@@ -84,10 +84,27 @@
           <div class="create-customer__contacts">
             <div v-for="(c, i) in form.contacts" :key="i" class="create-customer__contact-row">
               <el-input v-model="c.name" placeholder="姓名（可空）" style="width: 140px" />
+              <el-input v-model="c.title" placeholder="职务（原文）" style="width: 150px" />
+              <el-select
+                v-model="c.functionRole"
+                clearable
+                placeholder="岗位类别"
+                style="width: 150px"
+              >
+                <el-option
+                  v-for="option in contactFunctions"
+                  :key="option.name"
+                  :label="option.label"
+                  :value="option.name"
+                />
+              </el-select>
               <el-input v-model="c.phone" placeholder="电话（必填）" style="width: 160px" />
               <el-button link type="danger" @click="form.contacts.splice(i, 1)">删除</el-button>
             </div>
-            <el-button size="small" @click="form.contacts.push({ name: '', phone: '' })">
+            <el-button
+              size="small"
+              @click="form.contacts.push({ name: '', title: '', functionRole: '', phone: '' })"
+            >
               + 添加联系人
             </el-button>
           </div>
@@ -183,10 +200,18 @@ const form = reactive({
   grade: 'C',
   ownerId: '',
   notes: '',
-  contacts: [{ name: '', phone: '' } as { name?: string; phone?: string }],
+  contacts: [
+    { name: '', title: '', functionRole: '', phone: '' } as {
+      name?: string
+      title?: string
+      functionRole?: string
+      phone?: string
+    },
+  ],
 })
 const industries = ref<DimensionOption[]>([])
 const businessSegments = ref<DimensionOption[]>([])
+const contactFunctions = ref<DimensionOption[]>([])
 const provinces = ref<AdministrativeDivision[]>([])
 const cities = ref<AdministrativeDivision[]>([])
 const assignees = ref<AssigneeOption[]>([])
@@ -197,14 +222,17 @@ const firstHit = computed(() => dedupHits.value[0])
 const canOwnCustomer = computed(() => ['sales', 'executive'].includes(auth.user?.role ?? ''))
 
 onMounted(async () => {
-  const [industryOptions, segmentOptions, provinceOptions, assigneeOptions] = await Promise.all([
-    listDimensionOptions('industry').catch(() => []),
-    listDimensionOptions('sub_industry').catch(() => []),
-    listProvinces().catch(() => []),
-    auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
-  ])
+  const [industryOptions, segmentOptions, functionOptions, provinceOptions, assigneeOptions] =
+    await Promise.all([
+      listDimensionOptions('industry').catch(() => []),
+      listDimensionOptions('sub_industry').catch(() => []),
+      listDimensionOptions('contact_function').catch(() => []),
+      listProvinces().catch(() => []),
+      auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
+    ])
   industries.value = industryOptions.filter((option) => option.isActive)
   businessSegments.value = segmentOptions.filter((option) => option.isActive)
+  contactFunctions.value = functionOptions.filter((option) => option.isActive)
   provinces.value = provinceOptions
   assignees.value = assigneeOptions
 })
@@ -259,7 +287,12 @@ async function handleSubmit() {
       notes: form.notes || undefined,
       contacts: form.contacts
         .filter((c) => c.phone?.trim())
-        .map((c) => ({ name: c.name?.trim() || undefined, phone: c.phone?.trim() })),
+        .map((c) => ({
+          name: c.name?.trim() || undefined,
+          title: c.title?.trim() || undefined,
+          functionRole: c.functionRole || undefined,
+          phone: c.phone?.trim(),
+        })),
     })
     ElMessage.success('建档成功')
     void router.push('/customers')
@@ -301,7 +334,7 @@ function customerStatusLabel(status?: DedupHit['customerStatus']) {
   padding: var(--crm-spacing-xl);
 }
 .create-customer__card {
-  max-width: 640px;
+  max-width: 920px;
 }
 .create-customer__contacts {
   width: 100%;
@@ -316,7 +349,8 @@ function customerStatusLabel(status?: DedupHit['customerStatus']) {
   width: 100%;
 }
 .create-customer__contact-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 140px 150px 150px 160px auto;
   gap: var(--crm-spacing-sm);
   align-items: center;
 }

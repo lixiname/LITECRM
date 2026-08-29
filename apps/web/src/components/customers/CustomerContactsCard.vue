@@ -16,6 +16,9 @@
           </div>
           <div class="contacts-card__meta">
             <span>{{ contact.title || '未填写职位' }}</span>
+            <el-tag v-if="contact.functionRole" size="small" effect="plain">
+              {{ functionRoleLabel(contact.functionRole) }}
+            </el-tag>
             <span>{{ maskPhone(contact.phone) }}</span>
           </div>
         </div>
@@ -32,6 +35,16 @@
           ><el-input v-model="form.name" placeholder="可留空"
         /></el-form-item>
         <el-form-item label="职位"><el-input v-model="form.title" /></el-form-item>
+        <el-form-item label="岗位类别">
+          <el-select v-model="form.functionRole" clearable placeholder="请选择" style="width: 100%">
+            <el-option
+              v-for="option in functionRoles"
+              :key="option.name"
+              :label="option.label"
+              :value="option.name"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="电话" required>
           <el-input v-model="form.phone" placeholder="手机号或座机" />
         </el-form-item>
@@ -46,9 +59,16 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { addContact, removeContact, updateContact, type Contact } from '@crm/domain'
+import {
+  addContact,
+  listDimensionOptions,
+  removeContact,
+  updateContact,
+  useQuery,
+  type Contact,
+} from '@crm/domain'
 import { maskPhone } from './customer-presentation'
 
 const props = defineProps<{
@@ -61,13 +81,20 @@ const emit = defineEmits<{ changed: [] }>()
 const visible = ref(false)
 const saving = ref(false)
 const editingId = ref<string>()
-const form = reactive({ name: '', title: '', phone: '', isKeyContact: false })
+const form = reactive({ name: '', title: '', functionRole: '', phone: '', isKeyContact: false })
+const { data: allFunctionRoles } = useQuery('catalog:contact-function', () =>
+  listDimensionOptions('contact_function'),
+)
+const functionRoles = computed(() =>
+  (allFunctionRoles.value ?? []).filter((option) => option.isActive),
+)
 
 function resetForm(contact?: Contact) {
   editingId.value = contact?.id
   Object.assign(form, {
     name: contact?.name ?? '',
     title: contact?.title ?? '',
+    functionRole: contact?.functionRole ?? '',
     phone: contact?.phone ?? '',
     isKeyContact: contact?.isKeyContact ?? false,
   })
@@ -88,6 +115,7 @@ async function handleSave() {
     const input = {
       name: form.name.trim() || undefined,
       title: form.title.trim() || undefined,
+      functionRole: form.functionRole || undefined,
       phone: form.phone.trim(),
       isKeyContact: form.isKeyContact,
     }
@@ -101,6 +129,10 @@ async function handleSave() {
   } finally {
     saving.value = false
   }
+}
+
+function functionRoleLabel(value: string): string {
+  return allFunctionRoles.value?.find((option) => option.name === value)?.label ?? value
 }
 
 async function handleRemove(contact: Contact) {
