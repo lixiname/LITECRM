@@ -22,6 +22,7 @@ import { touchCustomerActivity } from '../customers/customer-activity-projection
 import type { OpportunityQueryDto } from './dto/opportunity-query.dto'
 import { deriveOpportunityStagnation, opportunityStagnationSql } from './opportunity-stagnation'
 import { businessDate, todayBusinessDate } from '../common/business-date'
+import { buildOpportunityActivity } from './opportunity-activity-projection'
 
 /** 商机创建与查询；过程命令由 OpportunityCommandsService 承担。 */
 @Injectable()
@@ -310,6 +311,7 @@ export class OpportunitiesService {
       events,
       actions,
       deal: deal[0] ?? null,
+      activity: buildOpportunityActivity(opportunity, followUps, quotes, deal[0]),
       ...deriveOpportunityStagnation(
         opportunity,
         actions[0] ?? null,

@@ -82,55 +82,25 @@
     </el-card>
 
     <el-card v-if="opp" class="opp-detail__card">
-      <template #header>报价记录（口头与正式均独立留痕）</template>
-      <el-table :data="opp.quotes" border>
-        <el-table-column label="时间" width="170"
-          ><template #default="{ row }">{{ formatTime(row.quotedAt) }}</template></el-table-column
-        >
-        <el-table-column label="类型" width="80"
-          ><template #default="{ row }">{{
-            opportunityQuoteKindLabel(row.kind)
-          }}</template></el-table-column
-        >
-        <el-table-column label="金额" width="130"
-          ><template #default="{ row }">{{
-            opportunityAmountText(row.amount)
-          }}</template></el-table-column
-        >
-        <el-table-column prop="quoteNo" label="报价单号" />
-        <el-table-column label="上一版本" min-width="150">
-          <template #default="{ row }">{{ supersedesText(row.supersedesQuoteId) }}</template>
-        </el-table-column>
-        <el-table-column prop="note" label="说明" min-width="160" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">{{ opportunityQuoteStatusLabel(row.status) }}</template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
-    <el-card v-if="opp" class="opp-detail__card">
-      <template #header>跟进事实</template>
-      <el-timeline>
+      <template #header>
+        <div class="opp-detail__activity-head">
+          <strong>商机动态</strong>
+          <span>按真实发生顺序汇总需求、跟进、报价与结案事实</span>
+        </div>
+      </template>
+      <el-timeline class="opp-detail__activity">
         <el-timeline-item
-          v-for="item in opp.followUps"
-          :key="item.id"
-          :timestamp="formatTime(item.occurredAt)"
+          v-for="item in opp.activity"
+          :key="`${item.type}-${item.id}`"
+          :timestamp="dateText(item.occurredAt)"
+          :type="activityType(item.type)"
+          placement="top"
         >
-          {{ item.conclusion }}
-        </el-timeline-item>
-      </el-timeline>
-      <el-empty v-if="opp.followUps.length === 0" description="尚无跟进记录" :image-size="60" />
-    </el-card>
-
-    <el-card v-if="opp" class="opp-detail__card">
-      <template #header>状态事件</template>
-      <el-timeline>
-        <el-timeline-item
-          v-for="event in opp.events"
-          :key="event.id"
-          :timestamp="formatTime(event.occurredAt)"
-        >
-          {{ eventText(event) }}
+          <div class="opp-detail__activity-node">
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.summary }}</span>
+            <small v-if="activityMeta(item)">{{ activityMeta(item) }}</small>
+          </div>
         </el-timeline-item>
       </el-timeline>
     </el-card>
@@ -146,16 +116,17 @@ import {
   getOpportunity,
   getSalesPlan,
   listDimensionOptions,
+  OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
   OPPORTUNITY_RISK_LABELS,
   useAuthStore,
   useQuery,
+  type OpportunityActivityItem,
 } from '@crm/domain'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
 import {
   opportunityAmountText,
   opportunityAmountBasisLabel,
   opportunityQuoteKindLabel,
-  opportunityQuoteStatusLabel,
   opportunityStageLabel,
   opportunityStageTag,
 } from '../components/opportunities/opportunity-presentation'
@@ -212,36 +183,34 @@ function productLineLabel(productLines: string[]): string {
     .join('、')
 }
 function formatTime(value: string | undefined | null): string {
-  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+  if (!value) return '-'
+  return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function dateText(value: string | undefined | null): string {
-  return value ? new Date(value).toLocaleDateString('zh-CN') : '-'
+  return value ? (value.length === 10 ? value : new Date(value).toLocaleDateString('zh-CN')) : '-'
 }
-function eventText(event: { type: string; payload: unknown }): string {
-  const payload = (event.payload ?? {}) as {
-    from?: string
-    to?: string
-    name?: string
-    initialAmount?: number
-    initialAmountBasis?: 'estimate' | 'oral_quote' | 'formal_quote'
-    reason?: string
-    quoteId?: string
+function activityType(
+  type: OpportunityActivityItem['type'],
+): 'primary' | 'success' | 'danger' | 'warning' {
+  if (type === 'won') return 'success'
+  if (type === 'lost' || type === 'demand_disappeared') return 'danger'
+  if (type === 'quote') return 'warning'
+  return 'primary'
+}
+function activityMeta(item: OpportunityActivityItem): string {
+  if (item.type === 'follow_up' && item.metadata?.method) {
+    return (
+      OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS.find((option) => option.value === item.metadata?.method)
+        ?.label ?? item.metadata.method
+    )
   }
-  if (event.type === 'created')
-    return `创建商机：${payload.name ?? ''}，${opportunityAmountBasisLabel(payload.initialAmountBasis)} ${opportunityAmountText(payload.initialAmount?.toString())}`
-  if (event.type === 'stage_changed')
-    return `阶段：${eventStageLabel(payload.from)} → ${eventStageLabel(payload.to)}${payload.reason ? `（${payload.reason}）` : ''}`
-  return payload.quoteId ? '新增报价记录' : '更新商机'
-}
-function supersedesText(quoteId: string | null): string {
-  if (!quoteId) return '首次报价'
-  const previous = opp.value?.quotes.find((quote) => quote.id === quoteId)
-  return previous
-    ? `${opportunityQuoteKindLabel(previous.kind)} ${opportunityAmountText(previous.amount)}`
-    : '历史报价'
-}
-function eventStageLabel(stage: string | undefined): string {
-  return opportunityStageLabel(stage)
+  if (item.type === 'quote') {
+    const status = item.metadata?.status === 'active' ? '当前有效' : '已被后续报价替代'
+    return [status, item.metadata?.quoteNo ? `单号 ${item.metadata.quoteNo}` : '']
+      .filter(Boolean)
+      .join(' · ')
+  }
+  return ''
 }
 </script>
 
@@ -259,5 +228,25 @@ function eventStageLabel(stage: string | undefined): string {
 }
 .opp-detail__risk {
   margin-bottom: var(--crm-spacing-md);
+}
+.opp-detail__activity-head,
+.opp-detail__activity-node {
+  display: flex;
+  flex-direction: column;
+  gap: var(--crm-spacing-xs);
+}
+.opp-detail__activity-head span,
+.opp-detail__activity-node small {
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-sm);
+}
+.opp-detail__activity {
+  max-width: 900px;
+}
+.opp-detail__activity-node {
+  padding: var(--crm-spacing-sm) var(--crm-spacing-md);
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-color-bg-page);
 }
 </style>

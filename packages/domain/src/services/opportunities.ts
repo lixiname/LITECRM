@@ -5,6 +5,7 @@ import type {
   FollowUpAction,
   Opportunity,
   OpportunityFollowUp,
+  OpportunityActivityItem,
   OpportunityPage,
   OpportunityQuote,
 } from '../types/actions'
@@ -21,6 +22,7 @@ export interface OpportunityDetail extends Opportunity {
   events: { id: string; type: string; occurredAt: string; payload: unknown }[]
   actions: FollowUpAction[]
   deal: Deal | null
+  activity: OpportunityActivityItem[]
 }
 
 export interface OpportunityListQuery {

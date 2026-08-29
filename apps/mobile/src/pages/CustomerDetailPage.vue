@@ -74,20 +74,27 @@
                 {{ amountBasisLabel(opportunity.amountBasis) }}</span
               >
             </div>
-            <span>最新报价：{{ moneyText(opportunity.latestQuote?.amount) }}</span>
-            <span>下一步：{{ opportunity.currentAction?.content ?? '—' }}</span>
-            <div class="customer-detail__track">
-              <span class="is-done">发现需求</span>
-              <span :class="{ 'is-done': opportunity.latestFollowUp }">跟进</span>
-              <span :class="{ 'is-done': opportunity.latestQuote }">报价</span>
-              <span
-                :class="{
-                  'is-alert':
-                    !opportunity.currentAction &&
-                    (opportunity.stage === 'intent' || opportunity.stage === 'following'),
-                }"
-                >下一步</span
-              >
+            <div class="customer-detail__activity">
+              <div v-for="item in opportunity.activity" :key="`${item.type}-${item.id}`">
+                <span class="customer-detail__dot" :class="`is-${item.type}`" />
+                <small>{{ timeText(item.occurredAt) }}</small>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.summary }}</span>
+              </div>
+            </div>
+            <div
+              class="customer-detail__next"
+              :class="{
+                'is-alert':
+                  !opportunity.currentAction &&
+                  (opportunity.stage === 'intent' || opportunity.stage === 'following'),
+              }"
+            >
+              <strong>下一步计划</strong>
+              <span>{{ opportunity.currentAction?.content ?? terminalText(opportunity) }}</span>
+              <small v-if="opportunity.currentAction">{{
+                opportunity.currentAction.plannedAt
+              }}</small>
             </div>
           </div>
         </template>
@@ -217,6 +224,13 @@ function amountBasisLabel(basis: OpportunityInitialAmountBasis): string {
   )
 }
 
+function terminalText(opportunity: Opportunity): string {
+  if (opportunity.stage === 'won') return '已确认成交'
+  if (opportunity.stage === 'lost') return '商机已丢失'
+  if (opportunity.stage === 'demand_disappeared') return '需求已消失'
+  return '尚未安排下一步'
+}
+
 function timeText(v: string): string {
   return v.length === 10 ? v : new Date(v).toLocaleString('zh-CN', { hour12: false })
 }
@@ -244,25 +258,46 @@ function openVisit() {
   flex-direction: column;
   gap: 4px;
 }
-.customer-detail__track {
+.customer-detail__activity {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 0;
   margin-top: 4px;
 }
-.customer-detail__track span {
-  padding: 3px;
-  border-radius: 3px;
-  background: var(--crm-color-bg-page);
-  color: var(--crm-color-text-secondary);
-  text-align: center;
+.customer-detail__activity > div {
+  display: grid;
+  grid-template-columns: 8px 66px 64px minmax(0, 1fr);
+  gap: 4px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--crm-color-border);
   font-size: 11px;
 }
-.customer-detail__track .is-done {
-  color: var(--crm-color-primary);
-  background: var(--crm-color-primary-light);
+.customer-detail__activity small {
+  color: var(--crm-color-text-secondary);
 }
-.customer-detail__track .is-alert {
+.customer-detail__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--crm-color-primary);
+}
+.customer-detail__dot.is-won {
+  background: var(--crm-color-success);
+}
+.customer-detail__dot.is-lost,
+.customer-detail__dot.is-demand_disappeared {
+  background: var(--crm-color-danger);
+}
+.customer-detail__next {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 6px;
+  border-radius: 4px;
+  background: var(--crm-color-bg-page);
+}
+.customer-detail__next.is-alert {
   color: #d46b08;
   background: #fff7e6;
 }

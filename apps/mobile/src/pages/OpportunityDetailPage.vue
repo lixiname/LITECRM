@@ -53,34 +53,25 @@
         <van-cell title="客户下单时间" :value="dateTime(opportunity.deal.occurredAt)" />
       </van-cell-group>
 
-      <van-cell-group inset title="报价记录" class="opportunity-detail__section">
-        <van-cell
-          v-for="quote in opportunity.quotes"
-          :key="quote.id"
-          :title="`${quote.kind === 'formal' ? '正式报价' : '口头报价'} · ${money(quote.amount)}`"
-          :label="`${dateTime(quote.quotedAt)}${quote.note ? ` · ${quote.note}` : ''}`"
-        >
-          <template #value>
-            <van-tag :type="quote.status === 'active' ? 'primary' : 'default'">
-              {{ quote.status === 'active' ? '有效' : '已被替代' }}
-            </van-tag>
-          </template>
-        </van-cell>
-        <van-empty v-if="!opportunity.quotes.length" description="尚无报价" :image-size="54" />
-      </van-cell-group>
-
-      <van-cell-group inset title="跟进记录" class="opportunity-detail__section">
-        <van-cell
-          v-for="followUp in opportunity.followUps"
-          :key="followUp.id"
-          :title="followUp.conclusion"
-          :label="`${dateTime(followUp.occurredAt)}${followUp.method ? ` · ${methodLabel(followUp.method)}` : ''}`"
-        />
-        <van-empty
-          v-if="!opportunity.followUps.length"
-          description="尚无跟进记录"
-          :image-size="54"
-        />
+      <van-cell-group inset title="商机动态" class="opportunity-detail__section">
+        <div class="opportunity-activity">
+          <div
+            v-for="item in opportunity.activity"
+            :key="`${item.type}-${item.id}`"
+            class="opportunity-activity__row"
+          >
+            <div class="opportunity-activity__date">{{ dateText(item.occurredAt) }}</div>
+            <div class="opportunity-activity__line">
+              <span :class="['opportunity-activity__dot', `is-${item.type}`]" />
+              <span class="opportunity-activity__bar" />
+            </div>
+            <div class="opportunity-activity__content">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.summary }}</span>
+              <small v-if="activityMeta(item)">{{ activityMeta(item) }}</small>
+            </div>
+          </div>
+        </div>
       </van-cell-group>
 
       <div v-if="canOperate" class="opportunity-detail__actions">
@@ -156,6 +147,7 @@ import {
   useAuthStore,
   useQuery,
   winOpportunity,
+  type OpportunityActivityItem,
   type OpportunityStage,
 } from '@crm/domain'
 
@@ -287,16 +279,29 @@ function amountBasisLabel(value: string): string {
 function methodLabel(value: string): string {
   return OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS.find((item) => item.value === value)?.label ?? value
 }
+function activityMeta(item: OpportunityActivityItem): string {
+  if (item.type === 'follow_up' && item.metadata?.method) {
+    return methodLabel(item.metadata.method)
+  }
+  if (item.type === 'quote') {
+    const status = item.metadata?.status === 'active' ? '当前有效' : '已被后续报价替代'
+    return [status, item.metadata?.quoteNo ? `单号 ${item.metadata.quoteNo}` : '']
+      .filter(Boolean)
+      .join(' · ')
+  }
+  return ''
+}
 function money(value?: string | null): string {
   return value === undefined || value === null || value === ''
     ? '-'
     : `¥${Number(value).toLocaleString('zh-CN')}`
 }
 function dateTime(value?: string | null): string {
-  return value ? new Date(value).toLocaleString('zh-CN', { hour12: false }) : '-'
+  if (!value) return '-'
+  return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 function dateText(value?: string | null): string {
-  return value ? new Date(value).toLocaleDateString('zh-CN') : '-'
+  return value ? (value.length === 10 ? value : new Date(value).toLocaleDateString('zh-CN')) : '-'
 }
 function localInput(date: Date): string {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
@@ -314,6 +319,53 @@ function localInput(date: Date): string {
 }
 .opportunity-detail__section {
   margin-top: var(--crm-spacing-md);
+}
+.opportunity-activity {
+  padding: var(--crm-spacing-md);
+}
+.opportunity-activity__row {
+  display: grid;
+  grid-template-columns: 76px 16px minmax(0, 1fr);
+  gap: var(--crm-spacing-xs);
+  align-items: stretch;
+}
+.opportunity-activity__date,
+.opportunity-activity__content small {
+  color: var(--crm-color-text-secondary);
+  font-size: 11px;
+}
+.opportunity-activity__line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.opportunity-activity__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--crm-color-primary);
+}
+.opportunity-activity__dot.is-won {
+  background: var(--crm-color-success);
+}
+.opportunity-activity__dot.is-lost,
+.opportunity-activity__dot.is-demand_disappeared {
+  background: var(--crm-color-danger);
+}
+.opportunity-activity__dot.is-quote {
+  background: var(--crm-color-warning);
+}
+.opportunity-activity__bar {
+  width: 1px;
+  min-height: 44px;
+  flex: 1;
+  margin: 3px 0;
+  background: var(--crm-color-border);
+}
+.opportunity-activity__content {
+  display: grid;
+  gap: 3px;
+  padding-bottom: var(--crm-spacing-md);
 }
 .opportunity-detail__actions {
   position: fixed;

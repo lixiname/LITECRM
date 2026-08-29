@@ -203,6 +203,19 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .get(`/api/opportunities/${oppId}`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
     expect(afterQuote.body.deal).toBeNull()
+    expect(afterQuote.body.activity.map((item: { type: string }) => item.type)).toEqual(
+      expect.arrayContaining(['discovered', 'follow_up', 'quote']),
+    )
+    const customerDetail = await request(app.getHttpServer())
+      .get(`/api/customers/${customer.id}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    const opportunitySummary = customerDetail.body.opportunities.find(
+      (item: { id: string }) => item.id === oppId,
+    )
+    expect(opportunitySummary.activity.length).toBeLessThanOrEqual(5)
+    expect(opportunitySummary.activity.map((item: { type: string }) => item.type)).toEqual(
+      expect.arrayContaining(['discovered', 'follow_up', 'quote']),
+    )
     try {
       await db.insert(opportunityQuotes).values({
         opportunityId: oppId,

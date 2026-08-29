@@ -17,40 +17,32 @@
         <div class="opportunity-card__top">
           <div>
             <strong>{{ opportunity.name }}</strong>
-            <span class="opportunity-card__amount">{{
-              amountText(opportunity.referenceAmount)
-            }} · {{ opportunityAmountBasisLabel(opportunity.amountBasis) }}</span>
+            <span class="opportunity-card__amount"
+              >{{ amountText(opportunity.referenceAmount) }} ·
+              {{ opportunityAmountBasisLabel(opportunity.amountBasis) }}</span
+            >
           </div>
           <el-tag :type="opportunityStageTag(opportunity.stage)">
             {{ opportunityStageLabel(opportunity.stage) }}
           </el-tag>
         </div>
-        <div class="opportunity-card__track">
-          <div class="progress-node progress-node--done">
-            <span class="progress-node__dot" />
-            <strong>发现需求</strong>
-            <small>{{ dateText(opportunity.discoveredDate ?? opportunity.createdAt) }}</small>
+        <div class="opportunity-card__activity">
+          <div v-for="item in opportunity.activity" :key="`${item.type}-${item.id}`">
+            <span class="opportunity-card__dot" :class="`is-${item.type}`" />
+            <small>{{ dateText(item.occurredAt) }}</small>
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.summary }}</span>
           </div>
-          <div class="progress-node" :class="{ 'progress-node--done': opportunity.latestFollowUp }">
-            <span class="progress-node__dot" />
-            <strong>最近跟进</strong>
-            <small>{{ opportunity.latestFollowUp?.conclusion ?? '尚无跟进' }}</small>
-          </div>
-          <div class="progress-node" :class="{ 'progress-node--done': opportunity.latestQuote }">
-            <span class="progress-node__dot" />
-            <strong>最近报价</strong>
-            <small>{{ amountText(opportunity.latestQuote?.amount) }}</small>
-          </div>
-          <div
-            class="progress-node"
-            :class="{
-              'progress-node--attention': !opportunity.currentAction && isOpen(opportunity),
-            }"
-          >
-            <span class="progress-node__dot" />
-            <strong>{{ isOpen(opportunity) ? '下一步' : '结果' }}</strong>
-            <small>{{ opportunity.currentAction?.content ?? terminalText(opportunity) }}</small>
-          </div>
+        </div>
+        <div
+          class="opportunity-card__next"
+          :class="{ 'is-attention': !opportunity.currentAction && isOpen(opportunity) }"
+        >
+          <strong>{{ isOpen(opportunity) ? '下一步计划' : '结案结果' }}</strong>
+          <span>{{ opportunity.currentAction?.content ?? terminalText(opportunity) }}</span>
+          <small v-if="opportunity.currentAction">{{
+            dateText(opportunity.currentAction.plannedAt)
+          }}</small>
         </div>
         <div v-if="opportunity.riskFlags?.length" class="opportunity-card__attention">
           需处理：{{ primaryAttention(opportunity.riskFlags) }}
@@ -123,7 +115,8 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
 }
 .opportunity-progress__hint,
 .opportunity-card__amount,
-.progress-node small {
+.opportunity-card__activity small,
+.opportunity-card__next small {
   color: var(--crm-color-text-secondary);
   font-size: var(--crm-font-size-xs);
 }
@@ -143,38 +136,43 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
 .opportunity-card__amount {
   margin-left: var(--crm-spacing-sm);
 }
-.opportunity-card__track {
+.opportunity-card__activity {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--crm-spacing-sm);
+  gap: 0;
   margin-top: var(--crm-spacing-md);
 }
-.progress-node {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 8px 8px 8px 18px;
-  background: var(--crm-color-bg-page);
-  border-radius: var(--crm-radius-sm);
+.opportunity-card__activity > div {
+  display: grid;
+  grid-template-columns: 10px 74px 80px minmax(0, 1fr);
+  gap: var(--crm-spacing-xs);
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--crm-color-border);
 }
-.progress-node__dot {
-  position: absolute;
-  top: 13px;
-  left: 7px;
+.opportunity-card__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--crm-color-text-secondary);
-}
-.progress-node--done .progress-node__dot {
   background: var(--crm-color-primary);
 }
-.progress-node--attention {
-  background: #fff7e6;
+.opportunity-card__dot.is-won {
+  background: var(--crm-color-success);
 }
-.progress-node--attention .progress-node__dot {
-  background: var(--el-color-warning);
+.opportunity-card__dot.is-lost,
+.opportunity-card__dot.is-demand_disappeared {
+  background: var(--crm-color-danger);
+}
+.opportunity-card__next {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) auto;
+  gap: var(--crm-spacing-xs);
+  margin-top: var(--crm-spacing-sm);
+  padding: var(--crm-spacing-sm);
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-color-bg-page);
+}
+.opportunity-card__next.is-attention {
+  background: #fff7e6;
 }
 .opportunity-card__attention {
   margin-top: var(--crm-spacing-sm);

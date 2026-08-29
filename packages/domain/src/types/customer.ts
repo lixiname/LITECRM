@@ -4,6 +4,7 @@ import type {
   FollowUpAction,
   Opportunity,
   OpportunityFollowUp,
+  OpportunityActivityItem,
   OpportunityQuote,
   SalesPlan,
 } from './actions'
@@ -95,6 +96,7 @@ export interface CustomerOpportunitySummary extends Omit<
   latestQuote: OpportunityQuote | null
   latestFollowUp: OpportunityFollowUp | null
   customerName: string
+  activity: OpportunityActivityItem[]
 }
 
 export interface CustomerComplaintSummary extends Omit<Complaint, 'currentAction'> {

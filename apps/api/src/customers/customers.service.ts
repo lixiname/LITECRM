@@ -49,6 +49,7 @@ import { CustomerAssigneeService } from './customer-assignee.service'
 import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
 import { GeographyService } from '../geography/geography.service'
 import { businessDate } from '../common/business-date'
+import { buildOpportunityActivity } from '../opportunities/opportunity-activity-projection'
 
 export interface ImportedCustomerInput {
   name: string
@@ -508,6 +509,7 @@ export class CustomersService {
       opportunityProductLineRows,
       complaintActionRows,
       complaintFollowUpRows,
+      opportunityDealRows,
     ] = await Promise.all([
       opportunityIds.length
         ? db
@@ -560,6 +562,13 @@ export class CustomersService {
             .where(inArray(complaintFollowUps.complaintId, complaintIds))
             .orderBy(desc(complaintFollowUps.occurredAt))
         : Promise.resolve([] as (typeof complaintFollowUps.$inferSelect)[]),
+      opportunityIds.length
+        ? db
+            .select()
+            .from(deals)
+            .where(inArray(deals.sourceOpportunityId, opportunityIds))
+            .orderBy(desc(deals.occurredAt))
+        : Promise.resolve([] as (typeof deals.$inferSelect)[]),
     ])
 
     const opportunitiesWithContext = opportunitiesRows.map((row) => {
@@ -579,6 +588,12 @@ export class CustomersService {
           .map((item) => item.productLine),
         referenceAmount: latestQuote?.amount ?? row.estimatedAmount,
         amountBasis: latestQuote ? `${latestQuote.kind}_quote` : row.initialAmountBasis,
+        activity: buildOpportunityActivity(
+          row,
+          opportunityFollowUpRows.filter((item) => item.opportunityId === row.id),
+          quoteRows.filter((item) => item.opportunityId === row.id),
+          opportunityDealRows.find((item) => item.sourceOpportunityId === row.id),
+        ).slice(0, 5),
         customerName: row.customerName,
         ...deriveOpportunityStagnation(row, currentAction, latestQuote, latestFollowUp),
       }

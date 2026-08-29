@@ -122,6 +122,18 @@ export interface Opportunity {
   createdAt: string
 }
 
+export type OpportunityActivityType =
+  'discovered' | 'follow_up' | 'quote' | 'won' | 'lost' | 'demand_disappeared'
+
+export interface OpportunityActivityItem {
+  id: string
+  type: OpportunityActivityType
+  occurredAt: string
+  title: string
+  summary: string
+  metadata?: Record<string, string | null>
+}
+
 export type OpportunityRiskFlag =
   'no_pending_action' | 'action_overdue' | 'inactive_30d' | 'expected_close_overdue'
 
