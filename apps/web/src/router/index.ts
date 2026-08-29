@@ -11,7 +11,8 @@ declare module 'vue-router' {
   }
 }
 
-// 路由（§5.5 应用外壳）：业务页嵌套于 AppLayout（侧边栏）；登录落地 /customers
+// 路由（§5.5 应用外壳）：业务页嵌套于 AppLayout（侧边栏）；
+// 管理角色落地经营分析，销售落地我的工作，只读角色落地客户经营。
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -26,7 +27,15 @@ const router = createRouter({
       component: () => import('@/components/AppLayout.vue'),
       meta: { requiresAuth: true },
       children: [
-        { path: '', redirect: '/customers' },
+        {
+          path: '',
+          redirect: () => {
+            const auth = useAuthStore()
+            if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
+            if (auth.hasAbility('customer.write')) return { name: 'week-view' }
+            return { name: 'customers' }
+          },
+        },
         {
           path: 'management',
           name: 'management-dashboard',
@@ -88,13 +97,13 @@ const router = createRouter({
           path: 'expenses',
           name: 'expenses',
           component: () => import('@/pages/ExpensesPage.vue'),
-          meta: { title: '费用管理' },
+          meta: { title: '费用管理', requiresAbility: 'customer.write' },
         },
         {
           path: 'week-view',
           name: 'week-view',
           component: () => import('@/pages/WeekViewPage.vue'),
-          meta: { title: '销售计划周视图' },
+          meta: { title: '销售计划周视图', requiresAbility: 'customer.write' },
         },
         {
           path: 'claims',
@@ -124,12 +133,15 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'login' }
-  if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility))
+  if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility)) {
+    if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
     return { name: 'customers' }
-  if (to.meta.guestOnly && auth.isLoggedIn)
-    return auth.hasAbility('dashboard.view')
-      ? { name: 'management-dashboard' }
-      : { name: 'customers' }
+  }
+  if (to.meta.guestOnly && auth.isLoggedIn) {
+    if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
+    if (auth.hasAbility('customer.write')) return { name: 'week-view' }
+    return { name: 'customers' }
+  }
   return true
 })
 

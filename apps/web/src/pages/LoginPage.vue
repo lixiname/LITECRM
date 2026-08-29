@@ -65,7 +65,13 @@ async function handleLogin() {
   error.value = ''
   try {
     await auth.login(form.username.trim(), form.password)
-    void router.push(auth.hasAbility('dashboard.view') ? '/management' : '/')
+    void router.push(
+      auth.hasAbility('dashboard.view')
+        ? '/management'
+        : auth.hasAbility('customer.write')
+          ? '/week-view'
+          : '/customers',
+    )
   } catch (e) {
     error.value = e instanceof Error ? e.message : '登录失败，请稍后重试'
   } finally {

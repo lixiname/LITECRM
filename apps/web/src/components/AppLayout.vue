@@ -1,22 +1,7 @@
 <template>
   <el-container class="app-layout">
-    <el-aside width="200px" class="app-layout__aside">
-      <div class="app-layout__logo">Lite CRM</div>
-      <el-menu :default-active="activeMenu" router class="app-layout__menu">
-        <el-menu-item v-if="auth.hasAbility('dashboard.view')" index="/management">
-          管理看板
-        </el-menu-item>
-        <el-menu-item index="/customers">客户</el-menu-item>
-        <el-menu-item index="/opportunities">商机</el-menu-item>
-        <el-menu-item index="/complaints">客诉</el-menu-item>
-        <el-menu-item index="/expenses">费用</el-menu-item>
-        <el-menu-item index="/week-view">销售计划</el-menu-item>
-        <el-menu-item v-if="auth.hasAbility('approve.claim')" index="/claims"
-          >接管审批</el-menu-item
-        >
-        <el-menu-item v-if="auth.hasAbility('user.manage')" index="/catalog">字典配置</el-menu-item>
-        <el-menu-item v-if="auth.hasAbility('user.manage')" index="/users">用户管理</el-menu-item>
-      </el-menu>
+    <el-aside width="248px" class="app-layout__aside">
+      <AppSidebarNav :active-menu="activeMenu" />
     </el-aside>
 
     <el-container>
@@ -38,6 +23,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@crm/domain'
+import AppSidebarNav from './AppSidebarNav.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,31 +44,13 @@ function handleLogout() {
   background: var(--crm-color-bg-page);
 }
 .app-layout__aside {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   background: var(--crm-color-bg-card);
   border-right: 1px solid var(--crm-color-border);
   box-shadow: 2px 0 8px rgb(0 0 0 / 3%);
-}
-.app-layout__logo {
-  padding: var(--crm-spacing-lg);
-  font-size: var(--crm-font-size-lg);
-  font-weight: 600;
-  color: var(--crm-color-primary);
-}
-.app-layout__menu {
-  border-right: none;
-  --el-menu-bg-color: transparent;
-}
-.app-layout__menu :deep(.el-menu-item) {
-  margin: 0 8px;
-  border-radius: var(--crm-radius-sm);
-  width: auto;
-}
-.app-layout__menu :deep(.el-menu-item.is-active) {
-  background: var(--crm-color-primary-light);
-  color: var(--crm-color-primary);
-}
-.app-layout__menu :deep(.el-menu-item:hover) {
-  background: #f5f7fa;
+  overflow-y: auto;
 }
 .app-layout__header {
   display: flex;

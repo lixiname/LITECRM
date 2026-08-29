@@ -1,0 +1,60 @@
+import { mount } from '@vue/test-utils'
+import ElementPlus from 'element-plus'
+import { createPinia } from 'pinia'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { describe, expect, it } from 'vitest'
+import { useAuthStore, type Ability } from '@crm/domain'
+import AppSidebarNav from './AppSidebarNav.vue'
+
+const allAbilities: Ability[] = [
+  'customer.write',
+  'customer.transfer',
+  'customer.release',
+  'customer.claim',
+  'customer.invalidate',
+  'customer.restore',
+  'customer.import',
+  'approve.claim',
+  'dashboard.view',
+  'stats.view',
+  'export',
+  'user.manage',
+]
+
+function mountNavigation(capabilities: Ability[]) {
+  const pinia = createPinia()
+  const auth = useAuthStore(pinia)
+  auth.$patch({ capabilities })
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
+  })
+  return mount(AppSidebarNav, {
+    props: { activeMenu: '/customers' },
+    global: { plugins: [pinia, router, ElementPlus] },
+  })
+}
+
+describe('AppSidebarNav', () => {
+  it('管理员按工作意图看到完整分组，而非功能平铺', () => {
+    const wrapper = mountNavigation(allAbilities)
+    expect(wrapper.text()).toContain('工作台')
+    expect(wrapper.text()).toContain('客户与销售')
+    expect(wrapper.text()).toContain('管理协同')
+    expect(wrapper.text()).toContain('系统设置')
+    expect(wrapper.text()).toContain('我的工作计划、待办与每日记录')
+    expect(wrapper.text()).toContain('经营分析团队、商机与重点客户')
+    expect(wrapper.text()).toContain('业务字典业务选项与展示名称')
+  })
+
+  it('只读角色不显示填报、管理和系统入口，也不留下空分组', () => {
+    const wrapper = mountNavigation(['stats.view', 'export'])
+    expect(wrapper.text()).toContain('客户与销售')
+    expect(wrapper.text()).toContain('客户经营')
+    expect(wrapper.text()).not.toContain('工作台')
+    expect(wrapper.text()).not.toContain('我的工作')
+    expect(wrapper.text()).not.toContain('费用记录')
+    expect(wrapper.text()).not.toContain('管理协同')
+    expect(wrapper.text()).not.toContain('系统设置')
+  })
+})
