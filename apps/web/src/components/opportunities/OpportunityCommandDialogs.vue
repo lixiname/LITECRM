@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="showFollow" title="记录跟进并安排下一计划" width="480px">
+  <el-dialog v-model="showProgress" title="记录商机推进并安排下一计划" width="520px">
     <el-alert
       v-if="sourcePlan"
       class="opportunity-dialog__plan"
@@ -24,6 +24,36 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="本次有报价">
+        <el-switch v-model="followForm.hasQuote" />
+      </el-form-item>
+      <template v-if="followForm.hasQuote">
+        <el-alert
+          v-if="currentQuote"
+          class="opportunity-dialog__plan"
+          type="warning"
+          :closable="false"
+          :title="`当前有效报价：${quoteKindLabel(currentQuote.kind)} · ${amountText(currentQuote.amount)} · ${formatTime(currentQuote.quotedAt)}；保存后将自动替代该版本。`"
+        />
+        <el-form-item label="报价类型" required>
+          <el-radio-group v-model="quoteForm.kind">
+            <el-radio value="oral">口头报价</el-radio>
+            <el-radio value="formal">正式报价</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="报价金额" required>
+          <el-input v-model.number="quoteForm.amount" type="number" />
+        </el-form-item>
+        <el-form-item v-if="quoteForm.kind === 'formal'" label="报价单号">
+          <el-input v-model="quoteForm.quoteNo" />
+        </el-form-item>
+        <el-form-item v-if="quoteForm.kind === 'formal'" label="文件引用">
+          <el-input v-model="quoteForm.documentRef" placeholder="可选链接或文件编号" />
+        </el-form-item>
+        <el-form-item label="报价说明">
+          <el-input v-model="quoteForm.note" placeholder="如：调整配置后重新报价" />
+        </el-form-item>
+      </template>
       <el-form-item label="下一计划" required
         ><el-input v-model="followForm.nextActionContent"
       /></el-form-item>
@@ -32,58 +62,8 @@
       /></el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="showFollow = false">取消</el-button>
-      <el-button type="primary" :loading="acting" @click="handleFollow">保存</el-button>
-    </template>
-  </el-dialog>
-
-  <el-dialog v-model="showQuote" title="记录报价（不会自动成交）" width="480px">
-    <el-alert
-      v-if="sourcePlan"
-      class="opportunity-dialog__plan"
-      type="info"
-      :closable="false"
-      :title="`本次执行计划：${formatTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
-    />
-    <el-alert
-      v-if="currentQuote"
-      class="opportunity-dialog__plan"
-      type="warning"
-      :closable="false"
-      :title="`当前有效报价：${quoteKindLabel(currentQuote.kind)} · ${amountText(currentQuote.amount)} · ${formatTime(currentQuote.quotedAt)}；保存后将自动替代该版本。`"
-    />
-    <el-form label-width="100px">
-      <el-form-item label="报价类型" required>
-        <el-radio-group v-model="quoteForm.kind">
-          <el-radio value="oral">口头报价</el-radio>
-          <el-radio value="formal">正式报价</el-radio>
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item label="报价时间" required
-        ><el-input v-model="quoteForm.quotedAt" type="datetime-local"
-      /></el-form-item>
-      <el-form-item label="报价金额" required
-        ><el-input v-model.number="quoteForm.amount" type="number"
-      /></el-form-item>
-      <el-form-item v-if="quoteForm.kind === 'formal'" label="报价单号"
-        ><el-input v-model="quoteForm.quoteNo"
-      /></el-form-item>
-      <el-form-item v-if="quoteForm.kind === 'formal'" label="文件引用">
-        <el-input v-model="quoteForm.documentRef" placeholder="可选链接或文件编号" />
-      </el-form-item>
-      <el-form-item label="报价说明">
-        <el-input v-model="quoteForm.note" placeholder="如：调整配置后重新报价" />
-      </el-form-item>
-      <el-form-item label="下一计划" required>
-        <el-input v-model="quoteForm.nextActionContent" placeholder="如：确认客户对报价的反馈" />
-      </el-form-item>
-      <el-form-item label="计划时间" required>
-        <el-input v-model="quoteForm.nextActionAt" type="datetime-local" />
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <el-button @click="showQuote = false">取消</el-button>
-      <el-button type="primary" :loading="acting" @click="handleQuote">保存报价</el-button>
+      <el-button @click="showProgress = false">取消</el-button>
+      <el-button type="primary" :loading="acting" @click="handleProgress">保存推进</el-button>
     </template>
   </el-dialog>
 
@@ -140,7 +120,6 @@ import { computed, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   addOpportunityFollowUp,
-  addOpportunityQuote,
   closeOpportunity,
   OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
   winOpportunity,
@@ -151,8 +130,7 @@ import {
 
 const props = defineProps<{ opportunity: OpportunityDetail }>()
 const emit = defineEmits<{ changed: [] }>()
-const showFollow = ref(false)
-const showQuote = ref(false)
+const showProgress = ref(false)
 const showWin = ref(false)
 const showClose = ref(false)
 const acting = ref(false)
@@ -161,18 +139,16 @@ const followForm = reactive({
   occurredAt: localInput(new Date()),
   conclusion: '',
   method: '',
+  hasQuote: false,
   nextActionContent: '',
   nextActionAt: localInput(new Date()),
 })
 const quoteForm = reactive({
   kind: 'oral' as 'oral' | 'formal',
-  quotedAt: localInput(new Date()),
   amount: undefined as number | undefined,
   quoteNo: '',
   documentRef: '',
   note: '',
-  nextActionContent: '确认客户对报价的反馈',
-  nextActionAt: localInput(new Date()),
 })
 const winForm = reactive({
   occurredAt: localInput(new Date()),
@@ -184,19 +160,19 @@ const activeQuotes = computed(() =>
 )
 const currentQuote = computed(() => activeQuotes.value[0])
 
-function openFollow(plan?: SalesPlan, occurredDate?: string) {
+function openProgress(plan?: SalesPlan, occurredDate?: string) {
   sourcePlan.value = plan
   followForm.conclusion = ''
   followForm.method = ''
+  followForm.hasQuote = false
   followForm.occurredAt = occurredDate ? `${occurredDate}T09:00` : localInput(new Date())
+  quoteForm.kind = 'oral'
+  quoteForm.amount = undefined
+  quoteForm.quoteNo = ''
+  quoteForm.documentRef = ''
+  quoteForm.note = ''
   prefillNext(followForm, plan)
-  showFollow.value = true
-}
-function openQuote(plan?: SalesPlan) {
-  sourcePlan.value = plan
-  quoteForm.quotedAt = localInput(new Date())
-  prefillNext(quoteForm, plan, '确认客户对报价的反馈')
-  showQuote.value = true
+  showProgress.value = true
 }
 function openWin() {
   const quote = currentQuote.value
@@ -206,7 +182,7 @@ function openWin() {
 function openClose() {
   showClose.value = true
 }
-defineExpose({ openFollow, openQuote, openWin, openClose })
+defineExpose({ openProgress, openWin, openClose })
 
 async function runAction(action: () => Promise<unknown>, message: string): Promise<boolean> {
   acting.value = true
@@ -223,13 +199,16 @@ async function runAction(action: () => Promise<unknown>, message: string): Promi
   }
 }
 
-async function handleFollow() {
+async function handleProgress() {
   if (
     !followForm.conclusion.trim() ||
     !followForm.nextActionContent.trim() ||
     !followForm.nextActionAt
   ) {
     return ElMessage.warning('请填写本次结论和下一计划')
+  }
+  if (followForm.hasQuote && quoteForm.amount == null) {
+    return ElMessage.warning('请填写本次报价金额')
   }
   const succeeded = await runAction(
     () =>
@@ -238,41 +217,23 @@ async function handleFollow() {
         conclusion: followForm.conclusion.trim(),
         occurredAt: new Date(followForm.occurredAt).toISOString(),
         method: followForm.method.trim() || undefined,
+        quote: followForm.hasQuote
+          ? {
+              kind: quoteForm.kind,
+              amount: quoteForm.amount!,
+              quoteNo: quoteForm.quoteNo.trim() || undefined,
+              documentRef:
+                quoteForm.kind === 'formal' ? quoteForm.documentRef.trim() || undefined : undefined,
+              note: quoteForm.note.trim() || undefined,
+            }
+          : undefined,
         sourcePlanId: sourcePlan.value?.id,
         nextActionContent: followForm.nextActionContent.trim(),
         nextActionAt: new Date(followForm.nextActionAt).toISOString(),
       }),
-    '跟进已记录',
+    followForm.hasQuote ? '推进与报价已记录' : '推进已记录',
   )
-  if (succeeded) showFollow.value = false
-}
-
-async function handleQuote() {
-  if (
-    quoteForm.amount == null ||
-    !quoteForm.quotedAt ||
-    !quoteForm.nextActionContent.trim() ||
-    !quoteForm.nextActionAt
-  )
-    return ElMessage.warning('请填写报价和报价后的下一计划')
-  const succeeded = await runAction(
-    () =>
-      addOpportunityQuote(props.opportunity.id, {
-        version: props.opportunity.version,
-        kind: quoteForm.kind,
-        quotedAt: new Date(quoteForm.quotedAt).toISOString(),
-        amount: quoteForm.amount!,
-        quoteNo: quoteForm.quoteNo.trim() || undefined,
-        documentRef:
-          quoteForm.kind === 'formal' ? quoteForm.documentRef.trim() || undefined : undefined,
-        note: quoteForm.note.trim() || undefined,
-        sourcePlanId: sourcePlan.value?.id,
-        nextActionContent: quoteForm.nextActionContent.trim(),
-        nextActionAt: new Date(quoteForm.nextActionAt).toISOString(),
-      }),
-    '报价已记录',
-  )
-  if (succeeded) showQuote.value = false
+  if (succeeded) showProgress.value = false
 }
 
 async function handleWin() {
@@ -320,10 +281,9 @@ function localInput(date: Date): string {
 function prefillNext(
   target: { nextActionContent: string; nextActionAt: string },
   executingPlan?: SalesPlan,
-  defaultContent = '',
 ) {
   const currentPlan = executingPlan ? undefined : props.opportunity.actions[0]
-  target.nextActionContent = currentPlan?.content ?? defaultContent
+  target.nextActionContent = currentPlan?.content ?? ''
   target.nextActionAt = currentPlan
     ? localInput(new Date(currentPlan.plannedAt))
     : localInput(tomorrowAtNine())

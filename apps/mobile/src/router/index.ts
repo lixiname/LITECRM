@@ -44,6 +44,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAbility: 'customer.write' },
     },
     {
+      path: '/records/:type/:id',
+      name: 'actual-record-detail',
+      component: () => import('@/pages/ActualRecordDetailPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/customers/:id',
       name: 'customer-detail',
       component: () => import('@/pages/CustomerDetailPage.vue'),

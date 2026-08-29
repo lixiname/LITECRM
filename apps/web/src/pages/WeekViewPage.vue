@@ -19,16 +19,24 @@
           <el-tag type="warning" effect="plain" size="small">{{ view.overdue.length }}</el-tag>
           <span class="week-view__overdue-hint">展开集中处理更早计划</span>
         </template>
-        <div v-for="action in view.overdue" :key="action.id" class="overdue-row">
+        <div
+          v-for="action in view.overdue"
+          :key="action.id"
+          class="overdue-row"
+          role="button"
+          tabindex="0"
+          @click="handleActionCommand('execute', action)"
+          @keydown.enter="handleActionCommand('execute', action)"
+        >
           <span>
             {{ formatDateTime(action.plannedAt) }} · {{ planLabel(action.planKind) }} ·
             <strong>{{ action.customerName }}</strong> · {{ action.content }}
           </span>
           <div class="week-view__actions">
-            <el-button type="primary" link @click="handleActionCommand('execute', action)">
-              去执行
-            </el-button>
-            <FollowUpActionMenu :action="action" hide-execute @command="handleActionCommand" />
+            <span>点击执行</span>
+            <span @click.stop>
+              <FollowUpActionMenu :action="action" hide-execute @command="handleActionCommand" />
+            </span>
           </div>
         </div>
       </el-collapse-item>
@@ -58,11 +66,9 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item disabled>安排待办</el-dropdown-item>
-                    <el-dropdown-item command="plan">客户拜访 / 商机跟进计划</el-dropdown-item>
+                    <el-dropdown-item command="plan">客户拜访 / 商机推进计划</el-dropdown-item>
                     <el-dropdown-item disabled divided>记录已发生</el-dropdown-item>
-                    <el-dropdown-item command="record"
-                      >新商机 / 拜访 / 跟进 / 报价</el-dropdown-item
-                    >
+                    <el-dropdown-item command="record">新商机 / 拜访 / 商机推进</el-dropdown-item>
                     <el-dropdown-item command="complaint" divided>登记新客诉</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -74,7 +80,15 @@
                 <div class="week-view__section-head">
                   <span>待执行</span><small>{{ day.pendingPlans.length }}</small>
                 </div>
-                <div v-for="action in day.pendingPlans" :key="action.id" class="week-view__item">
+                <div
+                  v-for="action in day.pendingPlans"
+                  :key="action.id"
+                  class="week-view__item"
+                  role="button"
+                  tabindex="0"
+                  @click="handleActionCommand('execute', action)"
+                  @keydown.enter="handleActionCommand('execute', action)"
+                >
                   <div class="week-view__item-head">
                     <span>{{ planLabel(action.planKind) }}</span>
                     <small>{{ timeOnly(action.plannedAt) }}</small>
@@ -83,18 +97,14 @@
                   <small v-if="action.opportunityName">{{ action.opportunityName }}</small>
                   <div :title="action.content">{{ action.content }}</div>
                   <div class="week-view__item-actions">
-                    <el-button
-                      type="primary"
-                      size="small"
-                      @click="handleActionCommand('execute', action)"
-                    >
-                      去执行
-                    </el-button>
-                    <FollowUpActionMenu
-                      :action="action"
-                      hide-execute
-                      @command="handleActionCommand"
-                    />
+                    <span>点击填报</span>
+                    <span @click.stop>
+                      <FollowUpActionMenu
+                        :action="action"
+                        hide-execute
+                        @command="handleActionCommand"
+                      />
+                    </span>
                   </div>
                 </div>
               </section>
@@ -108,6 +118,10 @@
                   :key="`${record.type}-${record.id}`"
                   class="week-view__record"
                   :class="{ 'week-view__record--complaint': record.type.startsWith('complaint_') }"
+                  role="button"
+                  tabindex="0"
+                  @click="openActualRecord(record)"
+                  @keydown.enter="openActualRecord(record)"
                 >
                   <div class="week-view__item-head">
                     <span>{{ recordLabel(record.type) }}</span
@@ -128,6 +142,8 @@
                   v-for="action in day.closedPlans"
                   :key="action.id"
                   class="week-view__closed-item"
+                  :class="{ 'week-view__closed-item--clickable': action.status === 'completed' }"
+                  @click="openClosedPlan(action)"
                 >
                   <span>{{ timeOnly(action.plannedAt) }} · {{ planLabel(action.planKind) }}</span>
                   <strong>{{ action.customerName }}</strong>
@@ -152,7 +168,7 @@
         <el-form-item label="计划类型" required>
           <el-radio-group v-model="planForm.planKind" @change="onPlanKindChange">
             <el-radio value="customer_visit">客户拜访</el-radio>
-            <el-radio value="opportunity_follow_up">商机跟进</el-radio>
+            <el-radio value="opportunity_follow_up">商机推进</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="客户" required>
@@ -242,8 +258,7 @@
           <el-radio-group v-model="recordDialog.type">
             <el-radio value="opportunity_created">新建商机</el-radio>
             <el-radio value="customer_visit">客户拜访</el-radio>
-            <el-radio value="opportunity_follow_up">商机跟进</el-radio>
-            <el-radio value="opportunity_quote">报价记录</el-radio>
+            <el-radio value="opportunity_follow_up">商机推进</el-radio>
             <el-radio value="complaint_registered">登记客诉</el-radio>
           </el-radio-group>
         </el-form-item>
@@ -262,14 +277,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item
-          v-if="
-            recordDialog.type === 'opportunity_follow_up' ||
-            recordDialog.type === 'opportunity_quote'
-          "
-          label="商机"
-          required
-        >
+        <el-form-item v-if="recordDialog.type === 'opportunity_follow_up'" label="商机" required>
           <el-select v-model="recordDialog.opportunityId" style="width: 100%">
             <el-option
               v-for="opportunity in recordOpportunityOptions"
@@ -287,6 +295,11 @@
     </el-dialog>
 
     <OpportunityCreateDialog ref="opportunityCreateDialog" @created="openCreatedOpportunity" />
+    <ActualRecordDetailDrawer
+      v-model="actualDetailVisible"
+      :record="selectedActualRecord"
+      :plan="selectedActualPlan"
+    />
   </div>
 </template>
 
@@ -298,6 +311,7 @@ import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
 import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
+import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
 import {
   createSalesPlan,
   getWeekView,
@@ -316,19 +330,14 @@ import {
 
 type ActionCommand = 'execute' | 'reschedule' | 'replace'
 type AddCommand = 'plan' | 'record' | 'complaint'
-type ActualRecordType = WeekBusinessRecord['type'] | WeekComplaintRecord['type']
-type ActualRecordVM = {
-  id: string
-  type: ActualRecordType
-  occurredAt: string
-  customerName: string
-  opportunityName?: string | null
-  summary: string
-  sourcePlanId: string | null
-}
+type ActualRecordVM = WeekBusinessRecord | WeekComplaintRecord
+type ActualRecordType = ActualRecordVM['type']
 
 const router = useRouter()
 const opportunityCreateDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
+const actualDetailVisible = ref(false)
+const selectedActualRecord = ref<ActualRecordVM>()
+const selectedActualPlan = ref<SalesPlan>()
 
 const today = new Date()
 const todayStr = fmt(today)
@@ -500,11 +509,7 @@ const recordDialog = reactive({
   visible: false,
   date: '',
   type: 'customer_visit' as
-    | 'opportunity_created'
-    | 'customer_visit'
-    | 'opportunity_follow_up'
-    | 'opportunity_quote'
-    | 'complaint_registered',
+    'opportunity_created' | 'customer_visit' | 'opportunity_follow_up' | 'complaint_registered',
   customerId: '',
   opportunityId: '',
 })
@@ -544,10 +549,29 @@ function continueRecord() {
   }
   if (!recordDialog.opportunityId) return ElMessage.warning('请选择商机')
   recordDialog.visible = false
-  const record = recordDialog.type === 'opportunity_quote' ? 'quote' : 'follow-up'
   void router.push(
-    `/opportunities/${recordDialog.opportunityId}?record=${record}&date=${recordDialog.date}`,
+    `/opportunities/${recordDialog.opportunityId}?record=progress&date=${recordDialog.date}`,
   )
+}
+
+function openActualRecord(record: ActualRecordVM) {
+  selectedActualRecord.value = record
+  selectedActualPlan.value = record.sourcePlanId
+    ? view.value?.plans.find((item) => item.id === record.sourcePlanId)
+    : undefined
+  actualDetailVisible.value = true
+}
+
+function openClosedPlan(action: SalesPlan) {
+  if (action.status !== 'completed') return
+  const record = [
+    ...(view.value?.businessRecords ?? []),
+    ...(view.value?.complaintRecords ?? []),
+  ].find((item) => item.sourcePlanId === action.id)
+  if (!record) return ElMessage.warning('该计划的执行事实不在当前周视图范围内')
+  selectedActualPlan.value = action
+  selectedActualRecord.value = record
+  actualDetailVisible.value = true
 }
 
 function openCreatedOpportunity(opportunityId: string) {
@@ -639,7 +663,7 @@ async function submitPlan() {
 function planLabel(kind: SalesPlanKind): string {
   return {
     customer_visit: '客户拜访',
-    opportunity_follow_up: '商机跟进',
+    opportunity_follow_up: '商机推进',
     complaint_follow_up: '客诉处理',
   }[kind]
 }
@@ -647,8 +671,8 @@ function recordLabel(type: ActualRecordType): string {
   return {
     opportunity_created: '发现商机',
     customer_visit: '客户拜访',
-    opportunity_follow_up: '商机跟进',
-    opportunity_quote: '报价记录',
+    opportunity_follow_up: '商机推进',
+    opportunity_quote: '独立报价',
     complaint_registered: '客诉登记',
     complaint_follow_up: '客诉跟进',
   }[type]
@@ -691,6 +715,7 @@ function formatDateTime(value: string): string {
   gap: var(--crm-spacing-md);
   padding: var(--crm-spacing-sm) 0;
   border-top: 1px solid var(--el-color-warning-light-7);
+  cursor: pointer;
 }
 .week-view__actions {
   display: flex;
@@ -767,6 +792,7 @@ function formatDateTime(value: string): string {
   background: var(--el-color-primary-light-9);
   font-size: var(--crm-font-size-sm);
   word-break: break-word;
+  cursor: pointer;
 }
 .week-view__item-actions {
   display: flex;
@@ -783,6 +809,7 @@ function formatDateTime(value: string): string {
   background: var(--crm-color-bg-card);
   font-size: var(--crm-font-size-sm);
   box-shadow: 0 1px 3px rgb(31 35 41 / 8%);
+  cursor: pointer;
 }
 .week-view__record--complaint {
   border-left-color: var(--crm-color-danger);
@@ -817,6 +844,9 @@ function formatDateTime(value: string): string {
   margin-top: var(--crm-spacing-sm);
   padding-left: var(--crm-spacing-sm);
   border-left: 2px solid var(--crm-color-border);
+}
+.week-view__closed-item--clickable {
+  cursor: pointer;
 }
 .week-view__empty-state {
   display: flex;

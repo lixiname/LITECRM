@@ -8,8 +8,7 @@
     >
       <template #actions>
         <template v-if="canOperate">
-          <el-button @click="commands?.openFollow()">记跟进</el-button>
-          <el-button @click="commands?.openQuote()">记报价</el-button>
+          <el-button type="primary" @click="commands?.openProgress()">记录商机推进</el-button>
           <el-button type="success" @click="commands?.openWin()">确认成交</el-button>
           <el-button type="danger" plain @click="commands?.openClose()">结案</el-button>
         </template>
@@ -48,7 +47,6 @@
           {{ opportunityAmountText(opp.referenceAmount) }} ·
           {{ opportunityAmountBasisLabel(opp.amountBasis) }}
         </el-descriptions-item>
-        >
         <el-descriptions-item label="来源">{{ sourceLabel(opp.source) }}</el-descriptions-item>
         <el-descriptions-item label="产品线">{{
           productLineLabel(opp.productLines)
@@ -190,16 +188,12 @@ watch(
     await nextTick()
     if (route.query.executePlan) {
       const plan = await getSalesPlan(route.query.executePlan as string)
-      commands.value?.openFollow(plan)
+      commands.value?.openProgress(plan)
       routeCommandOpened.value = true
       return
     }
-    if (route.query.record === 'follow-up') {
-      commands.value?.openFollow(undefined, route.query.date as string | undefined)
-      routeCommandOpened.value = true
-    }
-    if (route.query.record === 'quote') {
-      commands.value?.openQuote()
+    if (route.query.record === 'progress' || route.query.record === 'follow-up') {
+      commands.value?.openProgress(undefined, route.query.date as string | undefined)
       routeCommandOpened.value = true
     }
   },

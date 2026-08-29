@@ -1412,6 +1412,21 @@ export interface components {
             /** @description 第一步行动计划时间 */
             firstActionAt: string;
         };
+        /** @enum {string} */
+        OpportunityQuoteKind: "oral" | "formal";
+        OpportunityProgressQuoteDto: {
+            kind: components["schemas"]["OpportunityQuoteKind"];
+            /** @description 报价时间；缺省时与本次推进时间一致 */
+            quotedAt?: string;
+            /** @description 报价总额 */
+            amount: number;
+            /** @description 正式报价单号 */
+            quoteNo?: string;
+            /** @description 报价说明 */
+            note?: string;
+            /** @description 可选文件引用；不要求上传 */
+            documentRef?: string;
+        };
         CreateOpportunityFollowUpDto: {
             version: number;
             /** @description 本次跟进结论 */
@@ -1422,13 +1437,13 @@ export interface components {
             method?: string;
             /** @description 本次跟进履行的来源计划 */
             sourcePlanId?: string;
+            /** @description 本次推进中产生的新报价 */
+            quote?: components["schemas"]["OpportunityProgressQuoteDto"];
             /** @description 下一行动内容；开放商机的每次跟进均必填 */
             nextActionContent: string;
             /** @description 下一行动计划时间；开放商机的每次跟进均必填 */
             nextActionAt: string;
         };
-        /** @enum {string} */
-        OpportunityQuoteKind: "oral" | "formal";
         CreateOpportunityQuoteDto: {
             version: number;
             kind: components["schemas"]["OpportunityQuoteKind"];

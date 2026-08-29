@@ -26,6 +26,17 @@
       <span class="quick-add__date-val">{{ date }}</span>
     </div>
 
+    <van-cell-group v-if="dayPlans.length" inset title="优先处理已有计划" class="quick-add__plans">
+      <van-cell
+        v-for="planItem in dayPlans"
+        :key="planItem.id"
+        :title="`${planLabel(planItem)} · ${planItem.customerName ?? '客户'}`"
+        :label="`${formatTime(planItem.plannedAt)} · ${planItem.content}`"
+        is-link
+        @click="router.push(salesPlanExecutionRoute(planItem))"
+      />
+    </van-cell-group>
+
     <!-- 类型面板（移动端聚焦实际） -->
     <van-cell-group inset title="新增或记录">
       <van-cell
@@ -36,16 +47,10 @@
       />
       <van-cell title="记录客户拜访" icon="guide-o" is-link @click="pickType('customer_visit')" />
       <van-cell
-        title="记录商机跟进"
+        title="记录商机推进"
         icon="chart-trending-o"
         is-link
         @click="pickType('opportunity_follow_up')"
-      />
-      <van-cell
-        title="记录报价"
-        icon="balance-list-o"
-        is-link
-        @click="pickType('opportunity_quote')"
       />
       <van-cell
         title="登记客诉"
@@ -76,7 +81,7 @@
     <van-form v-if="selectedCustomer" class="quick-add__form">
       <van-cell-group inset :title="selectedCustomer.name">
         <van-field
-          v-if="type === 'opportunity_follow_up' || type === 'opportunity_quote'"
+          v-if="type === 'opportunity_follow_up'"
           v-model="opportunityLabel"
           label="商机"
           readonly
@@ -85,8 +90,29 @@
           @click="showOpportunityPicker = true"
         />
       </van-cell-group>
+      <van-cell-group v-if="matchingPlan" inset title="已存在相关计划" class="quick-add__match">
+        <van-cell
+          :title="planLabel(matchingPlan)"
+          :label="`${formatTime(matchingPlan.plannedAt)} · ${matchingPlan.content}`"
+        />
+        <div class="quick-add__match-actions">
+          <van-button block round type="primary" @click="executeMatchingPlan">
+            {{ matchingPlanCta }}
+          </van-button>
+          <van-button block plain round @click="recordOutsidePlan = true">
+            记录计划外实际
+          </van-button>
+        </div>
+      </van-cell-group>
       <div class="quick-add__submit">
-        <van-button block round type="primary" :loading="saving" @click="continueAction">
+        <van-button
+          v-if="!matchingPlan || recordOutsidePlan"
+          block
+          round
+          type="primary"
+          :loading="saving"
+          @click="continueAction"
+        >
           继续填写
         </van-button>
       </div>
@@ -103,17 +129,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import { listCustomers, listOpportunities, type CustomerItem, type Opportunity } from '@crm/domain'
+import {
+  getCustomer,
+  getOpportunity,
+  getWeekView,
+  listCustomers,
+  listOpportunities,
+  type CustomerItem,
+  type Opportunity,
+  type SalesPlan,
+} from '@crm/domain'
+import { salesPlanExecutionRoute } from '@/libs/sales-workbench'
 
 type QuickRecordType =
-  | 'opportunity_created'
-  | 'customer_visit'
-  | 'opportunity_follow_up'
-  | 'opportunity_quote'
-  | 'complaint_registered'
+  'opportunity_created' | 'customer_visit' | 'opportunity_follow_up' | 'complaint_registered'
 
 const route = useRoute()
 const router = useRouter()
@@ -136,21 +168,32 @@ const opportunities = ref<Opportunity[]>([])
 const opportunityId = ref('')
 const saving = ref(false)
 const showOpportunityPicker = ref(false)
+const dayPlans = ref<SalesPlan[]>([])
+const matchingPlan = ref<SalesPlan>()
+const recordOutsidePlan = ref(false)
 const opportunityColumns = computed(() =>
   opportunities.value.map((item) => ({ text: item.name, value: item.id })),
 )
 const opportunityLabel = computed(
   () => opportunities.value.find((item) => item.id === opportunityId.value)?.name ?? '',
 )
+const matchingPlanCta = computed(() => {
+  if (!matchingPlan.value) return '按此计划填报'
+  return matchingPlan.value.plannedAt.slice(0, 10) > date.value ? '提前执行此计划' : '按此计划填报'
+})
+
+onMounted(loadPlans)
 
 function setDate(d: string) {
   date.value = d
-  // 保持快速录入日期基准；具体表单可在目标页面里再确认时间
+  void loadPlans()
 }
 function pickType(t: QuickRecordType) {
   type.value = t
   selectedCustomer.value = undefined
   opportunityId.value = ''
+  matchingPlan.value = undefined
+  recordOutsidePlan.value = false
   void load()
 }
 async function load() {
@@ -166,25 +209,49 @@ async function load() {
 async function selectCustomer(customer: CustomerItem) {
   selectedCustomer.value = customer
   opportunityId.value = ''
-  if (type.value === 'opportunity_follow_up' || type.value === 'opportunity_quote') {
+  matchingPlan.value = undefined
+  recordOutsidePlan.value = false
+  if (type.value === 'opportunity_follow_up') {
     const page = await listOpportunities({ customerId: customer.id, page: 1, pageSize: 50 })
     opportunities.value = page.items.filter(
       (item) => item.stage === 'intent' || item.stage === 'following',
     )
+  } else if (type.value === 'customer_visit') {
+    const detail = await getCustomer(customer.id)
+    matchingPlan.value = detail.currentVisitPlan ?? undefined
   }
 }
 
-function pickOpportunity({ selectedOptions }: { selectedOptions: { value: string }[] }) {
+async function pickOpportunity({ selectedOptions }: { selectedOptions: { value: string }[] }) {
   opportunityId.value = selectedOptions[0].value
   showOpportunityPicker.value = false
+  const detail = await getOpportunity(opportunityId.value)
+  matchingPlan.value = detail.actions[0]
+  recordOutsidePlan.value = false
+}
+
+async function loadPlans() {
+  try {
+    const view = await getWeekView(date.value, date.value)
+    const unique = new Map<string, SalesPlan>()
+    for (const item of [...view.overdue, ...view.plans]) {
+      if (item.status === 'pending') unique.set(item.id, item)
+    }
+    dayPlans.value = [...unique.values()].sort(
+      (left, right) => new Date(left.plannedAt).getTime() - new Date(right.plannedAt).getTime(),
+    )
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '计划加载失败')
+  }
+}
+
+function executeMatchingPlan() {
+  if (matchingPlan.value) void router.push(salesPlanExecutionRoute(matchingPlan.value))
 }
 
 async function continueAction() {
   if (!type.value || !selectedCustomer.value) return
-  if (
-    (type.value === 'opportunity_follow_up' || type.value === 'opportunity_quote') &&
-    !opportunityId.value
-  ) {
+  if (type.value === 'opportunity_follow_up' && !opportunityId.value) {
     return showToast('请选择要跟进的商机')
   }
   saving.value = true
@@ -209,7 +276,6 @@ async function continueAction() {
         path: `/opportunities/${opportunityId.value}/follow-up`,
         query: {
           date: date.value,
-          mode: type.value === 'opportunity_quote' ? 'quote' : 'follow_up',
         },
       })
     }
@@ -218,6 +284,16 @@ async function continueAction() {
   } finally {
     saving.value = false
   }
+}
+
+function planLabel(planItem: SalesPlan): string {
+  if (planItem.planKind === 'customer_visit') return '客户拜访'
+  if (planItem.planKind === 'complaint_follow_up') return '客诉跟进'
+  return '商机推进'
+}
+
+function formatTime(value: string): string {
+  return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 
@@ -228,10 +304,17 @@ async function continueAction() {
   padding-bottom: 88px;
 }
 .quick-add__form,
-.quick-add__submit {
+.quick-add__submit,
+.quick-add__plans,
+.quick-add__match {
   margin-top: var(--crm-spacing-md);
 }
 .quick-add__submit {
   padding: 0 var(--crm-spacing-md);
+}
+.quick-add__match-actions {
+  display: grid;
+  gap: var(--crm-spacing-sm);
+  padding: var(--crm-spacing-md);
 }
 </style>

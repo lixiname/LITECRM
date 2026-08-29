@@ -1,7 +1,7 @@
 <template>
   <div>
     <van-nav-bar
-      :title="plan ? '执行商机计划' : '记录商机实际'"
+      :title="plan ? '执行商机计划' : '记录商机推进'"
       left-arrow
       @click-left="router.back()"
     />
@@ -11,25 +11,22 @@
       :scrollable="false"
       :text="`本次执行计划：${formatTime(plan.plannedAt)} · ${plan.content}`"
     />
-    <van-tabs v-model:active="mode">
-      <van-tab title="记录跟进" name="follow_up" />
-      <van-tab title="记录报价" name="quote" />
-    </van-tabs>
     <van-form @submit="submit">
       <van-cell-group inset>
-        <template v-if="mode === 'follow_up'">
-          <van-field v-model="occurredAt" label="跟进时间" type="datetime-local" required />
-          <van-field v-model="conclusion" label="本次结论" type="textarea" rows="2" required />
-          <van-field
-            v-model="methodLabel"
-            label="跟进方式"
-            readonly
-            is-link
-            placeholder="选择沟通方式"
-            @click="showMethod = true"
-          />
-        </template>
-        <template v-else>
+        <van-field v-model="occurredAt" label="推进时间" type="datetime-local" required />
+        <van-field v-model="conclusion" label="本次结论" type="textarea" rows="2" required />
+        <van-field
+          v-model="methodLabel"
+          label="沟通方式"
+          readonly
+          is-link
+          placeholder="选择沟通方式"
+          @click="showMethod = true"
+        />
+        <van-cell title="本次产生报价">
+          <template #value><van-switch v-model="hasQuote" size="22" /></template>
+        </van-cell>
+        <template v-if="hasQuote">
           <van-field
             v-model="quoteKindLabel"
             label="报价类型"
@@ -38,7 +35,6 @@
             required
             @click="showQuoteKind = true"
           />
-          <van-field v-model="quotedAt" label="报价时间" type="datetime-local" required />
           <van-field v-model="amount" label="报价金额" type="number" required />
           <van-field
             v-if="quoteKind === 'formal'"
@@ -87,7 +83,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   addOpportunityFollowUp,
-  addOpportunityQuote,
   getOpportunity,
   getSalesPlan,
   OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
@@ -102,16 +97,15 @@ const opportunityId = String(route.params.id)
 const planId = String(route.query.planId ?? '')
 const opportunity = ref<OpportunityDetail>()
 const plan = ref<SalesPlan>()
-const mode = ref<'follow_up' | 'quote'>('follow_up')
 const occurredAt = ref(localInput(new Date()))
 const conclusion = ref('')
 const method = ref('')
 const methodLabel = ref('')
 const showMethod = ref(false)
+const hasQuote = ref(false)
 const quoteKind = ref<'oral' | 'formal'>('oral')
 const quoteKindLabel = ref('口头报价')
 const showQuoteKind = ref(false)
-const quotedAt = ref(localInput(new Date()))
 const amount = ref('')
 const quoteNo = ref('')
 const quoteNote = ref('')
@@ -144,11 +138,9 @@ onMounted(async () => {
       nextAt.value = localInput(new Date(currentPlan.plannedAt))
       nextContent.value = currentPlan.content
     }
-    mode.value = route.query.mode === 'quote' ? 'quote' : 'follow_up'
     const date = route.query.date as string | undefined
     if (date) {
       occurredAt.value = `${date}T09:00`
-      quotedAt.value = `${date}T09:00`
     }
   } catch (error) {
     showToast(error instanceof Error ? error.message : '加载失败')
@@ -158,36 +150,30 @@ onMounted(async () => {
 async function submit() {
   if (!opportunity.value) return
   if (!nextAt.value || !nextContent.value.trim()) return showToast('请填写下次时间和内容')
+  if (!conclusion.value.trim()) return showToast('请填写本次结论')
+  if (hasQuote.value && !amount.value) return showToast('请填写报价金额')
   saving.value = true
   try {
-    if (mode.value === 'follow_up') {
-      if (!conclusion.value.trim()) return showToast('请填写本次结论')
-      await addOpportunityFollowUp(opportunityId, {
-        version: opportunity.value.version,
-        conclusion: conclusion.value.trim(),
-        occurredAt: new Date(occurredAt.value).toISOString(),
-        method: method.value.trim() || undefined,
-        sourcePlanId: plan.value?.id,
-        nextActionAt: new Date(nextAt.value).toISOString(),
-        nextActionContent: nextContent.value.trim(),
-      })
-    } else {
-      if (!amount.value) return showToast('请填写报价金额')
-      await addOpportunityQuote(opportunityId, {
-        version: opportunity.value.version,
-        kind: quoteKind.value,
-        quotedAt: new Date(quotedAt.value).toISOString(),
-        amount: Number(amount.value),
-        quoteNo: quoteNo.value.trim() || undefined,
-        note: quoteNote.value.trim() || undefined,
-        documentRef:
-          quoteKind.value === 'formal' ? documentRef.value.trim() || undefined : undefined,
-        sourcePlanId: plan.value?.id,
-        nextActionAt: new Date(nextAt.value).toISOString(),
-        nextActionContent: nextContent.value.trim(),
-      })
-    }
-    showToast(mode.value === 'follow_up' ? '跟进已记录' : '报价已记录')
+    await addOpportunityFollowUp(opportunityId, {
+      version: opportunity.value.version,
+      conclusion: conclusion.value.trim(),
+      occurredAt: new Date(occurredAt.value).toISOString(),
+      method: method.value.trim() || undefined,
+      quote: hasQuote.value
+        ? {
+            kind: quoteKind.value,
+            amount: Number(amount.value),
+            quoteNo: quoteNo.value.trim() || undefined,
+            note: quoteNote.value.trim() || undefined,
+            documentRef:
+              quoteKind.value === 'formal' ? documentRef.value.trim() || undefined : undefined,
+          }
+        : undefined,
+      sourcePlanId: plan.value?.id,
+      nextActionAt: new Date(nextAt.value).toISOString(),
+      nextActionContent: nextContent.value.trim(),
+    })
+    showToast(hasQuote.value ? '推进与报价已记录' : '推进已记录')
     router.back()
   } catch (error) {
     showToast(error instanceof Error ? error.message : '保存失败')

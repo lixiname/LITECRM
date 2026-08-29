@@ -84,8 +84,7 @@
       </van-cell-group>
 
       <div v-if="canOperate" class="opportunity-detail__actions">
-        <van-button plain type="primary" @click="openRecord('follow_up')">记跟进</van-button>
-        <van-button plain type="primary" @click="openRecord('quote')">记报价</van-button>
+        <van-button plain type="primary" @click="openProgress">记录推进</van-button>
         <van-button plain type="danger" @click="openClose">未成交结案</van-button>
         <van-button type="success" @click="openWin">确认成交</van-button>
       </div>
@@ -191,11 +190,8 @@ const currentQuote = computed(() =>
   opportunity.value?.quotes.find((quote) => quote.status === 'active'),
 )
 
-function openRecord(mode: 'follow_up' | 'quote') {
-  void router.push({
-    path: `/opportunities/${opportunityId}/follow-up`,
-    query: { mode },
-  })
+function openProgress() {
+  void router.push(`/opportunities/${opportunityId}/follow-up`)
 }
 
 function openWin() {
@@ -326,7 +322,7 @@ function localInput(date: Date): string {
   left: 0;
   z-index: 4;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: var(--crm-spacing-sm);
   padding-bottom: max(var(--crm-spacing-sm), env(safe-area-inset-bottom));

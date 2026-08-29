@@ -3121,6 +3121,43 @@
           "firstActionAt"
         ]
       },
+      "OpportunityQuoteKind": {
+        "type": "string",
+        "enum": ["oral", "formal"]
+      },
+      "OpportunityProgressQuoteDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpportunityQuoteKind"
+              }
+            ]
+          },
+          "quotedAt": {
+            "type": "string",
+            "description": "报价时间；缺省时与本次推进时间一致"
+          },
+          "amount": {
+            "type": "number",
+            "description": "报价总额"
+          },
+          "quoteNo": {
+            "type": "string",
+            "description": "正式报价单号"
+          },
+          "note": {
+            "type": "string",
+            "description": "报价说明"
+          },
+          "documentRef": {
+            "type": "string",
+            "description": "可选文件引用；不要求上传"
+          }
+        },
+        "required": ["kind", "amount"]
+      },
       "CreateOpportunityFollowUpDto": {
         "type": "object",
         "properties": {
@@ -3144,6 +3181,14 @@
             "type": "string",
             "description": "本次跟进履行的来源计划"
           },
+          "quote": {
+            "description": "本次推进中产生的新报价",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OpportunityProgressQuoteDto"
+              }
+            ]
+          },
           "nextActionContent": {
             "type": "string",
             "description": "下一行动内容；开放商机的每次跟进均必填"
@@ -3154,10 +3199,6 @@
           }
         },
         "required": ["version", "conclusion", "nextActionContent", "nextActionAt"]
-      },
-      "OpportunityQuoteKind": {
-        "type": "string",
-        "enum": ["oral", "formal"]
       },
       "CreateOpportunityQuoteDto": {
         "type": "object",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ActionWeekView, SalesPlan } from '@crm/domain'
-import { buildMobileWeekDays, salesPlanExecutionRoute } from '../sales-workbench'
+import { actualRecordRoute, buildMobileWeekDays, salesPlanExecutionRoute } from '../sales-workbench'
 
 const plan: SalesPlan = {
   id: 'plan-1',
@@ -59,5 +59,23 @@ describe('mobile sales workbench projection', () => {
         opportunityId: 'opportunity-1',
       }),
     ).toBe('/opportunities/opportunity-1/follow-up?planId=plan-1')
+  })
+
+  it('opens a completed fact in a dedicated read-only detail page', () => {
+    const route = actualRecordRoute({
+      id: 'follow-up-1',
+      type: 'opportunity_follow_up',
+      occurredAt: '2026-08-24T10:00:00+08:00',
+      customerId: 'customer-1',
+      customerName: '测试客户',
+      opportunityId: 'opportunity-1',
+      opportunityName: '过滤设备项目',
+      summary: '确认技术参数',
+      sourcePlanId: 'plan-1',
+    })
+
+    expect(route).toContain('/records/opportunity_follow_up/follow-up-1?')
+    expect(route).toContain('opportunityId=opportunity-1')
+    expect(route).not.toBe('/opportunities/opportunity-1')
   })
 })

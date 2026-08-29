@@ -73,6 +73,7 @@ export interface OpportunityFollowUp {
 export interface OpportunityQuote {
   id: string
   opportunityId: string
+  followUpId: string | null
   actorId: string
   kind: OpportunityQuoteKind
   quotedAt: string

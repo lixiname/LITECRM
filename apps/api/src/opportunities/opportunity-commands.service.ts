@@ -2,7 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import type { AuthUser } from '../auth/auth.service'
 import { CatalogService } from '../catalog/catalog.service'
-import { db } from '../common/db/db'
+import { db, type DbClient } from '../common/db/db'
 import {
   deals,
   opportunities,
@@ -45,6 +45,20 @@ export class OpportunityCommandsService {
         })
         .returning()
 
+      const quote = dto.quote
+        ? await this.appendQuote(tx, {
+            opportunityId: id,
+            actorId: actor.id,
+            followUpId: followUp.id,
+            kind: dto.quote.kind,
+            quotedAt: dto.quote.quotedAt ? new Date(dto.quote.quotedAt) : occurredAt,
+            amount: dto.quote.amount,
+            quoteNo: dto.quote.quoteNo,
+            note: dto.quote.note,
+            documentRef: dto.quote.documentRef,
+          })
+        : null
+
       await this.actionsService.continueWithNext(
         tx,
         dto.sourcePlanId,
@@ -84,7 +98,12 @@ export class OpportunityCommandsService {
         actorId: actor.id,
         occurredAt,
         type: nextStage === opportunity.stage ? 'updated' : 'stage_changed',
-        payload: { from: opportunity.stage, to: nextStage, followUpId: followUp.id },
+        payload: {
+          from: opportunity.stage,
+          to: nextStage,
+          followUpId: followUp.id,
+          quoteId: quote?.id ?? null,
+        },
       })
       await touchCustomerActivity(tx, opportunity.customerId, occurredAt)
       return updated
@@ -96,44 +115,18 @@ export class OpportunityCommandsService {
     this.opportunityAccess.assertOpen(opportunity.stage)
 
     return db.transaction(async (tx) => {
-      // 同一商机的报价必须串行更新，防止并发请求产生两条有效报价。
-      await tx.execute(
-        sql`select 1 from ${opportunities} where ${opportunities.id} = ${id} for update`,
-      )
-
-      const [currentQuote] = await tx
-        .select({ id: opportunityQuotes.id })
-        .from(opportunityQuotes)
-        .where(and(eq(opportunityQuotes.opportunityId, id), eq(opportunityQuotes.status, 'active')))
-        .orderBy(desc(opportunityQuotes.createdAt))
-        .limit(1)
-      if (currentQuote) {
-        await tx
-          .update(opportunityQuotes)
-          .set({
-            status: 'superseded',
-            updatedAt: new Date(),
-            version: sql`${opportunityQuotes.version} + 1`,
-          })
-          .where(eq(opportunityQuotes.id, currentQuote.id))
-      }
-
       const occurredAt = new Date(dto.quotedAt)
-      const [quote] = await tx
-        .insert(opportunityQuotes)
-        .values({
-          opportunityId: id,
-          actorId: actor.id,
-          kind: dto.kind,
-          quotedAt: occurredAt,
-          amount: String(dto.amount),
-          quoteNo: dto.quoteNo?.trim() || null,
-          supersedesQuoteId: currentQuote?.id ?? null,
-          sourcePlanId: dto.sourcePlanId ?? null,
-          note: dto.note?.trim() || null,
-          documentRef: dto.documentRef?.trim() || null,
-        })
-        .returning()
+      const quote = await this.appendQuote(tx, {
+        opportunityId: id,
+        actorId: actor.id,
+        kind: dto.kind,
+        quotedAt: occurredAt,
+        amount: dto.amount,
+        quoteNo: dto.quoteNo,
+        sourcePlanId: dto.sourcePlanId,
+        note: dto.note,
+        documentRef: dto.documentRef,
+      })
 
       await this.actionsService.continueWithNext(
         tx,
@@ -274,6 +267,65 @@ export class OpportunityCommandsService {
       await touchCustomerActivity(tx, opportunity.customerId, closedAt)
       return updated
     })
+  }
+
+  private async appendQuote(
+    tx: DbClient,
+    input: {
+      opportunityId: string
+      actorId: string
+      followUpId?: string
+      kind: CreateOpportunityQuoteDto['kind']
+      quotedAt: Date
+      amount: number
+      quoteNo?: string
+      sourcePlanId?: string
+      note?: string
+      documentRef?: string
+    },
+  ) {
+    // 同一商机的报价必须串行更新，防止并发请求产生两条有效报价。
+    await tx.execute(
+      sql`select 1 from ${opportunities} where ${opportunities.id} = ${input.opportunityId} for update`,
+    )
+    const [currentQuote] = await tx
+      .select({ id: opportunityQuotes.id })
+      .from(opportunityQuotes)
+      .where(
+        and(
+          eq(opportunityQuotes.opportunityId, input.opportunityId),
+          eq(opportunityQuotes.status, 'active'),
+        ),
+      )
+      .orderBy(desc(opportunityQuotes.createdAt))
+      .limit(1)
+    if (currentQuote) {
+      await tx
+        .update(opportunityQuotes)
+        .set({
+          status: 'superseded',
+          updatedAt: new Date(),
+          version: sql`${opportunityQuotes.version} + 1`,
+        })
+        .where(eq(opportunityQuotes.id, currentQuote.id))
+    }
+    const [quote] = await tx
+      .insert(opportunityQuotes)
+      .values({
+        opportunityId: input.opportunityId,
+        actorId: input.actorId,
+        followUpId: input.followUpId ?? null,
+        kind: input.kind,
+        quotedAt: input.quotedAt,
+        amount: String(input.amount),
+        quoteNo: input.quoteNo?.trim() || null,
+        supersedesQuoteId: currentQuote?.id ?? null,
+        sourcePlanId: input.sourcePlanId ?? null,
+        note: input.note?.trim() || null,
+        documentRef: input.documentRef?.trim() || null,
+      })
+      .returning()
+    return quote
   }
 }
 

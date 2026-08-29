@@ -19,6 +19,7 @@ export interface WeekBusinessRecord {
   opportunityName: string | null
   summary: string
   sourcePlanId: string | null
+  linkedQuoteId?: string | null
 }
 
 export interface WeekComplaintRecord {
@@ -28,6 +29,7 @@ export interface WeekComplaintRecord {
   customerId: string
   customerName: string
   complaintId: string
+  opportunityName?: null
   summary: string
   sourcePlanId: string | null
 }

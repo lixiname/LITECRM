@@ -15,15 +15,20 @@
     <template v-else>
       <section v-if="view?.overdue.length" class="overdue-panel">
         <div class="overdue-panel__title">逾期待执行 · {{ view.overdue.length }}</div>
-        <div v-for="action in view.overdue" :key="action.id" class="plan-row plan-row--overdue">
+        <div
+          v-for="action in view.overdue"
+          :key="action.id"
+          class="plan-row plan-row--overdue"
+          @click="executePlan(action)"
+        >
           <div>
             <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
             <strong>{{ action.customerName }}</strong>
             <span>{{ action.content }}</span>
             <small>{{ formatTime(action.plannedAt) }}</small>
           </div>
-          <van-button v-if="canWrite" size="mini" type="primary" @click="openActionSheet(action)">
-            去执行
+          <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
+            改期
           </van-button>
         </div>
       </section>
@@ -47,20 +52,20 @@
             <div class="day-card__section-title">
               <span>待执行</span><small>{{ day.pendingPlans.length }}</small>
             </div>
-            <div v-for="action in day.pendingPlans" :key="action.id" class="plan-row">
+            <div
+              v-for="action in day.pendingPlans"
+              :key="action.id"
+              class="plan-row"
+              @click="executePlan(action)"
+            >
               <div>
                 <span class="plan-row__kind">{{ planLabel(action.planKind) }}</span>
                 <strong>{{ action.customerName }}</strong>
                 <span>{{ action.content }}</span>
                 <small>{{ timeOnly(action.plannedAt) }}</small>
               </div>
-              <van-button
-                v-if="canWrite"
-                size="mini"
-                type="primary"
-                @click="openActionSheet(action)"
-              >
-                去执行
+              <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
+                改期
               </van-button>
             </div>
           </section>
@@ -75,7 +80,7 @@
               type="button"
               class="record-row"
               :class="{ 'record-row--complaint': record.type.startsWith('complaint_') }"
-              @click="router.push(actualRecordRoute(record))"
+              @click="openActualRecord(record)"
             >
               <div class="record-row__head">
                 <span>{{ recordLabel(record.type) }}</span>
@@ -89,7 +94,13 @@
 
           <details v-if="day.closedPlans.length" class="day-card__closed">
             <summary>已结束计划 {{ day.closedPlans.length }}</summary>
-            <div v-for="action in day.closedPlans" :key="action.id" class="closed-row">
+            <div
+              v-for="action in day.closedPlans"
+              :key="action.id"
+              class="closed-row"
+              :class="{ 'closed-row--clickable': action.status === 'completed' }"
+              @click="openClosedPlan(action)"
+            >
               <span>{{ timeOnly(action.plannedAt) }} · {{ planLabel(action.planKind) }}</span>
               <strong>{{ action.customerName }}</strong>
               <small>{{ action.status === 'completed' ? '已执行' : action.cancelReason }}</small>
@@ -104,13 +115,6 @@
       </div>
     </template>
 
-    <van-action-sheet
-      v-model:show="showActionSheet"
-      :actions="actionOptions"
-      cancel-text="返回"
-      close-on-click-action
-      @select="selectActionCommand"
-    />
     <van-popup v-model:show="commandSheet.visible" position="bottom" round>
       <div class="command-sheet">
         <h3>计划改期</h3>
@@ -146,14 +150,9 @@ import {
   type MobileActualRecord,
 } from '../libs/sales-workbench'
 
-type ActionCommand = 'execute' | 'reschedule'
 const router = useRouter()
 const auth = useAuthStore()
 const canWrite = computed(() => auth.hasAbility('customer.write'))
-const actionOptions: { name: string; value: ActionCommand }[] = [
-  { name: '填写执行结果', value: 'execute' },
-  { name: '改期', value: 'reschedule' },
-]
 const today = new Date()
 const todayText = localDate(today)
 const weekOffset = ref(0)
@@ -180,7 +179,6 @@ const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, v
 
 watch(weekOffset, () => void reload())
 
-const showActionSheet = ref(false)
 const selectedAction = ref<SalesPlan>()
 const commandSheet = reactive({ visible: false, plannedAt: '', saving: false })
 
@@ -190,17 +188,11 @@ function shiftWeek(value: number) {
 function goToday() {
   weekOffset.value = 0
 }
-function openActionSheet(action: SalesPlan) {
-  selectedAction.value = action
-  showActionSheet.value = true
+function executePlan(action: SalesPlan) {
+  if (canWrite.value) void router.push(salesPlanExecutionRoute(action))
 }
-function selectActionCommand(option: { value: ActionCommand }) {
-  const action = selectedAction.value
-  if (!action) return
-  if (option.value === 'execute') {
-    void router.push(salesPlanExecutionRoute(action))
-    return
-  }
+function openReschedule(action: SalesPlan) {
+  selectedAction.value = action
   commandSheet.plannedAt = localDate(new Date(action.plannedAt))
   commandSheet.visible = true
 }
@@ -226,10 +218,25 @@ async function submitReschedule() {
 function goQuickAdd(date: string) {
   void router.push({ path: '/quick-add', query: { date } })
 }
+function openActualRecord(record: MobileActualRecord) {
+  const plan = record.sourcePlanId
+    ? view.value?.plans.find((item) => item.id === record.sourcePlanId)
+    : undefined
+  void router.push(actualRecordRoute(record, plan))
+}
+function openClosedPlan(action: SalesPlan) {
+  if (action.status !== 'completed') return
+  const record = [
+    ...(view.value?.businessRecords ?? []),
+    ...(view.value?.complaintRecords ?? []),
+  ].find((item) => item.sourcePlanId === action.id)
+  if (!record) return showToast('该计划的执行事实不在当前周视图范围内')
+  void router.push(actualRecordRoute(record, action))
+}
 function planLabel(kind: SalesPlanKind): string {
   return {
     customer_visit: '客户拜访',
-    opportunity_follow_up: '商机跟进',
+    opportunity_follow_up: '商机推进',
     complaint_follow_up: '客诉处理',
   }[kind]
 }
@@ -237,8 +244,8 @@ function recordLabel(type: MobileActualRecord['type']): string {
   return {
     opportunity_created: '发现商机',
     customer_visit: '客户拜访',
-    opportunity_follow_up: '商机跟进',
-    opportunity_quote: '报价记录',
+    opportunity_follow_up: '商机推进',
+    opportunity_quote: '独立报价',
     complaint_registered: '客诉登记',
     complaint_follow_up: '客诉处理',
   }[type]
@@ -386,6 +393,9 @@ function formatTime(value: string): string {
   padding: var(--crm-spacing-xs) 0;
   filter: grayscale(1);
   opacity: 0.62;
+}
+.closed-row--clickable {
+  cursor: pointer;
 }
 .day-card__add {
   border-top: 1px solid var(--crm-color-border);

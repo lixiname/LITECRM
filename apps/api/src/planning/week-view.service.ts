@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { and, eq, sql, type AnyColumn } from 'drizzle-orm'
+import { and, eq, isNull, sql, type AnyColumn } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
 import { db } from '../common/db/db'
@@ -74,10 +74,14 @@ export class WeekViewService {
           opportunityName: opportunities.name,
           conclusion: opportunityFollowUps.conclusion,
           sourcePlanId: opportunityFollowUps.sourcePlanId,
+          quoteId: opportunityQuotes.id,
+          quoteAmount: opportunityQuotes.amount,
+          quoteKind: opportunityQuotes.kind,
         })
         .from(opportunityFollowUps)
         .innerJoin(opportunities, eq(opportunityFollowUps.opportunityId, opportunities.id))
         .innerJoin(customers, eq(opportunities.customerId, customers.id))
+        .leftJoin(opportunityQuotes, eq(opportunityQuotes.followUpId, opportunityFollowUps.id))
         .where(
           and(eq(opportunityFollowUps.actorId, ownerId), inRange(opportunityFollowUps.occurredAt)),
         ),
@@ -96,7 +100,13 @@ export class WeekViewService {
         .from(opportunityQuotes)
         .innerJoin(opportunities, eq(opportunityQuotes.opportunityId, opportunities.id))
         .innerJoin(customers, eq(opportunities.customerId, customers.id))
-        .where(and(eq(opportunityQuotes.actorId, ownerId), inRange(opportunityQuotes.quotedAt))),
+        .where(
+          and(
+            eq(opportunityQuotes.actorId, ownerId),
+            inRange(opportunityQuotes.quotedAt),
+            isNull(opportunityQuotes.followUpId),
+          ),
+        ),
       db
         .select({
           id: complaints.id,
@@ -160,8 +170,11 @@ export class WeekViewService {
           customerName: item.customerName,
           opportunityId: item.opportunityId,
           opportunityName: item.opportunityName,
-          summary: item.conclusion,
+          summary: item.quoteId
+            ? `${item.conclusion}；${item.quoteKind === 'formal' ? '正式' : '口头'}报价 ¥${Number(item.quoteAmount).toLocaleString('zh-CN')}`
+            : item.conclusion,
           sourcePlanId: item.sourcePlanId,
+          linkedQuoteId: item.quoteId,
         })),
         ...quotes.map((item) => ({
           id: item.id,

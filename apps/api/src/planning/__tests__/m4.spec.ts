@@ -59,6 +59,26 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     await db.execute(sql`DELETE FROM daily_expenses`).catch(() => {})
     await db
       .execute(
+        sql`DELETE FROM opportunity_quotes WHERE opportunity_id IN (SELECT id FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%'))`,
+      )
+      .catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM opportunity_follow_ups WHERE opportunity_id IN (SELECT id FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%'))`,
+      )
+      .catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM opportunity_events WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
+      )
+      .catch(() => {})
+    await db
+      .execute(
+        sql`DELETE FROM opportunities WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
+      )
+      .catch(() => {})
+    await db
+      .execute(
         sql`DELETE FROM visit_records WHERE customer_id IN (SELECT id FROM customers WHERE name LIKE 'M4_%')`,
       )
       .catch(() => {})
@@ -217,6 +237,66 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     const replacement = rows.find((item) => item.status === 'pending')
     expect(replacement?.content).toBe('改为拜访技术负责人')
     expect(replacement?.sourceId).toBe(adjustedVisit.body.id)
+  })
+
+  it('商机推进可原子记录报价，周视图只显示一条组合事实', async () => {
+    const sales1 = await login('sales1', 'Crm@123456')
+    const customer = await createCustomer(sales1.accessToken, 'M4_推进报价客户')
+    const created = await request(app.getHttpServer())
+      .post('/api/opportunities')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        customerId: customer.id,
+        name: '过滤系统改造',
+        source: 'referral',
+        initialAmountBasis: 'estimate',
+        initialAmount: 260000,
+        discoveredDate: '2026-09-21',
+        firstActionAt: '2026-09-22T09:00:00+08:00',
+        firstActionContent: '确认过滤精度参数',
+      })
+    expect(created.status).toBe(201)
+
+    const before = await request(app.getHttpServer())
+      .get(`/api/opportunities/${created.body.id}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    const progressed = await request(app.getHttpServer())
+      .post(`/api/opportunities/${created.body.id}/follow-ups`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({
+        version: before.body.version,
+        occurredAt: '2026-09-22T10:00:00+08:00',
+        conclusion: '客户确认参数，本次给出口头报价',
+        method: 'offline_visit',
+        quote: { kind: 'oral', amount: 255000, note: '按当前配置估算' },
+        sourcePlanId: before.body.actions[0].id,
+        nextActionAt: '2026-09-29T09:00:00+08:00',
+        nextActionContent: '确认客户对报价的反馈',
+      })
+    expect(progressed.status).toBe(201)
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/opportunities/${created.body.id}`)
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(detail.body.followUps).toHaveLength(1)
+    expect(detail.body.quotes).toHaveLength(1)
+    expect(detail.body.quotes[0].followUpId).toBe(detail.body.followUps[0].id)
+
+    const week = await request(app.getHttpServer())
+      .get('/api/week-view?start=2026-09-21&end=2026-09-27')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    const related = week.body.businessRecords.filter(
+      (item: { opportunityId?: string }) => item.opportunityId === created.body.id,
+    )
+    expect(
+      related.filter((item: { type: string }) => item.type === 'opportunity_follow_up'),
+    ).toHaveLength(1)
+    expect(
+      related.filter((item: { type: string }) => item.type === 'opportunity_quote'),
+    ).toHaveLength(0)
+    expect(
+      related.find((item: { type: string }) => item.type === 'opportunity_follow_up').summary,
+    ).toContain('口头报价')
   })
 
   it('费用作废不改总额：draft → submitted → voided（剔除统计留痕）', async () => {

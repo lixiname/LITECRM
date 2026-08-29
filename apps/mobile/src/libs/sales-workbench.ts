@@ -63,18 +63,22 @@ export function salesPlanExecutionRoute(plan: SalesPlan): string {
   return `/customers/${plan.customerId}/visit/new?${query}`
 }
 
-export function actualRecordRoute(record: MobileActualRecord): string {
-  if (
-    record.type === 'opportunity_created' ||
-    record.type === 'opportunity_follow_up' ||
-    record.type === 'opportunity_quote'
-  ) {
-    return `/opportunities/${record.opportunityId}`
+export function actualRecordRoute(record: MobileActualRecord, plan?: SalesPlan): string {
+  const params = new URLSearchParams({
+    customerId: record.customerId,
+    customerName: record.customerName,
+  })
+  if ('opportunityId' in record && record.opportunityId) {
+    params.set('opportunityId', record.opportunityId)
+    if (record.opportunityName) params.set('opportunityName', record.opportunityName)
   }
-  if (record.type === 'complaint_registered' || record.type === 'complaint_follow_up') {
-    return `/complaints/${record.complaintId}`
+  if ('complaintId' in record) params.set('complaintId', record.complaintId)
+  if (record.sourcePlanId) params.set('sourcePlanId', record.sourcePlanId)
+  if (plan) {
+    params.set('planAt', plan.plannedAt)
+    params.set('planContent', plan.content)
   }
-  return `/customers/${record.customerId}`
+  return `/records/${record.type}/${record.id}?${params.toString()}`
 }
 
 function groupByDate<T>(items: T[], value: (item: T) => string): Map<string, T[]> {

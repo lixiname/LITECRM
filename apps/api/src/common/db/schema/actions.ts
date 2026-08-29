@@ -139,6 +139,7 @@ export const opportunityQuotes = pgTable(
     opportunityId: uuid('opportunity_id')
       .notNull()
       .references(() => opportunities.id),
+    followUpId: uuid('follow_up_id').references(() => opportunityFollowUps.id),
     actorId: uuid('actor_id')
       .notNull()
       .references(() => users.id),
@@ -160,6 +161,7 @@ export const opportunityQuotes = pgTable(
     ),
     check('opportunity_quotes_amount_check', sql`${table.amount} >= 0`),
     index('opportunity_quotes_opp_quoted_idx').on(table.opportunityId, table.quotedAt),
+    uniqueIndex('opportunity_quotes_follow_up_uq').on(table.followUpId),
     uniqueIndex('opportunity_quotes_one_active_uq')
       .on(table.opportunityId)
       .where(sql`${table.status} = 'active'`),

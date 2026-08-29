@@ -66,7 +66,7 @@ function typeLabel(type: CustomerTimelineItem['type']): string {
   const labels: Record<CustomerTimelineItem['type'], string> = {
     visit: '拜访',
     opportunity: '商机',
-    opportunity_follow_up: '商机跟进',
+    opportunity_follow_up: '商机推进',
     quote: '报价',
     complaint: '客诉',
     complaint_follow_up: '客诉跟进',
