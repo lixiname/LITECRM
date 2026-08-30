@@ -1199,6 +1199,97 @@ button {
   background: linear-gradient(135deg, #397361, #4d8874);
 }
 
+/* 04 — 现代关系运营：现代企业效率的轻量骨架 + 温和关系经营的色彩气质 */
+.theme-hybrid {
+  --page: #f5f6f3;
+  --surface: #ffffff;
+  --surface-soft: #f6f8f5;
+  --sidebar: #ffffff;
+  --sidebar-text: #34423d;
+  --sidebar-muted: #87958f;
+  --sidebar-active: #e8f1ed;
+  --sidebar-line: #e2e7e3;
+  --sidebar-divider: #e7ebe8;
+  --text: #25332e;
+  --muted: #68766f;
+  --faint: #8d9993;
+  --line: #e1e6e2;
+  --line-strong: #d1d9d4;
+  --primary: #397361;
+  --primary-soft: #e7f0ec;
+  --primary-strong: #285b4c;
+  --success: #397361;
+  --success-soft: #e7f1ed;
+  --warning: #ad7433;
+  --warning-soft: #faf0e0;
+  --danger: #b35552;
+  --danger-soft: #f8e9e7;
+  --radius: 10px;
+  --radius-lg: 12px;
+  --control-radius: 7px;
+  --nav-radius: 8px;
+  --shadow: 0 3px 14px rgba(42, 60, 52, 0.045);
+  --shadow-raised: 0 18px 42px rgba(42, 67, 58, 0.14);
+  --button-shadow: 0 5px 12px rgba(57, 115, 97, 0.16);
+  --card-pad: 21px;
+  --gap: 18px;
+  --proposal-bg: #eef3f0;
+  --proposal-text: #29443b;
+  --proposal-muted: #72877f;
+  --proposal-index: #397361;
+  --proposal-index-text: #ffffff;
+  --proposal-chip-line: #d5dfda;
+  --proposal-chip-text: #5e756c;
+  --nav-active-text: #285b4c;
+  --active-line-left: 8px;
+  --active-line-width: 3px;
+  --topbar: rgba(255, 255, 255, 0.95);
+  --avatar-bg: #e3ede9;
+  --avatar-text: #2d6252;
+  --pipeline-1: #b5bdb9;
+  --pipeline-2: #8daaa0;
+  --pipeline-3: #4f8875;
+  --pipeline-4: #c79451;
+  --grade-bg: #ad7d3e;
+  --customer-hero: #fbfcfa;
+  --phone-frame: #263c35;
+  --phone-stage: #eef1ed;
+  --mobile-bg: #f5f7f4;
+  --mobile-surface: #ffffff;
+  --mobile-card-shadow: 0 4px 12px rgba(42, 67, 58, 0.055);
+}
+.theme-hybrid .brand-mark {
+  border-radius: 9px;
+  box-shadow: 0 6px 14px rgba(57, 115, 97, 0.17);
+}
+.theme-hybrid .nav-item.active::before {
+  top: 14px;
+  bottom: 14px;
+}
+.theme-hybrid .card {
+  border-color: rgba(218, 225, 220, 0.92);
+}
+.theme-hybrid .card-head {
+  background: #fcfdfc;
+}
+.theme-hybrid .funnel-card {
+  border-top: 2px solid var(--primary);
+}
+.theme-hybrid .customer-monogram {
+  border-radius: 10px;
+}
+.theme-hybrid .timeline-dot {
+  background: #ad7d3e;
+  box-shadow: 0 0 0 1px #ad7d3e;
+}
+.theme-hybrid .timeline-result {
+  border-left-color: #ad7d3e;
+}
+.theme-hybrid .quick-action {
+  background: linear-gradient(135deg, #397361, #4e8875);
+  box-shadow: 0 8px 18px rgba(57, 115, 97, 0.16);
+}
+
 @media (max-width: 1240px) {
   body {
     min-width: 1024px;
