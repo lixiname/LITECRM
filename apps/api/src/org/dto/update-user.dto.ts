@@ -1,9 +1,14 @@
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsIn, IsOptional, IsString, IsUUID } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
 import { ROLES, type Role } from '../../common/constants'
 
 // 更新用户（admin，user.manage）：字段均可选
 export class UpdateUserDto {
+  @ApiProperty({ description: '用户当前版本号，用于防止并发覆盖' })
+  @IsInt()
+  @Min(1)
+  version!: number
+
   @ApiPropertyOptional({ description: '显示名' })
   @IsOptional()
   @IsString()

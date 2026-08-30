@@ -215,6 +215,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -429,6 +437,14 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -987,7 +1003,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateContactDto"
+                "$ref": "#/components/schemas/UpdateContactDto"
               }
             }
           }
@@ -1006,6 +1022,14 @@
             "name": "contactId",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "required": true,
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -2002,6 +2026,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCommandDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "提交（计入统计）"
@@ -2023,6 +2057,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCommandDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "作废（剔除统计，留痕）"
@@ -2344,6 +2388,40 @@
         },
         "tags": ["reporting"]
       }
+    },
+    "/alerts": {
+      "get": {
+        "operationId": "AlertsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "当前用户的实时派生提醒及未读数量"
+          }
+        },
+        "tags": ["alerts"]
+      }
+    },
+    "/alerts/read": {
+      "post": {
+        "operationId": "AlertsController_markRead",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadAlertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "标记一条当前可见提醒为已读"
+          }
+        },
+        "tags": ["alerts"]
+      }
     }
   },
   "info": {
@@ -2545,9 +2623,13 @@
             "format": "date-time",
             "type": "string",
             "description": "创建时间"
+          },
+          "version": {
+            "type": "number",
+            "description": "当前版本号"
           }
         },
-        "required": ["id", "username", "displayName", "role", "isActive", "createdAt"]
+        "required": ["id", "username", "displayName", "role", "isActive", "createdAt", "version"]
       },
       "CreateUserDto": {
         "type": "object",
@@ -2590,6 +2672,10 @@
       "UpdateUserDto": {
         "type": "object",
         "properties": {
+          "version": {
+            "type": "number",
+            "description": "用户当前版本号，用于防止并发覆盖"
+          },
           "displayName": {
             "type": "string",
             "description": "显示名"
@@ -2619,7 +2705,8 @@
             "type": "boolean",
             "description": "是否启用"
           }
-        }
+        },
+        "required": ["version"]
       },
       "CustomerGrade": {
         "type": "string",
@@ -2867,6 +2954,10 @@
       "UpdateDimensionOptionDto": {
         "type": "object",
         "properties": {
+          "version": {
+            "type": "number",
+            "description": "字典项当前版本号，用于防止并发覆盖"
+          },
           "label": {
             "type": "string",
             "description": "展示名称"
@@ -2879,7 +2970,8 @@
             "type": "boolean",
             "description": "是否启用"
           }
-        }
+        },
+        "required": ["version"]
       },
       "AdministrativeDivisionDto": {
         "type": "object",
@@ -3264,6 +3356,36 @@
           }
         },
         "required": ["toOwnerId", "reason"]
+      },
+      "UpdateContactDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "姓名（可空=裸电话）"
+          },
+          "title": {
+            "type": "string",
+            "description": "职位"
+          },
+          "functionRole": {
+            "type": "string",
+            "description": "岗位类别（字典：contact_function）"
+          },
+          "phone": {
+            "type": "string",
+            "description": "电话（每个客户至少一个联系人含电话）"
+          },
+          "isKeyContact": {
+            "type": "boolean",
+            "description": "是否首要联系人（每客户至多一个）"
+          },
+          "version": {
+            "type": "number",
+            "description": "联系人当前版本号，用于防止并发覆盖"
+          }
+        },
+        "required": ["version"]
       },
       "SalesPlanKind": {
         "type": "string",
@@ -3896,6 +4018,10 @@
             "type": "string",
             "description": "费用日期"
           },
+          "version": {
+            "type": "number",
+            "description": "更新已有草稿时的版本号；新建时不传"
+          },
           "tobaccoAlcohol": {
             "type": "number",
             "description": "烟酒"
@@ -3922,6 +4048,26 @@
           }
         },
         "required": ["expenseDate"]
+      },
+      "ExpenseCommandDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "description": "当前费用版本号，用于防止并发覆盖"
+          }
+        },
+        "required": ["version"]
+      },
+      "ReadAlertDto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "提醒的稳定业务键"
+          }
+        },
+        "required": ["key"]
       }
     }
   }

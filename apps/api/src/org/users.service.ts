@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, or } from 'drizzle-orm'
+import { and, eq, or, sql } from 'drizzle-orm'
 import * as bcrypt from 'bcryptjs'
 import { db } from '../common/db/db'
 import { salesRegions, users } from '../common/db/schema'
@@ -57,6 +57,7 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto) {
     const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1)
     if (!existing) throw new NotFoundException('用户不存在')
+    if (existing.version !== dto.version) throw new ConflictException('用户已被更新，请刷新后重试')
     await this.assertRegion(dto.region)
 
     const [updated] = await db
@@ -68,20 +69,31 @@ export class UsersService {
         phone: dto.phone === undefined ? existing.phone : dto.phone,
         region: dto.region === undefined ? existing.region : dto.region,
         isActive: dto.isActive ?? existing.isActive,
+        updatedAt: new Date(),
+        version: sql`${users.version} + 1`,
       })
-      .where(eq(users.id, id))
+      .where(and(eq(users.id, id), eq(users.version, dto.version)))
       .returning()
+    if (!updated) throw new ConflictException('用户已被更新，请刷新后重试')
     return toUserDto(updated)
   }
 
   // 停用：isActive=false + tokenVersion+1 全端失效（§6.5）
-  async deactivate(id: string): Promise<void> {
+  async deactivate(id: string, version: number): Promise<void> {
     const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1)
     if (!existing) throw new NotFoundException('用户不存在')
-    await db
+    if (existing.version !== version) throw new ConflictException('用户已被更新，请刷新后重试')
+    const [updated] = await db
       .update(users)
-      .set({ isActive: false, tokenVersion: existing.tokenVersion + 1 })
-      .where(eq(users.id, id))
+      .set({
+        isActive: false,
+        tokenVersion: existing.tokenVersion + 1,
+        updatedAt: new Date(),
+        version: sql`${users.version} + 1`,
+      })
+      .where(and(eq(users.id, id), eq(users.version, version)))
+      .returning({ id: users.id })
+    if (!updated) throw new ConflictException('用户已被更新，请刷新后重试')
   }
 
   // 重置密码：复用 auth 服务（生成临时密码 + 全端失效）
@@ -119,5 +131,6 @@ export function toUserDto(u: UserRow) {
     region: u.region,
     isActive: u.isActive,
     createdAt: u.createdAt,
+    version: u.version,
   }
 }

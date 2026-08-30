@@ -10,7 +10,7 @@ import { AppModule } from '../src/app.module'
  * 运行：pnpm --filter @crm/api generate:openapi
  */
 async function generate() {
-  const app = await NestFactory.create(AppModule, { logger: false })
+  const app = await NestFactory.create(AppModule, { logger: ['error'], abortOnError: false })
   const config = new DocumentBuilder().setTitle('Lite CRM API').setVersion('1.0').build()
   const document = SwaggerModule.createDocument(app, config)
   const output = resolve(__dirname, '../../../packages/contracts/openapi.json')
@@ -19,4 +19,7 @@ async function generate() {
   await app.close()
 }
 
-void generate()
+void generate().catch((error: unknown) => {
+  console.error(error)
+  process.exitCode = 1
+})

@@ -30,11 +30,19 @@ export class ExpensesService {
     }
     if (existing) {
       if (existing.status !== 'draft') throw new ConflictException('已提交/作废的费用不可修改')
+      if (dto.version !== existing.version) {
+        throw new ConflictException('费用已被更新，请刷新后重试')
+      }
       const [updated] = await db
         .update(dailyExpenses)
-        .set(values)
-        .where(eq(dailyExpenses.id, existing.id))
+        .set({
+          ...values,
+          updatedAt: new Date(),
+          version: sql`${dailyExpenses.version} + 1`,
+        })
+        .where(and(eq(dailyExpenses.id, existing.id), eq(dailyExpenses.version, existing.version)))
         .returning()
+      if (!updated) throw new ConflictException('费用已被更新，请刷新后重试')
       return updated
     }
     const [created] = await db
@@ -45,26 +53,51 @@ export class ExpensesService {
   }
 
   // 提交（§8.8：draft → submitted，计入统计）
-  async submit(id: string, actor: AuthUser) {
+  async submit(id: string, version: number, actor: AuthUser) {
     const exp = await this.getOwned(id, actor)
     if (exp.status !== 'draft') throw new ConflictException('仅草稿可提交')
+    if (exp.version !== version) throw new ConflictException('费用已被更新，请刷新后重试')
     const [updated] = await db
       .update(dailyExpenses)
-      .set({ status: 'submitted', submittedAt: new Date() })
-      .where(eq(dailyExpenses.id, id))
+      .set({
+        status: 'submitted',
+        submittedAt: new Date(),
+        updatedAt: new Date(),
+        version: sql`${dailyExpenses.version} + 1`,
+      })
+      .where(
+        and(
+          eq(dailyExpenses.id, id),
+          eq(dailyExpenses.status, 'draft'),
+          eq(dailyExpenses.version, version),
+        ),
+      )
       .returning()
+    if (!updated) throw new ConflictException('费用已被更新，请刷新后重试')
     return updated
   }
 
   // 作废（§8.8：剔除统计，留痕）
-  async void(id: string, actor: AuthUser) {
+  async void(id: string, version: number, actor: AuthUser) {
     const exp = await this.getOwned(id, actor)
     if (exp.status === 'voided') throw new ConflictException('费用已作废')
+    if (exp.version !== version) throw new ConflictException('费用已被更新，请刷新后重试')
     const [updated] = await db
       .update(dailyExpenses)
-      .set({ status: 'voided' })
-      .where(eq(dailyExpenses.id, id))
+      .set({
+        status: 'voided',
+        updatedAt: new Date(),
+        version: sql`${dailyExpenses.version} + 1`,
+      })
+      .where(
+        and(
+          eq(dailyExpenses.id, id),
+          sql`${dailyExpenses.status} <> 'voided'`,
+          eq(dailyExpenses.version, version),
+        ),
+      )
       .returning()
+    if (!updated) throw new ConflictException('费用已被更新，请刷新后重试')
     return updated
   }
 

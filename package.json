@@ -8,6 +8,7 @@
     "dev:web": "pnpm --filter @crm/web dev",
     "dev:mobile": "pnpm --filter @crm/mobile dev",
     "dev:api": "pnpm --filter @crm/api start:dev",
+    "dev": "pnpm --parallel --filter @crm/api --filter @crm/web --filter @crm/mobile run dev",
     "build": "turbo build",
     "test": "turbo test",
     "lint": "turbo lint",
@@ -19,6 +20,8 @@
     "db:migrate": "pnpm --filter @crm/api db:migrate",
     "db:seed": "pnpm --filter @crm/api db:seed",
     "db:seed:demo": "pnpm --filter @crm/api db:seed:demo",
+    "projections:check": "pnpm --filter @crm/api projections:check",
+    "projections:rebuild": "pnpm --filter @crm/api projections:rebuild",
     "db:studio": "pnpm --filter @crm/api db:studio",
     "prepare": "husky"
   },

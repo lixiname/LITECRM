@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
 import { customerDimensionOptions } from '../common/db/schema'
 import type { CustomerDimension } from '../common/constants'
@@ -77,6 +77,8 @@ export class CatalogService {
       .where(eq(customerDimensionOptions.id, id))
       .limit(1)
     if (!existing) throw new NotFoundException('字典项不存在')
+    if (existing.version !== dto.version)
+      throw new ConflictException('字典项已被更新，请刷新后重试')
 
     const [updated] = await db
       .update(customerDimensionOptions)
@@ -84,23 +86,37 @@ export class CatalogService {
         label: dto.label?.trim() ?? existing.label,
         sortOrder: dto.sortOrder ?? existing.sortOrder,
         isActive: dto.isActive ?? existing.isActive,
+        updatedAt: new Date(),
+        version: sql`${customerDimensionOptions.version} + 1`,
       })
-      .where(eq(customerDimensionOptions.id, id))
+      .where(
+        and(eq(customerDimensionOptions.id, id), eq(customerDimensionOptions.version, dto.version)),
+      )
       .returning()
+    if (!updated) throw new ConflictException('字典项已被更新，请刷新后重试')
     return updated
   }
 
   // 删除 = 停用（软删，历史客户上的字典快照不受影响，§7.2 设计约定①）
-  async remove(id: string): Promise<void> {
+  async remove(id: string, version: number): Promise<void> {
     const [existing] = await db
       .select()
       .from(customerDimensionOptions)
       .where(eq(customerDimensionOptions.id, id))
       .limit(1)
     if (!existing) throw new NotFoundException('字典项不存在')
-    await db
+    if (existing.version !== version) throw new ConflictException('字典项已被更新，请刷新后重试')
+    const [updated] = await db
       .update(customerDimensionOptions)
-      .set({ isActive: false })
-      .where(eq(customerDimensionOptions.id, id))
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+        version: sql`${customerDimensionOptions.version} + 1`,
+      })
+      .where(
+        and(eq(customerDimensionOptions.id, id), eq(customerDimensionOptions.version, version)),
+      )
+      .returning({ id: customerDimensionOptions.id })
+    if (!updated) throw new ConflictException('字典项已被更新，请刷新后重试')
   }
 }

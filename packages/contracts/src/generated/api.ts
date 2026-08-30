@@ -1124,6 +1124,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AlertsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AlertsController_markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1209,6 +1241,8 @@ export interface components {
              * @description 创建时间
              */
             createdAt: string;
+            /** @description 当前版本号 */
+            version: number;
         };
         CreateUserDto: {
             /** @description 登录用户名 */
@@ -1227,6 +1261,8 @@ export interface components {
             region?: string;
         };
         UpdateUserDto: {
+            /** @description 用户当前版本号，用于防止并发覆盖 */
+            version: number;
             /** @description 显示名 */
             displayName?: string;
             /** @description 角色 */
@@ -1311,6 +1347,8 @@ export interface components {
             sortOrder?: number;
         };
         UpdateDimensionOptionDto: {
+            /** @description 字典项当前版本号，用于防止并发覆盖 */
+            version: number;
             /** @description 展示名称 */
             label?: string;
             /** @description 排序权重 */
@@ -1491,6 +1529,20 @@ export interface components {
             toOwnerId: string;
             /** @description 恢复原因 */
             reason: string;
+        };
+        UpdateContactDto: {
+            /** @description 姓名（可空=裸电话） */
+            name?: string;
+            /** @description 职位 */
+            title?: string;
+            /** @description 岗位类别（字典：contact_function） */
+            functionRole?: string;
+            /** @description 电话（每个客户至少一个联系人含电话） */
+            phone?: string;
+            /** @description 是否首要联系人（每客户至多一个） */
+            isKeyContact?: boolean;
+            /** @description 联系人当前版本号，用于防止并发覆盖 */
+            version: number;
         };
         /**
          * @description 业务计划类型
@@ -1773,6 +1825,8 @@ export interface components {
         CreateExpenseDto: {
             /** @description 费用日期 */
             expenseDate: string;
+            /** @description 更新已有草稿时的版本号；新建时不传 */
+            version?: number;
             /** @description 烟酒 */
             tobaccoAlcohol?: number;
             /** @description 礼品 */
@@ -1785,6 +1839,14 @@ export interface components {
             lodging?: number;
             /** @description 备注 */
             notes?: string;
+        };
+        ExpenseCommandDto: {
+            /** @description 当前费用版本号，用于防止并发覆盖 */
+            version: number;
+        };
+        ReadAlertDto: {
+            /** @description 提醒的稳定业务键 */
+            key: string;
         };
     };
     responses: never;
@@ -1950,7 +2012,9 @@ export interface operations {
     };
     UsersController_deactivate: {
         parameters: {
-            query?: never;
+            query: {
+                version: string;
+            };
             header?: never;
             path: {
                 id: string;
@@ -2148,7 +2212,9 @@ export interface operations {
     };
     CatalogController_remove: {
         parameters: {
-            query?: never;
+            query: {
+                version: string;
+            };
             header?: never;
             path: {
                 id: string;
@@ -2607,7 +2673,9 @@ export interface operations {
     };
     CustomersController_removeContact: {
         parameters: {
-            query?: never;
+            query: {
+                version: string;
+            };
             header?: never;
             path: {
                 contactId: string;
@@ -2636,7 +2704,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateContactDto"];
+                "application/json": components["schemas"]["UpdateContactDto"];
             };
         };
         responses: {
@@ -3426,7 +3494,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseCommandDto"];
+            };
+        };
         responses: {
             /** @description 提交（计入统计） */
             200: {
@@ -3446,7 +3518,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpenseCommandDto"];
+            };
+        };
         responses: {
             /** @description 作废（剔除统计，留痕） */
             200: {
@@ -3630,6 +3706,46 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description 团队已提交费用与未提交草稿摘要 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AlertsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前用户的实时派生提醒及未读数量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AlertsController_markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadAlertDto"];
+            };
+        };
+        responses: {
+            /** @description 标记一条当前可见提醒为已读 */
             200: {
                 headers: {
                     [name: string]: unknown;

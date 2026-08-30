@@ -128,6 +128,7 @@ const dialog = reactive({
   name: '',
   label: '',
   sortOrder: 0,
+  version: 0,
 })
 
 function openAdd() {
@@ -137,6 +138,7 @@ function openAdd() {
   dialog.name = ''
   dialog.label = ''
   dialog.sortOrder = 0
+  dialog.version = 0
 }
 function openEdit(option: DimensionOption) {
   dialog.visible = true
@@ -145,6 +147,7 @@ function openEdit(option: DimensionOption) {
   dialog.name = option.name
   dialog.label = option.label
   dialog.sortOrder = option.sortOrder
+  dialog.version = option.version
 }
 
 async function handleSave() {
@@ -155,7 +158,11 @@ async function handleSave() {
   acting.value = true
   try {
     if (dialog.isEdit) {
-      await updateOption(dialog.id, { label, sortOrder: dialog.sortOrder })
+      await updateOption(dialog.id, {
+        version: dialog.version,
+        label,
+        sortOrder: dialog.sortOrder,
+      })
     } else {
       await createOption({ dimension: dimension.value, name, label, sortOrder: dialog.sortOrder })
     }
@@ -171,7 +178,7 @@ async function handleSave() {
 
 async function toggle(option: DimensionOption) {
   try {
-    await updateOption(option.id, { isActive: !option.isActive })
+    await updateOption(option.id, { version: option.version, isActive: !option.isActive })
     await reload()
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '操作失败')

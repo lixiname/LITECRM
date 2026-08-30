@@ -440,10 +440,18 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     expect(create.body.status).toBe('draft')
     const expId = create.body.id as string
 
-    const submit = await request(app.getHttpServer())
-      .post(`/api/expenses/${expId}/submit`)
-      .set('Authorization', `Bearer ${sales1.accessToken}`)
-    expect(submit.status).toBe(201)
+    const concurrentSubmit = await Promise.all([
+      request(app.getHttpServer())
+        .post(`/api/expenses/${expId}/submit`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ version: create.body.version }),
+      request(app.getHttpServer())
+        .post(`/api/expenses/${expId}/submit`)
+        .set('Authorization', `Bearer ${sales1.accessToken}`)
+        .send({ version: create.body.version }),
+    ])
+    expect(concurrentSubmit.map((response) => response.status).sort()).toEqual([201, 409])
+    const submit = concurrentSubmit.find((response) => response.status === 201)!
     expect(submit.body.status).toBe('submitted')
 
     const update = await request(app.getHttpServer())
@@ -455,6 +463,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     const v = await request(app.getHttpServer())
       .post(`/api/expenses/${expId}/void`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
+      .send({ version: submit.body.version })
     expect(v.status).toBe(201)
     expect(v.body.status).toBe('voided')
 

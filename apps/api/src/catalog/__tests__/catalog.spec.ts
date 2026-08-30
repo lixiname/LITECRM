@@ -71,7 +71,12 @@ describe('字典稳定值与展示名称', () => {
     const disabled = await request(app.getHttpServer())
       .patch(`/api/catalog/${created.body.id as string}`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ name: 'attempted_change', label: '测试行业（更新）', isActive: false })
+      .send({
+        version: created.body.version,
+        name: 'attempted_change',
+        label: '测试行业（更新）',
+        isActive: false,
+      })
     expect(disabled.status).toBe(200)
     expect(disabled.body).toMatchObject({
       name: 'catalog_test_value',

@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsOptional, IsString } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator'
 
 // 联系人（§7.2：name 可空=裸电话场景；每客户至多一个首要联系人）
 export class CreateContactDto {
@@ -27,4 +27,11 @@ export class CreateContactDto {
   @IsOptional()
   @IsBoolean()
   isKeyContact?: boolean
+}
+
+export class UpdateContactDto extends CreateContactDto {
+  @ApiProperty({ description: '联系人当前版本号，用于防止并发覆盖' })
+  @IsInt()
+  @Min(1)
+  version!: number
 }

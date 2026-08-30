@@ -7,6 +7,10 @@ import { seedAccounts, seedDimensions, seedGeography } from '../../../scripts/se
 import { AppModule } from '../../app.module'
 import { db } from '../../common/db/db'
 import { customers } from '../../common/db/schema'
+import {
+  findCustomerActivityProjectionDrift,
+  rebuildCustomerActivityProjections,
+} from '../customer-activity-projection'
 
 describe('客户工作台（资料、联系人、最近活动与时间线）', () => {
   let app: INestApplication
@@ -94,7 +98,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     const firstId = before.body.contacts[0].id as string
 
     const onlyPhoneDelete = await request(app.getHttpServer())
-      .delete(`/api/customers/contacts/${firstId}`)
+      .delete(`/api/customers/contacts/${firstId}?version=${before.body.contacts[0].version}`)
       .set('Authorization', `Bearer ${token}`)
     expect(onlyPhoneDelete.status).toBe(400)
 
@@ -115,8 +119,11 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
         .isKeyContact,
     ).toBe(true)
 
+    const demotedFirst = after.body.contacts.find(
+      (contact: { id: string }) => contact.id === firstId,
+    )
     const removeOld = await request(app.getHttpServer())
-      .delete(`/api/customers/contacts/${firstId}`)
+      .delete(`/api/customers/contacts/${firstId}?version=${demotedFirst.version}`)
       .set('Authorization', `Bearer ${token}`)
     expect(removeOld.status).toBe(200)
 
@@ -127,10 +134,10 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     expect(third.status).toBe(201)
     const concurrentDelete = await Promise.all([
       request(app.getHttpServer())
-        .delete(`/api/customers/contacts/${second.body.id}`)
+        .delete(`/api/customers/contacts/${second.body.id}?version=${second.body.version}`)
         .set('Authorization', `Bearer ${token}`),
       request(app.getHttpServer())
-        .delete(`/api/customers/contacts/${third.body.id}`)
+        .delete(`/api/customers/contacts/${third.body.id}?version=${third.body.version}`)
         .set('Authorization', `Bearer ${token}`),
     ])
     expect(concurrentDelete.map((response) => response.status).sort()).toEqual([200, 400])
@@ -163,7 +170,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     const invalid = await request(app.getHttpServer())
       .patch(`/api/customers/contacts/${created.body.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ functionRole: 'unknown_function' })
+      .send({ version: created.body.version, functionRole: 'unknown_function' })
     expect(invalid.status).toBe(400)
 
     const detail = await request(app.getHttpServer())
@@ -213,6 +220,53 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
       .get('/api/customers?keyword=WB_活动时间线')
       .set('Authorization', `Bearer ${token}`)
     expect(list.body.items[0].lastActivityAt).toBeTruthy()
+  })
+
+  it('客户活动投影漂移可检查并从事实完整重算', async () => {
+    const customer = await createCustomer('WB_投影重算')
+    const occurredAt = '2026-08-20'
+    const visit = await request(app.getHttpServer())
+      .post('/api/visits')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        customerId: customer.id,
+        occurredAt,
+        method: 'offline_visit',
+        businessSituation: '投影重算测试事实',
+        nextActionAt: '2026-09-16',
+        nextActionContent: '继续验证投影',
+      })
+    expect(visit.status).toBe(201)
+
+    await db
+      .update(customers)
+      .set({ firstVisitedAt: '2020-01-01', lastActivityAt: null })
+      .where(eq(customers.id, customer.id))
+
+    const before = await findCustomerActivityProjectionDrift()
+    expect(before).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          customerId: customer.id,
+          expectedFirstVisitedAt: occurredAt,
+          expectedLastActivityAt: occurredAt,
+        }),
+      ]),
+    )
+
+    expect(await rebuildCustomerActivityProjections()).toBeGreaterThanOrEqual(1)
+    expect(
+      (await findCustomerActivityProjectionDrift()).find((item) => item.customerId === customer.id),
+    ).toBeUndefined()
+
+    const [repaired] = await db
+      .select({
+        firstVisitedAt: customers.firstVisitedAt,
+        lastActivityAt: customers.lastActivityAt,
+      })
+      .from(customers)
+      .where(eq(customers.id, customer.id))
+    expect(repaired).toMatchObject({ firstVisitedAt: occurredAt, lastActivityAt: occurredAt })
   })
 
   it('客户经营阶段由 CRM 前成交事实与首次成交自动派生', async () => {

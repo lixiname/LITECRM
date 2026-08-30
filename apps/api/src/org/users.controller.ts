@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
@@ -41,8 +41,8 @@ export class UsersController {
 
   @Delete(':id')
   @ApiOkResponse({ description: '停用成功' })
-  deactivate(@Param('id') id: string) {
-    return this.usersService.deactivate(id)
+  deactivate(@Param('id') id: string, @Query('version') version: string) {
+    return this.usersService.deactivate(id, Number(version))
   }
 
   // 重置密码：返回临时密码（仅此一次展示，§8.1）

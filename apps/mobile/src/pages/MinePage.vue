@@ -28,6 +28,24 @@
 
       <MyPipelineSummaryCard />
 
+      <van-cell-group v-if="alerts?.items.length" inset title="提醒" class="mine__alerts">
+        <van-cell
+          v-for="alert in alerts.items.slice(0, 8)"
+          :key="alert.key"
+          :title="alert.title"
+          :label="alert.summary"
+          :is-link="alert.type !== 'management_comment'"
+          @click="openAlert(alert)"
+        >
+          <template #icon>
+            <span
+              class="mine__alert-dot"
+              :class="[`is-${alert.severity}`, { 'is-read': alert.read }]"
+            />
+          </template>
+        </van-cell>
+      </van-cell-group>
+
       <van-cell-group v-if="overdue.length" inset title="需先处理的逾期计划">
         <van-cell
           v-for="plan in overdue.slice(0, 5)"
@@ -83,11 +101,15 @@ import { useRouter } from 'vue-router'
 import {
   DATA_SCOPE_LABELS,
   getWeekView,
+  getSalesPlan,
+  listAlerts,
+  markAlertRead,
   ROLE_LABELS,
   useAuthStore,
   useQuery,
   type SalesPlan,
   type SalesPlanKind,
+  type AlertItem,
 } from '@crm/domain'
 import { localDate, salesPlanExecutionRoute } from '../libs/sales-workbench'
 import MyPipelineSummaryCard from '../components/MyPipelineSummaryCard.vue'
@@ -108,6 +130,7 @@ const {
   error,
   reload,
 } = useQuery('mine:week-workbench', () => getWeekView(localDate(monday), localDate(sunday)))
+const { data: alerts, reload: reloadAlerts } = useQuery('mine:alerts', listAlerts)
 
 const overdue = computed(() => week.value?.overdue ?? [])
 const todayPending = computed(() =>
@@ -128,6 +151,18 @@ function execute(plan: SalesPlan) {
 function handleLogout() {
   auth.logout()
   void router.push('/login')
+}
+async function openAlert(alert: AlertItem) {
+  if (!alert.read) {
+    await markAlertRead(alert.key)
+    await reloadAlerts()
+  }
+  if (alert.type === 'overdue_action') {
+    const plan = await getSalesPlan(alert.targetId)
+    execute(plan)
+  } else if (alert.customerId) {
+    void router.push(`/customers/${alert.customerId}`)
+  }
 }
 function planLabel(kind: SalesPlanKind): string {
   return {
@@ -174,8 +209,25 @@ function dateTime(value: string): string {
   font-size: 11px;
 }
 .mine__profile,
-.mine__tools {
+.mine__tools,
+.mine__alerts {
   margin-top: var(--crm-spacing-md);
+}
+.mine__alert-dot {
+  width: 7px;
+  height: 7px;
+  margin: 8px 10px 0 0;
+  border-radius: 50%;
+  background: var(--crm-color-primary);
+}
+.mine__alert-dot.is-warning {
+  background: var(--crm-color-warning);
+}
+.mine__alert-dot.is-danger {
+  background: var(--crm-color-danger);
+}
+.mine__alert-dot.is-read {
+  background: var(--crm-color-border-strong);
 }
 .mine__logout {
   margin: var(--crm-spacing-lg) var(--crm-spacing-md);

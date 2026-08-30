@@ -67,6 +67,7 @@ export interface Contact {
   functionRole: string | null
   phone: string | null
   isKeyContact: boolean
+  version: number
 }
 
 export interface CustomerDetail extends CustomerItem {
@@ -169,6 +170,7 @@ export interface DimensionOption {
   label: string
   sortOrder: number
   isActive: boolean
+  version: number
 }
 
 // ===== UI 选项常量（domain 层，组件不写枚举字面量）=====

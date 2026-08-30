@@ -46,7 +46,7 @@
         :label="`¥${totalOf(e)} · ${statusLabel(e.status)}`"
       >
         <template #value>
-          <van-button v-if="e.status === 'draft'" size="mini" type="success" @click="submit(e.id)"
+          <van-button v-if="e.status === 'draft'" size="mini" type="success" @click="submit(e)"
             >提交</van-button
           >
           <van-button
@@ -54,7 +54,7 @@
             size="mini"
             type="danger"
             plain
-            @click="remove(e.id)"
+            @click="remove(e)"
             >作废</van-button
           >
         </template>
@@ -128,6 +128,7 @@ async function handleSave() {
       entertainment: form.entertainment,
       lodging: form.lodging,
       notes: form.notes || undefined,
+      version: items.value.find((item) => item.expenseDate === form.expenseDate)?.version,
     })
     showToast('已保存')
     await load()
@@ -138,18 +139,18 @@ async function handleSave() {
   }
 }
 
-async function submit(id: string) {
+async function submit(expense: Expense) {
   try {
-    await submitExpense(id)
+    await submitExpense(expense.id, expense.version)
     showToast('费用已提交')
     await load()
   } catch (error) {
     showToast(error instanceof Error ? error.message : '提交失败')
   }
 }
-async function remove(id: string) {
+async function remove(expense: Expense) {
   try {
-    await voidExpense(id)
+    await voidExpense(expense.id, expense.version)
     showToast('费用已作废')
     await load()
   } catch (error) {

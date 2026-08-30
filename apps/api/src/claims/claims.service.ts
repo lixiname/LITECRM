@@ -58,7 +58,6 @@ export class ClaimsService {
         reason: dto.reason,
       })
       .returning()
-    // TODO(M5)：站内提醒 owner 及管理链（alerts 模块）
     return created
   }
 
@@ -115,7 +114,6 @@ export class ClaimsService {
         .returning({ id: customerClaimRequests.id })
       if (!reviewed) throw new ConflictException('申请已被处理，请刷新后重试')
     })
-    // TODO(M5)：通知申请人审批结果
     return { id: claim.id, status: 'approved' }
   }
 
@@ -125,7 +123,7 @@ export class ClaimsService {
     const customer = await this.getCustomer(claim.customerId)
     await this.assertReviewer(claim, customer, actor)
     if (!dto.comment?.trim()) throw new BadRequestException('拒绝必须填写意见')
-    await this.markReviewed(id, 'rejected', actor, dto.comment)
+    await this.markReviewed(id, 'rejected', actor, dto.comment, claim.version)
     return { id: claim.id, status: 'rejected' }
   }
 
@@ -219,6 +217,7 @@ export class ClaimsService {
     status: 'approved' | 'rejected',
     actor: AuthUser,
     comment: string | null,
+    version: number,
   ) {
     const [reviewed] = await db
       .update(customerClaimRequests)
@@ -230,7 +229,13 @@ export class ClaimsService {
         updatedAt: new Date(),
         version: sql`${customerClaimRequests.version} + 1`,
       })
-      .where(and(eq(customerClaimRequests.id, id), eq(customerClaimRequests.status, 'pending')))
+      .where(
+        and(
+          eq(customerClaimRequests.id, id),
+          eq(customerClaimRequests.status, 'pending'),
+          eq(customerClaimRequests.version, version),
+        ),
+      )
       .returning({ id: customerClaimRequests.id })
     if (!reviewed) throw new ConflictException('申请已被处理，请刷新后重试')
   }

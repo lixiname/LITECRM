@@ -9,6 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\"",
     "start": "nest start",
+    "dev": "nest start --watch",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -22,6 +23,8 @@
     "db:migrate:runtime": "ts-node scripts/migrate-runtime.ts",
     "db:seed": "ts-node scripts/seed.ts",
     "db:seed:demo": "ts-node scripts/seed-demo.ts",
+    "projections:check": "ts-node scripts/customer-activity-projections.ts",
+    "projections:rebuild": "ts-node scripts/customer-activity-projections.ts --fix",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit"
   },

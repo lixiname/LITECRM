@@ -29,4 +29,7 @@ export class UserDto {
 
   @ApiProperty({ description: '创建时间' })
   createdAt!: Date
+
+  @ApiProperty({ description: '当前版本号' })
+  version!: number
 }

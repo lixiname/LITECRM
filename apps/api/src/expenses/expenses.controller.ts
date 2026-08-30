@@ -7,6 +7,7 @@ import { PermissionsGuard } from '../access/permissions.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
 import { ExpensesService } from './expenses.service'
 import { CreateExpenseDto } from './dto/create-expense.dto'
+import { ExpenseCommandDto } from './dto/expense-command.dto'
 
 // 每日费用（§8.8：轻量统计；customer.write 填报）
 @ApiTags('expenses')
@@ -30,13 +31,13 @@ export class ExpensesController {
 
   @Post(':id/submit')
   @ApiOkResponse({ description: '提交（计入统计）' })
-  submit(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.expensesService.submit(id, user)
+  submit(@Param('id') id: string, @Body() dto: ExpenseCommandDto, @CurrentUser() user: AuthUser) {
+    return this.expensesService.submit(id, dto.version, user)
   }
 
   @Post(':id/void')
   @ApiOkResponse({ description: '作废（剔除统计，留痕）' })
-  void(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.expensesService.void(id, user)
+  void(@Param('id') id: string, @Body() dto: ExpenseCommandDto, @CurrentUser() user: AuthUser) {
+    return this.expensesService.void(id, dto.version, user)
   }
 }

@@ -157,6 +157,7 @@ const dialog = reactive({
   reportsToId: '',
   phone: '',
   region: '',
+  version: 0,
 })
 
 const usersWithoutSelf = computed(() => {
@@ -185,6 +186,7 @@ function openAdd() {
   dialog.reportsToId = ''
   dialog.phone = ''
   dialog.region = ''
+  dialog.version = 0
 }
 
 function openEdit(u: User) {
@@ -198,6 +200,7 @@ function openEdit(u: User) {
   dialog.reportsToId = u.reportsToId ?? ''
   dialog.phone = u.phone ?? ''
   dialog.region = u.region ?? ''
+  dialog.version = u.version
 }
 
 async function saveUser() {
@@ -217,6 +220,7 @@ async function saveUser() {
   try {
     if (dialog.isEdit) {
       const dto: UpdateUserInput = {
+        version: dialog.version,
         displayName,
         role: dialog.role,
         reportsToId: dialog.reportsToId || null,
@@ -261,10 +265,10 @@ async function toggleActive(user: User) {
   }
   try {
     if (user.isActive) {
-      await deactivateUser(user.id)
+      await deactivateUser(user.id, user.version)
       ElMessage.success('已停用')
     } else {
-      await updateUser(user.id, { isActive: true })
+      await updateUser(user.id, { version: user.version, isActive: true })
       ElMessage.success('已启用')
     }
     await reload()

@@ -59,6 +59,7 @@ describe('CustomerContactsCard', () => {
             functionRole: 'equipment_engineering',
             phone: '13800001001',
             isKeyContact: true,
+            version: 1,
           },
         ],
       },

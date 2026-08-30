@@ -28,6 +28,6 @@ export function updateOption(
   return apiPatch<DimensionOption>(`/catalog/${id}`, dto)
 }
 
-export function removeOption(id: string): Promise<void> {
-  return apiDelete<void>(`/catalog/${id}`)
+export function removeOption(id: string, version: number): Promise<void> {
+  return apiDelete<void>(`/catalog/${id}?version=${version}`)
 }

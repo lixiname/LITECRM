@@ -25,7 +25,7 @@ import { OwnershipService } from './ownership.service'
 import { CreateCustomerDto } from './dto/create-customer.dto'
 import { UpdateCustomerDto } from './dto/update-customer.dto'
 import { CustomerQueryDto } from './dto/customer-query.dto'
-import { CreateContactDto } from './dto/contact.dto'
+import { CreateContactDto, UpdateContactDto } from './dto/contact.dto'
 import { DedupCheckDto } from './dto/dedup-check.dto'
 import { TransferCustomerDto } from './dto/transfer-customer.dto'
 import { ReleaseCustomerDto } from './dto/release-customer.dto'
@@ -198,7 +198,7 @@ export class CustomersController {
   @ApiOkResponse({ description: '更新联系人' })
   updateContact(
     @Param('contactId') contactId: string,
-    @Body() dto: CreateContactDto,
+    @Body() dto: UpdateContactDto,
     @CurrentUser() user: AuthUser,
   ) {
     return this.customersService.updateContact(contactId, dto, user)
@@ -206,7 +206,11 @@ export class CustomersController {
 
   @Delete('contacts/:contactId')
   @ApiOkResponse({ description: '删除联系人' })
-  removeContact(@Param('contactId') contactId: string, @CurrentUser() user: AuthUser) {
-    return this.customersService.removeContact(contactId, user)
+  removeContact(
+    @Param('contactId') contactId: string,
+    @Query('version') version: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.customersService.removeContact(contactId, Number(version), user)
   }
 }

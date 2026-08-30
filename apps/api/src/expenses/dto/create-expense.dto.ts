@@ -1,11 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsISO8601, IsNumber, IsOptional, IsString, Min } from 'class-validator'
+import { IsISO8601, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 
 // 每日费用（§8.8：每人每天一条 upsert；五类分项；draft/submitted/voided）
 export class CreateExpenseDto {
   @ApiProperty({ description: '费用日期' })
   @IsISO8601()
   expenseDate!: string
+
+  @ApiPropertyOptional({ description: '更新已有草稿时的版本号；新建时不传' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  version?: number
 
   @ApiPropertyOptional({ description: '烟酒' })
   @IsOptional()

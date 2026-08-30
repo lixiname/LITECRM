@@ -23,8 +23,8 @@ export function updateUser(id: string, dto: UpdateUserInput): Promise<User> {
 }
 
 /** 停用：isActive=false + 全端 token 失效 */
-export function deactivateUser(id: string): Promise<void> {
-  return apiDelete<void>(`/users/${id}`)
+export function deactivateUser(id: string, version: number): Promise<void> {
+  return apiDelete<void>(`/users/${id}?version=${version}`)
 }
 
 /** 重置密码：返回临时密码（仅此一次展示） */

@@ -21,7 +21,7 @@
               v-if="(row as Expense).status === 'draft'"
               size="small"
               type="success"
-              @click="submit((row as Expense).id)"
+              @click="submit(row as Expense)"
               >提交</el-button
             >
             <el-button
@@ -29,7 +29,7 @@
               size="small"
               type="danger"
               plain
-              @click="remove((row as Expense).id)"
+              @click="remove(row as Expense)"
               >作废</el-button
             >
           </template>
@@ -75,10 +75,10 @@ async function act(fn: () => Promise<unknown>, msg: string) {
     ElMessage.error(e instanceof Error ? e.message : '操作失败')
   }
 }
-function submit(id: string) {
-  void act(() => submitExpense(id), '已提交')
+function submit(expense: Expense) {
+  void act(() => submitExpense(expense.id, expense.version), '已提交')
 }
-async function remove(id: string) {
+async function remove(expense: Expense) {
   try {
     await ElMessageBox.confirm('作废后该记录不再计入有效费用统计，是否继续？', '确认作废', {
       confirmButtonText: '确认作废',
@@ -88,7 +88,7 @@ async function remove(id: string) {
   } catch {
     return
   }
-  await act(() => voidExpense(id), '已作废')
+  await act(() => voidExpense(expense.id, expense.version), '已作废')
 }
 </script>
 

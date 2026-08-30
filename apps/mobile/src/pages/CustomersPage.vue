@@ -1,6 +1,12 @@
 <template>
   <div class="customers">
-    <van-nav-bar title="客户" left-arrow @click-left="router.push('/')" />
+    <van-nav-bar title="客户" left-arrow @click-left="router.push('/')">
+      <template v-if="canWrite" #right>
+        <button class="customers__create" type="button" @click="router.push('/customers/new')">
+          新建
+        </button>
+      </template>
+    </van-nav-bar>
     <van-search v-model="keyword" placeholder="搜索名称/城市" @search="onSearch" />
 
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
@@ -39,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   listCustomers,
@@ -47,6 +53,7 @@ import {
   CUSTOMER_RELATIONSHIP_STAGE_OPTIONS,
   isBusinessDateOverdue,
   listDimensionOptions,
+  useAuthStore,
   type CustomerItem,
   type CustomerStatus,
   type CustomerRelationshipStage,
@@ -54,6 +61,8 @@ import {
 } from '@crm/domain'
 
 const router = useRouter()
+const auth = useAuthStore()
+const canWrite = computed(() => auth.hasAbility('customer.write'))
 const keyword = ref('')
 const items = ref<CustomerItem[]>([])
 const loading = ref(false)
@@ -164,6 +173,13 @@ function nextActionText(customer: CustomerItem): string {
 .customers :deep(.van-search) {
   padding: 10px var(--crm-spacing-md);
   background: var(--crm-color-bg-page);
+}
+.customers__create {
+  border: 0;
+  background: transparent;
+  color: var(--crm-color-primary-active);
+  font: inherit;
+  font-weight: 650;
 }
 .customers :deep(.van-search__content) {
   border: 1px solid var(--crm-color-border);

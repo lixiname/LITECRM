@@ -7,6 +7,7 @@ import {
   ParseEnumPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common'
 import { ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger'
@@ -62,7 +63,7 @@ export class CatalogController {
   @ApiOkResponse({ description: '停用字典项（软删）' })
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('user.manage')
-  remove(@Param('id') id: string) {
-    return this.catalogService.remove(id)
+  remove(@Param('id') id: string, @Query('version') version: string) {
+    return this.catalogService.remove(id, Number(version))
   }
 }

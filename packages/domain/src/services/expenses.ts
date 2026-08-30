@@ -14,6 +14,8 @@ export interface Expense {
   lodging: string | null
   notes: string | null
   status: string
+  version: number
+  updatedAt: string
   createdAt: string
 }
 
@@ -28,11 +30,11 @@ export function listExpenses(month?: string): Promise<Expense[]> {
 }
 
 /** 提交（计入统计） */
-export function submitExpense(id: string): Promise<Expense> {
-  return apiPost<Expense>(`/expenses/${id}/submit`)
+export function submitExpense(id: string, version: number): Promise<Expense> {
+  return apiPost<Expense>(`/expenses/${id}/submit`, { version })
 }
 
 /** 作废（剔除统计，留痕） */
-export function voidExpense(id: string): Promise<Expense> {
-  return apiPost<Expense>(`/expenses/${id}/void`)
+export function voidExpense(id: string, version: number): Promise<Expense> {
+  return apiPost<Expense>(`/expenses/${id}/void`, { version })
 }

@@ -26,6 +26,7 @@ import {
 } from './actions'
 import {
   businessWeeks,
+  alertReads,
   dailyExpenses,
   followUpActions,
   managementComments,
@@ -60,6 +61,7 @@ export {
   complaints,
   complaintFollowUps,
   businessWeeks,
+  alertReads,
   weeklyPlans,
   followUpActions,
   salesPlanReschedules,

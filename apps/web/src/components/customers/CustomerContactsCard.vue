@@ -81,6 +81,7 @@ const emit = defineEmits<{ changed: [] }>()
 const visible = ref(false)
 const saving = ref(false)
 const editingId = ref<string>()
+const editingVersion = ref<number>()
 const form = reactive({ name: '', title: '', functionRole: '', phone: '', isKeyContact: false })
 const { data: allFunctionRoles } = useQuery('catalog:contact-function', () =>
   listDimensionOptions('contact_function'),
@@ -91,6 +92,7 @@ const functionRoles = computed(() =>
 
 function resetForm(contact?: Contact) {
   editingId.value = contact?.id
+  editingVersion.value = contact?.version
   Object.assign(form, {
     name: contact?.name ?? '',
     title: contact?.title ?? '',
@@ -119,7 +121,8 @@ async function handleSave() {
       phone: form.phone.trim(),
       isKeyContact: form.isKeyContact,
     }
-    if (editingId.value) await updateContact(editingId.value, input)
+    if (editingId.value)
+      await updateContact(editingId.value, { ...input, version: editingVersion.value! })
     else await addContact(props.customerId, input)
     ElMessage.success(editingId.value ? '联系人已更新' : '联系人已添加')
     visible.value = false
@@ -142,7 +145,7 @@ async function handleRemove(contact: Contact) {
       '删除联系人',
       { type: 'warning', confirmButtonText: '删除' },
     )
-    await removeContact(contact.id)
+    await removeContact(contact.id, contact.version)
     ElMessage.success('联系人已删除')
     emit('changed')
   } catch (error) {

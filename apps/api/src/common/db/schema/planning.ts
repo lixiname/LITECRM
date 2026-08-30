@@ -198,3 +198,20 @@ export const dailyExpenses = pgTable(
     index('daily_expenses_owner_date_idx').on(table.ownerId, table.expenseDate),
   ],
 )
+
+// 提醒主体由业务事实实时派生；本表只保存“谁已读过哪条提醒”，不复制提醒状态。
+export const alertReads = pgTable(
+  'alert_reads',
+  {
+    ...baseColumns,
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    alertKey: text('alert_key').notNull(),
+    readAt: timestamp('read_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('alert_reads_user_key_uq').on(table.userId, table.alertKey),
+    index('alert_reads_user_read_idx').on(table.userId, table.readAt),
+  ],
+)

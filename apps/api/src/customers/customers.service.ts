@@ -43,7 +43,7 @@ import type { AuthUser } from '../auth/auth.service'
 import type { CreateCustomerDto } from './dto/create-customer.dto'
 import type { UpdateCustomerDto } from './dto/update-customer.dto'
 import type { CustomerQueryDto } from './dto/customer-query.dto'
-import type { CreateContactDto } from './dto/contact.dto'
+import type { CreateContactDto, UpdateContactDto } from './dto/contact.dto'
 import type { DedupCheckDto } from './dto/dedup-check.dto'
 import { CustomerAssigneeService } from './customer-assignee.service'
 import { deriveOpportunityStagnation } from '../opportunities/opportunity-stagnation'
@@ -842,7 +842,11 @@ export class CustomersService {
       if (dto.isKeyContact) {
         await tx
           .update(contacts)
-          .set({ isKeyContact: false, updatedAt: new Date() })
+          .set({
+            isKeyContact: false,
+            updatedAt: new Date(),
+            version: sql`${contacts.version} + 1`,
+          })
           .where(and(eq(contacts.customerId, customer.id), eq(contacts.isKeyContact, true)))
       }
       const [created] = await tx
@@ -860,9 +864,12 @@ export class CustomersService {
     })
   }
 
-  async updateContact(contactId: string, dto: CreateContactDto, actor: AuthUser) {
+  async updateContact(contactId: string, dto: UpdateContactDto, actor: AuthUser) {
     const [contact] = await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1)
     if (!contact) throw new NotFoundException('联系人不存在')
+    if (contact.version !== dto.version) {
+      throw new ConflictException('联系人已被他人更新，请刷新后重试')
+    }
     const customer = await this.findVisible(contact.customerId, actor)
     await this.assertCanContribute(customer, actor)
     if (dto.functionRole) {
@@ -878,7 +885,11 @@ export class CustomersService {
       if (dto.isKeyContact) {
         await tx
           .update(contacts)
-          .set({ isKeyContact: false, updatedAt: new Date() })
+          .set({
+            isKeyContact: false,
+            updatedAt: new Date(),
+            version: sql`${contacts.version} + 1`,
+          })
           .where(
             and(
               eq(contacts.customerId, contact.customerId),
@@ -899,16 +910,19 @@ export class CustomersService {
           updatedAt: new Date(),
           version: sql`${contacts.version} + 1`,
         })
-        .where(and(eq(contacts.id, contactId), eq(contacts.version, contact.version)))
+        .where(and(eq(contacts.id, contactId), eq(contacts.version, dto.version)))
         .returning()
       if (!updated) throw new ConflictException('联系人已被他人更新，请刷新后重试')
       return updated
     })
   }
 
-  async removeContact(contactId: string, actor: AuthUser): Promise<void> {
+  async removeContact(contactId: string, version: number, actor: AuthUser): Promise<void> {
     const [contact] = await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1)
     if (!contact) throw new NotFoundException('联系人不存在')
+    if (!Number.isInteger(version) || contact.version !== version) {
+      throw new ConflictException('联系人已被他人更新，请刷新后重试')
+    }
     const customer = await this.findVisible(contact.customerId, actor)
     await this.assertCanContribute(customer, actor)
     await db.transaction(async (tx) => {
@@ -916,7 +930,11 @@ export class CustomersService {
       if (contact.phone?.trim()) {
         await this.assertAnotherPhoneExists(tx, contact.customerId, contact.id)
       }
-      await tx.delete(contacts).where(eq(contacts.id, contactId))
+      const [removed] = await tx
+        .delete(contacts)
+        .where(and(eq(contacts.id, contactId), eq(contacts.version, version)))
+        .returning({ id: contacts.id })
+      if (!removed) throw new ConflictException('联系人已被他人更新，请刷新后重试')
     })
   }
 

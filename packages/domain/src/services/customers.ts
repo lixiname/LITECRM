@@ -12,6 +12,7 @@ import type {
 export type CreateCustomerInput = components['schemas']['CreateCustomerDto']
 export type UpdateCustomerInput = components['schemas']['UpdateCustomerDto']
 export type CreateContactInput = components['schemas']['CreateContactDto']
+export type UpdateContactInput = components['schemas']['UpdateContactDto']
 export type DedupCheckInput = components['schemas']['DedupCheckDto']
 export type AssigneeOption = components['schemas']['AssigneeOptionDto']
 
@@ -182,10 +183,10 @@ export function addContact(customerId: string, dto: CreateContactInput): Promise
   return apiPost<Contact>(`/customers/${customerId}/contacts`, dto)
 }
 
-export function updateContact(contactId: string, dto: CreateContactInput): Promise<Contact> {
+export function updateContact(contactId: string, dto: UpdateContactInput): Promise<Contact> {
   return apiPatch<Contact>(`/customers/contacts/${contactId}`, dto)
 }
 
-export function removeContact(contactId: string): Promise<void> {
-  return apiDelete<void>(`/customers/contacts/${contactId}`)
+export function removeContact(contactId: string, version: number): Promise<void> {
+  return apiDelete<void>(`/customers/contacts/${contactId}?version=${version}`)
 }
