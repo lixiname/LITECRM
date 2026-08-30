@@ -188,7 +188,7 @@ const matchingPlanCta = computed(() => {
   if (!matchingPlan.value) return '按此计划填报'
   return matchingPlan.value.plannedAt.slice(0, 10) > date.value ? '提前执行此计划' : '按此计划填报'
 })
-const pageTitle = computed(() => (fromWeek && date.value < today ? '补录当日实际' : '记录'))
+const pageTitle = computed(() => (fromWeek && date.value < today ? '补录当日实际' : '快速记录'))
 
 onMounted(loadPlans)
 
@@ -318,6 +318,7 @@ function displayDate(value: string): string {
   box-sizing: border-box;
   min-height: 100vh;
   padding-bottom: 88px;
+  background: var(--crm-color-bg-page);
 }
 .quick-add__form,
 .quick-add__submit,
@@ -333,5 +334,15 @@ function displayDate(value: string): string {
   display: grid;
   gap: var(--crm-spacing-sm);
   padding: var(--crm-spacing-md);
+}
+.quick-add :deep(.van-cell-group__title) {
+  padding-top: var(--crm-spacing-lg);
+  color: var(--crm-color-text-secondary);
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: 0.04em;
+}
+.quick-add :deep(.van-cell__left-icon) {
+  color: var(--crm-color-primary);
 }
 </style>

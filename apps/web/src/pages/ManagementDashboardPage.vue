@@ -1,8 +1,9 @@
 <template>
   <div class="management-dashboard">
     <AppPageHeader
-      title="管理看板"
-      description="从销售储备、团队执行、重点客户和费用发现需要介入的事项"
+      eyebrow="Management Overview"
+      title="经营与过程看板"
+      description="先识别漏斗风险，再查看团队动作与需要介入的重要客户"
     />
 
     <el-card class="management-dashboard__filters" shadow="never">
@@ -210,10 +211,18 @@ function monthStart(date: Date): string {
 <style scoped>
 .management-dashboard {
   min-width: 960px;
+  max-width: var(--crm-content-max-width);
+  margin: 0 auto;
+  padding: var(--crm-spacing-xl) 28px var(--crm-spacing-3xl);
 }
 .management-dashboard__filters,
 .management-dashboard__body {
-  margin: 0 var(--crm-spacing-lg) var(--crm-spacing-lg);
+  margin: 0 0 var(--crm-spacing-lg);
+  border-color: var(--crm-color-border);
+  box-shadow: var(--crm-shadow-card);
+}
+.management-dashboard__filters :deep(.el-card__body) {
+  padding: 13px 14px;
 }
 .management-dashboard__filter-row {
   display: flex;
@@ -226,11 +235,19 @@ function monthStart(date: Date): string {
 }
 .management-dashboard__filters small {
   display: block;
-  margin-top: var(--crm-spacing-sm);
-  color: var(--crm-color-text-secondary);
+  margin-top: 9px;
+  color: var(--crm-color-text-tertiary);
+  font-size: 11px;
 }
 .management-dashboard__content {
   min-height: 360px;
-  padding-top: var(--crm-spacing-sm);
+  padding-top: var(--crm-spacing-xs);
+}
+.management-dashboard__body :deep(.el-card__body) {
+  padding: 0 20px 22px;
+}
+.management-dashboard__body :deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+  background: var(--crm-color-divider);
 }
 </style>

@@ -99,17 +99,17 @@ function percent(value: number): string {
 .overview-panel__side,
 .overview-panel__risks {
   display: grid;
-  gap: var(--crm-spacing-md);
+  gap: var(--crm-spacing-lg);
 }
 .overview-panel__headline {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: var(--crm-spacing-md);
+  gap: var(--crm-spacing-lg);
 }
 .overview-panel__period-results {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--crm-spacing-md);
+  gap: var(--crm-spacing-lg);
 }
 .overview-panel__period-label {
   grid-column: 1 / -1;
@@ -120,7 +120,7 @@ function percent(value: number): string {
 .overview-panel__columns {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
-  gap: var(--crm-spacing-md);
+  gap: var(--crm-spacing-lg);
 }
 .overview-panel__title {
   display: flex;
@@ -134,14 +134,16 @@ function percent(value: number): string {
   gap: var(--crm-spacing-md);
   padding: var(--crm-spacing-md);
   border: 0;
-  border-radius: var(--crm-radius-sm);
-  background: var(--crm-color-bg-page);
+  border: 1px solid transparent;
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-soft);
   color: inherit;
   text-align: left;
   cursor: pointer;
 }
 .overview-panel__risks button:hover {
-  background: var(--el-color-primary-light-9);
+  border-color: var(--crm-color-border-strong);
+  background: var(--crm-color-primary-lighter);
 }
 .overview-panel__risks b {
   color: var(--el-color-danger);

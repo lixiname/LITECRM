@@ -116,7 +116,7 @@ function dimensionLabel(dimension: CustomerDimension, value?: string | null): st
 
 <style scoped>
 .profile-card {
-  margin-bottom: var(--crm-spacing-lg);
+  margin-bottom: 0;
 }
 .profile-card__header {
   display: flex;

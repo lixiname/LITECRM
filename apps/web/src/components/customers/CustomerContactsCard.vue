@@ -154,7 +154,7 @@ async function handleRemove(contact: Contact) {
 
 <style scoped>
 .contacts-card {
-  margin-bottom: var(--crm-spacing-lg);
+  margin-bottom: 0;
 }
 .contacts-card__header {
   display: flex;
@@ -171,7 +171,7 @@ async function handleRemove(contact: Contact) {
   justify-content: space-between;
   gap: var(--crm-spacing-sm);
   padding: var(--crm-spacing-sm) 0;
-  border-bottom: 1px solid var(--crm-color-border);
+  border-bottom: 1px solid var(--crm-color-divider);
 }
 .contacts-card__item:last-child {
   border-bottom: 0;

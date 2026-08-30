@@ -112,7 +112,7 @@ function metadataText(item: CustomerTimelineItem): string {
 
 <style scoped>
 .activity-card {
-  margin-bottom: var(--crm-spacing-lg);
+  margin-bottom: 0;
 }
 .activity-card__header,
 .activity-card__title {
@@ -123,13 +123,30 @@ function metadataText(item: CustomerTimelineItem): string {
 }
 .activity-card__hint,
 .activity-card__meta {
-  color: var(--crm-color-text-secondary);
+  color: var(--crm-color-text-tertiary);
   font-size: var(--crm-font-size-xs);
+}
+.activity-card :deep(.el-timeline) {
+  padding-left: 5px;
+}
+.activity-card :deep(.el-timeline-item__timestamp) {
+  color: var(--crm-color-text-tertiary);
+  font-size: 11px;
+}
+.activity-card :deep(.el-timeline-item__tail) {
+  border-left-color: var(--crm-color-border-strong);
+}
+.activity-card__item {
+  padding: 2px 0 6px;
+  line-height: var(--crm-line-height-relaxed);
+}
+.activity-card__title {
+  margin-bottom: 3px;
 }
 .activity-card__item--link {
   cursor: pointer;
 }
 .activity-card__item--link:hover .activity-card__title > span:first-child {
-  color: var(--crm-color-primary);
+  color: var(--crm-color-primary-active);
 }
 </style>

@@ -1,6 +1,10 @@
 <template>
   <div class="week-view">
-    <AppPageHeader title="销售计划周视图" :description="weekLabel">
+    <AppPageHeader
+      eyebrow="Weekly Workbench"
+      title="销售计划周视图"
+      :description="`${weekLabel} · 计划与实际统一查看`"
+    >
       <template #actions>
         <div class="week-view__navigator">
           <el-button-group>
@@ -823,6 +827,10 @@ function formatDateTime(value: string): string {
 </script>
 
 <style scoped>
+.week-view {
+  width: min(100%, 1640px);
+  margin: 0 auto;
+}
 .week-view__navigator {
   display: flex;
   gap: var(--crm-spacing-sm);
@@ -863,7 +871,7 @@ function formatDateTime(value: string): string {
   gap: var(--crm-spacing-xs);
 }
 .week-view__card :deep(.el-card__body) {
-  padding: var(--crm-spacing-md);
+  padding: var(--crm-spacing-lg);
 }
 .week-view__scroll {
   padding-bottom: var(--crm-spacing-sm);
@@ -878,8 +886,8 @@ function formatDateTime(value: string): string {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-page);
+  border-radius: var(--crm-radius-lg);
+  background: var(--crm-color-bg-subtle);
   overflow: hidden;
 }
 .week-view__col--today {
@@ -891,7 +899,7 @@ function formatDateTime(value: string): string {
   align-items: center;
   justify-content: space-between;
   gap: var(--crm-spacing-sm);
-  padding: var(--crm-spacing-md);
+  padding: var(--crm-spacing-md) var(--crm-spacing-lg);
   border-bottom: 1px solid var(--crm-color-border);
   background: var(--crm-color-bg-card);
   font-weight: 600;
@@ -909,7 +917,7 @@ function formatDateTime(value: string): string {
   flex: 1;
   flex-direction: column;
   gap: var(--crm-spacing-lg);
-  padding: var(--crm-spacing-md);
+  padding: var(--crm-spacing-lg);
 }
 .week-view__section {
   display: grid;

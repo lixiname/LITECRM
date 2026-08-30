@@ -87,8 +87,9 @@ function money(value: number): string {
   gap: var(--crm-spacing-md);
   padding: var(--crm-spacing-lg);
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
+  border-radius: var(--crm-radius-lg);
   background: var(--crm-color-bg-card);
+  box-shadow: var(--crm-shadow-card);
 }
 .pipeline-composition__header,
 .pipeline-composition__health,
@@ -107,7 +108,7 @@ function money(value: number): string {
   color: var(--crm-color-text-secondary);
 }
 .pipeline-composition__eyebrow {
-  font-weight: 600;
+  font-weight: 680;
 }
 .pipeline-composition__total {
   text-align: right;
@@ -117,8 +118,10 @@ function money(value: number): string {
   display: block;
 }
 .pipeline-composition__total strong {
-  font-size: 28px;
+  font-size: 27px;
   line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 .pipeline-composition__total span {
   margin-top: 4px;
@@ -129,7 +132,7 @@ function money(value: number): string {
   display: flex;
   height: 14px;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: 3px;
   background: var(--crm-color-bg-page);
 }
 .pipeline-composition__bar span {
@@ -155,7 +158,11 @@ function money(value: number): string {
   grid-template-columns: 10px minmax(90px, 1fr) 58px minmax(150px, auto);
   gap: 10px;
   min-width: 0;
-  padding: 7px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--crm-color-divider);
+}
+.pipeline-composition__item:last-child {
+  border-bottom: 0;
 }
 .pipeline-composition__item i {
   width: 8px;
@@ -198,13 +205,13 @@ function money(value: number): string {
   color: var(--crm-color-danger);
 }
 .is-estimate {
-  background: #94a3b8;
+  background: #b5bdb9;
 }
 .is-oral_quote {
-  background: var(--crm-color-primary);
+  background: #8daaa0;
 }
 .is-formal_quote {
-  background: var(--el-color-success);
+  background: var(--crm-color-primary);
 }
 .pipeline-composition--compact {
   gap: var(--crm-spacing-sm);

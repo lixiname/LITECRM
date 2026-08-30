@@ -1,8 +1,9 @@
 <template>
   <div v-loading="loading" class="detail">
     <AppPageHeader
+      eyebrow="Customer Record"
       :title="detail?.name ?? '客户详情'"
-      description="客户资料、联系人、业务进展和归属状态"
+      description="优先查看当前商机、下一步动作与最近客户活动"
       back-to="/customers"
       back-label="客户列表"
     >
@@ -398,21 +399,23 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 
 <style scoped>
 .detail {
-  padding: var(--crm-spacing-xl);
+  max-width: var(--crm-content-max-width);
+  margin: 0 auto;
+  padding: var(--crm-spacing-xl) 28px var(--crm-spacing-3xl);
 }
 .detail__card {
-  margin-bottom: var(--crm-spacing-lg);
+  margin-bottom: 0;
 }
 .detail__workspace {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
-  gap: var(--crm-spacing-lg);
+  grid-template-columns: minmax(0, 1.65fr) minmax(310px, 0.75fr);
+  gap: 18px;
   align-items: start;
 }
 .detail__main,
 .detail__aside {
   display: grid;
-  gap: var(--crm-spacing-lg);
+  gap: 18px;
 }
 .detail__metrics {
   display: grid;
@@ -422,11 +425,23 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 .detail__metrics > div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--crm-color-divider);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-soft);
+}
+.detail__metrics strong {
+  overflow: hidden;
+  color: var(--crm-color-text-primary);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
 }
 .detail__metrics span {
-  color: var(--crm-color-text-secondary);
-  font-size: var(--crm-font-size-xs);
+  color: var(--crm-color-text-tertiary);
+  font-size: 10px;
 }
 .detail__dialog-alert {
   margin-bottom: var(--crm-spacing-md);

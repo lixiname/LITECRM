@@ -157,18 +157,51 @@ function nextActionText(customer: CustomerItem): string {
 </script>
 
 <style scoped>
+.customers {
+  min-height: 100vh;
+  background: var(--crm-color-bg-page);
+}
+.customers :deep(.van-search) {
+  padding: 10px var(--crm-spacing-md);
+  background: var(--crm-color-bg-page);
+}
+.customers :deep(.van-search__content) {
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-card);
+}
+.customers :deep(.van-list) {
+  display: grid;
+  gap: var(--crm-spacing-sm);
+  padding: 0 var(--crm-spacing-md) var(--crm-spacing-lg);
+}
+.customers :deep(.van-list > .van-cell) {
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-lg);
+  box-shadow: var(--crm-shadow-card);
+}
+.customers :deep(.van-cell__title > span) {
+  color: var(--crm-color-text-primary);
+  font-weight: 680;
+}
 .customers__profile {
   margin-top: 2px;
   color: var(--crm-color-text-primary);
+  font-size: 12px;
 }
 .customers__meta {
   display: flex;
-  gap: 8px;
-  color: var(--crm-color-text-secondary);
+  flex-wrap: wrap;
+  gap: 3px 8px;
+  color: var(--crm-color-text-tertiary);
+  font-size: 11px;
 }
 .customers__action {
-  margin-top: 3px;
-  color: var(--crm-color-primary);
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid var(--crm-color-divider);
+  color: var(--crm-color-primary-active);
+  font-size: 11px;
 }
 .customers__action.is-overdue {
   color: var(--van-danger-color);

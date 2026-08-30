@@ -1,15 +1,23 @@
 <template>
   <el-container class="app-layout">
-    <el-aside width="248px" class="app-layout__aside">
+    <el-aside width="236px" class="app-layout__aside">
       <AppSidebarNav :active-menu="activeMenu" />
     </el-aside>
 
     <el-container>
       <el-header class="app-layout__header">
-        <span class="app-layout__title">{{ route.meta.title ?? '' }}</span>
+        <div class="app-layout__context">
+          <span>{{ sectionLabel }}</span>
+          <i>/</i>
+          <strong>{{ route.meta.title ?? '' }}</strong>
+        </div>
         <div class="app-layout__user">
-          <span class="app-layout__username">{{ auth.user?.displayName }}</span>
-          <el-button link type="danger" @click="handleLogout">退出</el-button>
+          <span class="app-layout__avatar" aria-hidden="true">{{ userInitial }}</span>
+          <span class="app-layout__identity">
+            <strong>{{ auth.user?.displayName }}</strong>
+            <small>{{ roleLabel }}</small>
+          </span>
+          <el-button link class="app-layout__logout" @click="handleLogout">退出</el-button>
         </div>
       </el-header>
       <el-main class="app-layout__main">
@@ -31,6 +39,24 @@ const auth = useAuthStore()
 
 // 侧边栏激活项：取一级路径（/customers/:id → /customers）
 const activeMenu = computed(() => `/${route.path.split('/')[1] ?? ''}`)
+const sectionLabel = computed(() => {
+  if (activeMenu.value === '/week-view') return '工作台'
+  if (['/customers', '/opportunities', '/complaints', '/expenses'].includes(activeMenu.value)) {
+    return '客户与销售'
+  }
+  if (['/management', '/claims'].includes(activeMenu.value)) return '管理协同'
+  return '系统设置'
+})
+const userInitial = computed(() => auth.user?.displayName?.slice(0, 1) ?? '用')
+const roleLabel = computed(() => {
+  const labels = {
+    sales: '销售人员',
+    executive: '管理人员',
+    assistant: '协同人员',
+    admin: '系统管理员',
+  }
+  return auth.user?.role ? labels[auth.user.role] : ''
+})
 
 function handleLogout() {
   auth.logout()
@@ -49,7 +75,6 @@ function handleLogout() {
   height: 100vh;
   background: var(--crm-color-bg-card);
   border-right: 1px solid var(--crm-color-border);
-  box-shadow: 2px 0 8px rgb(0 0 0 / 3%);
   overflow-y: auto;
 }
 .app-layout__header {
@@ -58,24 +83,61 @@ function handleLogout() {
   justify-content: space-between;
   background: var(--crm-color-bg-card);
   border-bottom: 1px solid var(--crm-color-border);
-  padding: 0 var(--crm-spacing-lg);
-  min-height: 64px;
+  padding: 0 var(--crm-spacing-xl);
+  min-height: var(--crm-header-height);
 }
-.app-layout__title {
-  font-size: var(--crm-font-size-md);
-  font-weight: 600;
+.app-layout__context {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--crm-color-text-tertiary);
+  font-size: var(--crm-font-size-xs);
+}
+.app-layout__context i {
+  color: var(--crm-color-border-strong);
+  font-style: normal;
+}
+.app-layout__context strong {
   color: var(--crm-color-text-primary);
+  font-weight: 650;
 }
 .app-layout__user {
   display: flex;
   align-items: center;
-  gap: var(--crm-spacing-sm);
+  gap: 9px;
 }
-.app-layout__username {
-  color: var(--crm-color-text-secondary);
+.app-layout__avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary-active);
+  font-size: var(--crm-font-size-xs);
+  font-weight: 750;
+}
+.app-layout__identity strong,
+.app-layout__identity small {
+  display: block;
+}
+.app-layout__identity strong {
+  color: var(--crm-color-text-primary);
+  font-size: var(--crm-font-size-xs);
+  line-height: 16px;
+}
+.app-layout__identity small {
+  color: var(--crm-color-text-tertiary);
+  font-size: 10px;
+  line-height: 13px;
+}
+.app-layout__logout {
+  margin-left: var(--crm-spacing-xs);
+  color: var(--crm-color-text-tertiary);
 }
 .app-layout__main {
   background: var(--crm-color-bg-page);
   padding: 0;
+  overflow: visible;
 }
 </style>

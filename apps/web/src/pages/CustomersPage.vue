@@ -1,37 +1,7 @@
 <template>
   <div class="customers">
-    <AppPageHeader :title="pageTitle" :description="pageDescription">
+    <AppPageHeader eyebrow="Customer Portfolio" :title="pageTitle" :description="pageDescription">
       <template #actions>
-        <el-segmented v-model="filters.status" :options="poolOptions" @change="load" />
-        <el-input
-          v-model="keyword"
-          placeholder="搜索名称/城市"
-          clearable
-          style="width: 220px"
-          @input="onSearch"
-        />
-        <el-select
-          v-model="filters.grade"
-          placeholder="等级"
-          clearable
-          style="width: 100px"
-          @change="load"
-        >
-          <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
-        </el-select>
-        <el-select
-          v-model="filters.relationshipStage"
-          placeholder="经营阶段"
-          clearable
-          style="width: 130px"
-        >
-          <el-option
-            v-for="item in CUSTOMER_RELATIONSHIP_STAGE_OPTIONS"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
         <el-button
           v-if="auth.hasAbility('customer.write') && filters.status === 'active'"
           type="primary"
@@ -48,12 +18,37 @@
       </template>
     </AppPageHeader>
 
+    <el-card class="customers__toolbar" shadow="never">
+      <div class="customers__toolbar-row">
+        <el-segmented v-model="filters.status" :options="poolOptions" @change="load" />
+        <span class="customers__toolbar-divider" />
+        <el-input
+          v-model="keyword"
+          placeholder="搜索客户名称或城市"
+          clearable
+          class="customers__search"
+          @input="onSearch"
+        />
+        <el-select v-model="filters.grade" placeholder="全部等级" clearable @change="load">
+          <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
+        </el-select>
+        <el-select v-model="filters.relationshipStage" placeholder="全部经营阶段" clearable>
+          <el-option
+            v-for="item in CUSTOMER_RELATIONSHIP_STAGE_OPTIONS"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
+      <span class="customers__result-hint">每页显示 {{ PAGE_SIZE }} 位客户</span>
+    </el-card>
+
     <el-card class="customers__card">
       <el-table
         v-if="!error && page?.items.length"
         v-loading="loading"
         :data="page?.items ?? []"
-        border
         @row-click="(row: CustomerItem) => router.push(`/customers/${row.id}`)"
       >
         <el-table-column label="客户" min-width="220">
@@ -76,7 +71,14 @@
           </template>
         </el-table-column>
         <el-table-column label="等级" width="70">
-          <template #default="{ row }">{{ (row as CustomerItem).grade }}</template>
+          <template #default="{ row }">
+            <span
+              class="customers__grade"
+              :class="`is-${(row as CustomerItem).grade.toLowerCase()}`"
+            >
+              {{ (row as CustomerItem).grade }}
+            </span>
+          </template>
         </el-table-column>
         <el-table-column label="有效商机" min-width="150">
           <template #default="{ row }">
@@ -304,14 +306,58 @@ function isOverdue(value?: string | null): boolean {
 
 <style scoped>
 .customers {
-  padding: var(--crm-spacing-xl);
+  max-width: var(--crm-content-max-width);
+  margin: 0 auto;
+  padding: var(--crm-spacing-xl) 28px var(--crm-spacing-3xl);
+}
+.customers__toolbar {
+  margin-bottom: var(--crm-spacing-lg);
+  box-shadow: var(--crm-shadow-card);
+}
+.customers__toolbar :deep(.el-card__body) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--crm-spacing-lg);
+  padding: 12px 14px;
+}
+.customers__toolbar-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--crm-spacing-sm);
+}
+.customers__toolbar-divider {
+  width: 1px;
+  height: 24px;
+  margin-inline: 2px;
+  background: var(--crm-color-divider);
+}
+.customers__toolbar .el-select {
+  width: 140px;
+}
+.customers__search {
+  width: 230px;
+}
+.customers__result-hint {
+  flex: none;
+  color: var(--crm-color-text-tertiary);
+  font-size: 11px;
+}
+.customers__card {
+  box-shadow: var(--crm-shadow-card);
+}
+.customers__card :deep(.el-card__body) {
+  padding: 0;
 }
 .customers__pagination {
-  margin-top: var(--crm-spacing-md);
+  margin: 0;
+  padding: 16px 20px;
   justify-content: flex-end;
+  border-top: 1px solid var(--crm-color-divider);
 }
 .customers__name {
-  font-weight: 600;
+  font-weight: 650;
   color: var(--crm-color-text-primary);
 }
 .customers__meta,
@@ -323,7 +369,7 @@ function isOverdue(value?: string | null): boolean {
   align-items: center;
   margin-top: 4px;
   color: var(--crm-color-text-secondary);
-  font-size: var(--crm-font-size-xs);
+  font-size: 11px;
 }
 .customers__stack {
   flex-direction: column;
@@ -333,8 +379,28 @@ function isOverdue(value?: string | null): boolean {
   font-size: var(--crm-font-size-xs);
 }
 .customers__overdue {
-  color: var(--el-color-danger);
+  color: var(--crm-color-danger);
   font-weight: 600;
+}
+.customers__grade {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-color-info-light);
+  color: var(--crm-color-info);
+  font-size: 11px;
+  font-weight: 780;
+}
+.customers__grade.is-s,
+.customers__grade.is-a {
+  background: var(--crm-color-attention-light);
+  color: var(--crm-color-attention);
+}
+.customers__grade.is-b {
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary-active);
 }
 .customers__ellipsis {
   overflow: hidden;

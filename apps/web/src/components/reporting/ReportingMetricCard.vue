@@ -17,32 +17,47 @@ defineProps<{
 
 <style scoped>
 .metric-card {
+  position: relative;
   display: grid;
-  gap: var(--crm-spacing-xs);
+  gap: 5px;
   min-height: 112px;
-  padding: var(--crm-spacing-lg);
+  padding: 16px;
   border: 1px solid var(--crm-color-border);
   border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-card);
+  background: var(--crm-color-bg-soft);
+  overflow: hidden;
 }
 .metric-card span,
 .metric-card small {
   color: var(--crm-color-text-secondary);
 }
 .metric-card strong {
-  font-size: 26px;
+  color: var(--crm-color-text-primary);
+  font-size: 24px;
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.025em;
 }
-.metric-card--primary {
-  border-top: 3px solid var(--crm-color-primary);
+.metric-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--crm-color-border-strong);
+  content: '';
 }
-.metric-card--warning {
-  border-top: 3px solid var(--el-color-warning);
+.metric-card--primary::before {
+  background: var(--crm-color-primary);
 }
-.metric-card--danger {
-  border-top: 3px solid var(--el-color-danger);
+.metric-card--warning::before {
+  background: var(--crm-color-warning);
 }
-.metric-card--success {
-  border-top: 3px solid var(--el-color-success);
+.metric-card--danger::before {
+  background: var(--crm-color-danger);
+}
+.metric-card--success::before {
+  background: var(--crm-color-success);
 }
 </style>

@@ -125,13 +125,18 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
   gap: var(--crm-spacing-md);
 }
 .opportunity-card {
-  padding: var(--crm-spacing-md);
+  padding: 15px;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
+  border-radius: var(--crm-radius-lg);
+  background: var(--crm-color-bg-card);
   cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .opportunity-card:hover {
-  border-color: var(--crm-color-primary);
+  border-color: #b7cdc4;
+  box-shadow: var(--crm-shadow-card);
 }
 .opportunity-card__amount {
   margin-left: var(--crm-spacing-sm);
@@ -169,14 +174,14 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
   margin-top: var(--crm-spacing-sm);
   padding: var(--crm-spacing-sm);
   border-radius: var(--crm-radius-sm);
-  background: var(--crm-color-bg-page);
+  background: var(--crm-color-bg-soft);
 }
 .opportunity-card__next.is-attention {
-  background: #fff7e6;
+  background: var(--crm-color-warning-light);
 }
 .opportunity-card__attention {
   margin-top: var(--crm-spacing-sm);
-  color: var(--el-color-warning-dark-2);
+  color: var(--crm-color-warning);
   font-size: var(--crm-font-size-xs);
 }
 </style>

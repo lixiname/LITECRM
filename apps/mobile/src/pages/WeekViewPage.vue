@@ -1,6 +1,12 @@
 <template>
   <div class="week-view">
-    <van-nav-bar title="计划" />
+    <header class="work-header">
+      <div>
+        <span>{{ todayLabel }}</span>
+        <h1>今日工作</h1>
+      </div>
+      <div class="work-header__avatar" aria-hidden="true">{{ userInitial }}</div>
+    </header>
     <div class="week-view__nav">
       <van-icon name="arrow-left" size="18" @click="shiftWeek(-1)" />
       <button type="button" class="week-view__range" @click="showWeekCalendar = true">
@@ -35,13 +41,13 @@
         </div>
       </section>
 
-      <div class="view-switch" role="tablist" aria-label="计划视图">
+      <div class="view-switch" role="tablist" aria-label="工作视图">
         <button
           type="button"
           :class="{ 'is-active': viewMode === 'day' }"
           @click="viewMode = 'day'"
         >
-          日程
+          每日
         </button>
         <button
           type="button"
@@ -69,6 +75,21 @@
           <small>{{ day.pendingPlans.length }}待 · {{ day.actualRecords.length }}记</small>
         </button>
       </div>
+
+      <button
+        v-if="canWrite && selectedDay && selectedDay.date <= todayText"
+        type="button"
+        class="work-quick"
+        @click="goQuickAdd(selectedDay.date)"
+      >
+        <span>{{
+          selectedDay.date === todayText ? '现场发生的事情最重要' : '补充该日实际业务事实'
+        }}</span>
+        <strong>
+          {{ selectedDay.date === todayText ? '快速记录' : '补录实际' }}
+          <b aria-hidden="true">＋</b>
+        </strong>
+      </button>
 
       <article v-if="viewMode === 'day' && selectedDay" class="day-card day-card--selected">
         <header class="day-card__head">
@@ -159,13 +180,6 @@
         </details>
 
         <div v-if="!selectedDay.hasContent" class="day-card__empty">当天还没有安排或记录</div>
-        <div
-          v-if="canWrite && selectedDay.date <= todayText"
-          class="day-card__add"
-          @click="goQuickAdd(selectedDay.date)"
-        >
-          ＋ {{ selectedDay.date === todayText ? '记录今日实际' : '补录该日实际' }}
-        </div>
       </article>
 
       <section v-else-if="viewMode === 'week'" class="week-overview">
@@ -305,6 +319,12 @@ const auth = useAuthStore()
 const canWrite = computed(() => auth.hasAbility('customer.write'))
 const today = new Date()
 const todayText = localDate(today)
+const todayLabel = today.toLocaleDateString('zh-CN', {
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+})
+const userInitial = computed(() => auth.user?.displayName?.slice(0, 1) ?? '我')
 const currentWeekStart = startOfBusinessWeek(todayText)
 const routeWeek = isBusinessDate(route.query.week) ? route.query.week : currentWeekStart
 const weekStart = ref(startOfBusinessWeek(routeWeek))
@@ -523,6 +543,40 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 </script>
 
 <style scoped>
+.week-view {
+  min-height: 100vh;
+  padding-bottom: var(--crm-spacing-md);
+  background: var(--crm-color-bg-page);
+}
+.work-header {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px var(--crm-spacing-lg) 12px;
+  background: var(--crm-color-bg-card);
+}
+.work-header span {
+  color: var(--crm-color-text-tertiary);
+  font-size: 10px;
+}
+.work-header h1 {
+  margin: 2px 0 0;
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.035em;
+}
+.work-header__avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary-active);
+  font-size: 12px;
+  font-weight: 750;
+}
 .week-view__nav,
 .day-card__head,
 .day-card__section-title,
@@ -533,9 +587,12 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   gap: var(--crm-spacing-sm);
 }
 .week-view__nav {
-  padding: var(--crm-spacing-sm) var(--crm-spacing-lg);
-  border-bottom: 1px solid var(--crm-color-border);
+  margin: 0 var(--crm-spacing-md) var(--crm-spacing-sm);
+  padding: 8px 10px;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
   background: var(--crm-color-bg-card);
+  box-shadow: var(--crm-shadow-card);
 }
 .day-card__add {
   color: var(--crm-color-primary);
@@ -559,11 +616,11 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   margin: var(--crm-spacing-xl) auto;
 }
 .overdue-panel {
-  margin: var(--crm-spacing-sm);
+  margin: var(--crm-spacing-sm) var(--crm-spacing-md);
   padding: var(--crm-spacing-md);
-  border: 1px solid var(--crm-color-danger);
-  border-radius: var(--crm-radius-md);
-  background: #fff1f0;
+  border: 1px solid #ecccca;
+  border-radius: var(--crm-radius-lg);
+  background: var(--crm-color-danger-light);
 }
 .overdue-panel__title {
   margin-bottom: var(--crm-spacing-sm);
@@ -574,10 +631,11 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-  margin: var(--crm-spacing-sm);
+  margin: var(--crm-spacing-sm) var(--crm-spacing-md);
   padding: 3px;
+  border: 1px solid var(--crm-color-border);
   border-radius: var(--crm-radius-md);
-  background: var(--crm-color-border);
+  background: #e9edea;
 }
 .view-switch button {
   padding: 7px;
@@ -588,31 +646,31 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .view-switch button.is-active {
   background: var(--crm-color-bg-card);
-  color: var(--crm-color-primary);
+  color: var(--crm-color-primary-active);
   font-weight: 700;
+  box-shadow: 0 2px 8px rgb(42 60 52 / 6%);
 }
 .day-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  margin: 0 var(--crm-spacing-sm) var(--crm-spacing-sm);
-  overflow: hidden;
+  gap: 3px;
+  margin: 0 var(--crm-spacing-md) var(--crm-spacing-sm);
+  padding: 6px;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
+  border-radius: var(--crm-radius-lg);
   background: var(--crm-color-bg-card);
+  box-shadow: var(--crm-shadow-card);
 }
 .day-strip__item {
   display: grid;
   gap: 2px;
   min-width: 0;
-  padding: 7px 1px;
+  padding: 6px 1px;
   border: 0;
-  border-right: 1px solid var(--crm-color-border);
+  border-radius: 8px;
   background: transparent;
   color: var(--crm-color-text-secondary);
   text-align: center;
-}
-.day-strip__item:last-child {
-  border-right: 0;
 }
 .day-strip__item strong {
   color: var(--crm-color-text-primary);
@@ -627,17 +685,50 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   color: var(--crm-color-primary);
 }
 .day-strip__item.is-selected {
-  background: var(--crm-color-primary-light);
+  background: var(--crm-color-primary);
+  color: #fff;
+}
+.day-strip__item.is-selected strong,
+.day-strip__item.is-selected small {
+  color: inherit;
+}
+.work-quick {
+  display: grid;
+  width: calc(100% - 24px);
+  gap: 4px;
+  margin: 0 var(--crm-spacing-md) var(--crm-spacing-sm);
+  padding: 13px 14px;
+  border: 0;
+  border-radius: var(--crm-radius-lg);
+  background: linear-gradient(135deg, var(--crm-color-primary), #4e8875);
+  color: #fff;
+  text-align: left;
+  box-shadow: 0 8px 18px rgb(57 115 97 / 16%);
+}
+.work-quick span {
+  opacity: 0.76;
+  font-size: 10px;
+}
+.work-quick strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.work-quick b {
+  font-size: 18px;
+  font-weight: 400;
 }
 .day-card--selected,
 .week-overview {
-  margin: 0 var(--crm-spacing-sm) var(--crm-spacing-lg);
+  margin: 0 var(--crm-spacing-md) var(--crm-spacing-lg);
 }
 .day-card {
   overflow: hidden;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
+  border-radius: var(--crm-radius-lg);
   background: var(--crm-color-bg-card);
+  box-shadow: var(--crm-shadow-card);
 }
 .day-card__head,
 .day-card__section,
@@ -648,7 +739,7 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .day-card__head {
   border-bottom: 1px solid var(--crm-color-border);
-  background: var(--crm-color-bg-page);
+  background: var(--crm-color-bg-subtle);
 }
 .day-card__head > div {
   display: flex;
@@ -677,7 +768,7 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .plan-row + .plan-row,
 .record-row + .record-row {
-  border-top: 1px dashed var(--crm-color-border);
+  margin-top: var(--crm-spacing-sm);
 }
 .plan-row > div,
 .record-row {
@@ -692,8 +783,10 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   padding: 1px 6px;
   border-radius: 4px;
   color: #fff;
-  background: var(--crm-color-primary);
-  font-size: 12px;
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary-active);
+  font-size: 10px;
+  font-weight: 680;
 }
 .plan-row small,
 .record-row small,
@@ -705,8 +798,10 @@ function temporaryRecordCount(day: MobileWeekDay): number {
   width: 100%;
   padding: var(--crm-spacing-sm);
   border: 0;
+  border: 1px solid var(--crm-color-divider);
   border-left: 3px solid var(--crm-color-success);
-  background: var(--crm-color-bg-page);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-soft);
   color: inherit;
   text-align: left;
 }
@@ -729,12 +824,13 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .day-card__add {
   border-top: 1px solid var(--crm-color-border);
+  color: var(--crm-color-primary-active);
   text-align: center;
 }
 .week-overview {
   overflow: hidden;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
+  border-radius: var(--crm-radius-lg);
   background: var(--crm-color-bg-card);
 }
 .week-overview__legend,
@@ -747,7 +843,7 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .week-overview__legend {
   padding: var(--crm-spacing-xs) var(--crm-spacing-sm);
-  background: var(--crm-color-bg-page);
+  background: var(--crm-color-bg-soft);
   color: var(--crm-color-text-secondary);
   font-size: 10px;
 }

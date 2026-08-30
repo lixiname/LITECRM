@@ -4,55 +4,216 @@
   box-sizing: border-box;
 }
 
+:root {
+  --el-color-primary: var(--crm-color-primary);
+  --el-color-primary-light-3: #74a091;
+  --el-color-primary-light-5: #9bbcaf;
+  --el-color-primary-light-7: #c5d9d1;
+  --el-color-primary-light-8: #d8e6e0;
+  --el-color-primary-light-9: var(--crm-color-primary-lighter);
+  --el-color-primary-dark-2: var(--crm-color-primary-active);
+  --el-color-success: var(--crm-color-success);
+  --el-color-success-light-9: var(--crm-color-success-light);
+  --el-color-warning: var(--crm-color-warning);
+  --el-color-warning-light-9: var(--crm-color-warning-light);
+  --el-color-danger: var(--crm-color-danger);
+  --el-color-danger-light-9: var(--crm-color-danger-light);
+  --el-color-info: var(--crm-color-info);
+  --el-color-info-light-9: var(--crm-color-info-light);
+  --el-text-color-primary: var(--crm-color-text-primary);
+  --el-text-color-regular: var(--crm-color-text-secondary);
+  --el-text-color-secondary: var(--crm-color-text-tertiary);
+  --el-text-color-placeholder: var(--crm-color-text-tertiary);
+  --el-border-color: var(--crm-color-border);
+  --el-border-color-light: var(--crm-color-divider);
+  --el-border-color-lighter: #eef1ef;
+  --el-fill-color: var(--crm-color-bg-soft);
+  --el-fill-color-light: var(--crm-color-bg-soft);
+  --el-fill-color-lighter: var(--crm-color-bg-subtle);
+  --el-fill-color-blank: var(--crm-color-bg-card);
+  --el-bg-color: var(--crm-color-bg-card);
+  --el-bg-color-page: var(--crm-color-bg-page);
+  --el-border-radius-base: var(--crm-radius-sm);
+  --el-border-radius-small: var(--crm-radius-xs);
+  --el-box-shadow-light: var(--crm-shadow-raised);
+}
+
 html,
 body {
   margin: 0;
+  min-width: 1080px;
   font-family:
+    'Segoe UI',
+    'Microsoft YaHei UI',
+    'PingFang SC',
     system-ui,
     -apple-system,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    'PingFang SC',
-    'Microsoft YaHei',
     sans-serif;
   background: var(--crm-color-bg-page);
   color: var(--crm-color-text-primary);
+  font-size: var(--crm-font-size-sm);
+  line-height: var(--crm-line-height-base);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--crm-shadow-focus);
 }
 
 #app {
   min-height: 100vh;
 }
 
-:where(.el-card) {
-  border-radius: var(--crm-radius-md);
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
-}
-
-:where(.el-card__header) {
-  font-weight: 600;
-  background: linear-gradient(180deg, #fcfcfd 0%, #ffffff 100%);
-}
-
-:where(.el-table__header th) {
-  font-size: var(--crm-font-size-sm);
+::selection {
+  background: #dceae4;
   color: var(--crm-color-text-primary);
 }
 
-:where(.el-table td, .el-table th) {
-  padding-top: 10px;
-  padding-bottom: 10px;
+:where(.el-card) {
+  overflow: hidden;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-lg);
+  background: var(--crm-color-bg-card);
+  box-shadow: var(--crm-shadow-card);
 }
 
-:where(.el-button),
-:where(.el-tag) {
+:where(.el-card__header) {
+  padding: 15px 20px;
+  border-bottom-color: var(--crm-color-divider);
+  background: var(--crm-color-bg-subtle);
+  color: var(--crm-color-text-primary);
+  font-weight: 650;
+}
+
+:where(.el-card__body) {
+  padding: 20px;
+}
+
+:where(.el-table) {
+  --el-table-header-bg-color: var(--crm-color-bg-soft);
+  --el-table-row-hover-bg-color: var(--crm-color-primary-lighter);
+  --el-table-border-color: var(--crm-color-divider);
+  color: var(--crm-color-text-primary);
+  border-radius: var(--crm-radius-md);
+}
+
+:where(.el-table__header th.el-table__cell) {
+  height: 42px;
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+:where(.el-table td.el-table__cell) {
+  padding-block: 10px;
+}
+
+:where(.el-table--border::before, .el-table--border::after, .el-table__inner-wrapper::before) {
+  background-color: var(--crm-color-divider);
+}
+
+:where(.el-button) {
+  min-height: 34px;
   border-radius: var(--crm-radius-sm);
+  font-weight: 560;
+}
+
+:where(.el-button--primary:not(.is-link, .is-plain)) {
+  box-shadow: 0 5px 12px rgb(57 115 97 / 16%);
+}
+
+:where(.el-button.is-link) {
+  min-height: auto;
+}
+
+:where(
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-textarea__inner,
+  .el-range-editor.el-input__wrapper
+) {
+  border-radius: var(--crm-radius-sm);
+  box-shadow: 0 0 0 1px var(--crm-color-border-strong) inset;
+}
+
+:where(.el-input__wrapper.is-focus, .el-select__wrapper.is-focused, .el-range-editor.is-active) {
+  box-shadow:
+    0 0 0 1px var(--crm-color-primary) inset,
+    var(--crm-shadow-focus);
+}
+
+:where(.el-tag) {
+  border-radius: var(--crm-radius-pill);
+  font-weight: 560;
+}
+
+:where(.el-tabs__header) {
+  margin-bottom: var(--crm-spacing-lg);
+}
+
+:where(.el-tabs__item) {
+  height: 42px;
+  color: var(--crm-color-text-secondary);
+  font-weight: 560;
+}
+
+:where(.el-tabs__item.is-active) {
+  color: var(--crm-color-primary-active);
+  font-weight: 680;
+}
+
+:where(.el-tabs__active-bar) {
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+:where(.el-segmented) {
+  --el-segmented-bg-color: var(--crm-color-bg-soft);
+  --el-segmented-item-selected-bg-color: var(--crm-color-bg-card);
+  --el-segmented-item-selected-color: var(--crm-color-primary-active);
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+}
+
+:where(.el-dialog) {
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-xl);
+  box-shadow: var(--crm-shadow-raised);
+}
+
+:where(.el-dialog__header) {
+  padding-bottom: var(--crm-spacing-md);
+  border-bottom: 1px solid var(--crm-color-divider);
+}
+
+:where(.el-pagination) {
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-hover-color: var(--crm-color-primary-active);
 }
 
 .crm-empty {
   margin: var(--crm-spacing-xxl) 0;
+}
+
+.crm-tabular-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
