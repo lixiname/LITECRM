@@ -19,6 +19,7 @@ describe('AccessService 权限语义（§6.1 / §6.2）', () => {
 
   it('能力点判定：assistant 只读统计，无填报权', () => {
     expect(service.can('assistant', 'stats.view')).toBe(true)
+    expect(service.can('assistant', 'dashboard.view')).toBe(false)
     expect(service.can('assistant', 'customer.write')).toBe(false)
   })
 

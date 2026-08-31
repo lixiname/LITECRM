@@ -132,6 +132,28 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       expect(salesRes.status).toBe(200)
       expect(assistantRes.status).toBe(403)
     })
+
+    it('经营统计允许管理者或助理只读访问，普通销售被拒绝', async () => {
+      const manager = await login('manager', 'Crm@123456')
+      const assistant = await login('assistant', 'Crm@123456')
+      const sales = await login('sales1', 'Crm@123456')
+
+      const [managerRes, assistantRes, salesRes] = await Promise.all([
+        request(app.getHttpServer())
+          .get('/api/reporting/overview')
+          .set('Authorization', `Bearer ${manager.accessToken}`),
+        request(app.getHttpServer())
+          .get('/api/reporting/overview')
+          .set('Authorization', `Bearer ${assistant.accessToken}`),
+        request(app.getHttpServer())
+          .get('/api/reporting/overview')
+          .set('Authorization', `Bearer ${sales.accessToken}`),
+      ])
+
+      expect(managerRes.status).toBe(200)
+      expect(assistantRes.status).toBe(200)
+      expect(salesRes.status).toBe(403)
+    })
   })
 
   describe('组织树数据范围（§6.1：self/team/full）', () => {
@@ -158,8 +180,8 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       expect(visible).toEqual([sales1Id])
     })
 
-    it('admin / assistant：full = 全部用户', async () => {
-      const all = await db.select({ id: users.id }).from(users)
+    it('admin full = 全部账号；assistant full = 全部销售经营人员', async () => {
+      const all = await db.select({ id: users.id, role: users.role }).from(users)
       const adminId = await getUserId('admin')
       const assistantId = await getUserId('assistant')
 
@@ -173,7 +195,12 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
         id: assistantId,
         role: 'assistant',
       })
-      expect(assistantVisible.length).toBe(all.length)
+      const salesBusinessUsers = all
+        .filter((item) => item.role === 'sales' || item.role === 'executive')
+        .map((item) => item.id)
+      expect([...assistantVisible].sort()).toEqual([...salesBusinessUsers].sort())
+      expect(assistantVisible).not.toContain(adminId)
+      expect(assistantVisible).not.toContain(assistantId)
     })
   })
 })

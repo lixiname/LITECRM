@@ -64,8 +64,17 @@ export class AccessService {
   async getVisibleUserIds(actor: { id: string; role: Role }): Promise<string[]> {
     const scope = ROLE_DATA_SCOPE[actor.role]
     if (scope === 'self') return [actor.id]
-    const all = await db.select({ id: users.id, reportsToId: users.reportsToId }).from(users)
-    if (scope === 'full') return all.map((u) => u.id)
+    const all = await db
+      .select({ id: users.id, role: users.role, reportsToId: users.reportsToId })
+      .from(users)
+    if (scope === 'full') {
+      // admin 的 full 是全部账号；assistant 的 full 是全部销售经营人员。
+      // 不按 isActive 过滤，确保离职/停用销售名下的历史经营数据仍可查询。
+      if (actor.role === 'assistant') {
+        return all.filter((u) => u.role === 'sales' || u.role === 'executive').map((u) => u.id)
+      }
+      return all.map((u) => u.id)
+    }
     return computeTeamVisibleIds(all, actor.id)
   }
 

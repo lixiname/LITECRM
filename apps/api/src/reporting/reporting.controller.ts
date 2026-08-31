@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger'
 import { PermissionsGuard } from '../access/permissions.guard'
-import { RequirePermission } from '../access/require-permission.decorator'
+import { RequireAnyPermission, RequirePermission } from '../access/require-permission.decorator'
 import { CurrentUser } from '../auth/current-user.decorator'
 import type { AuthUser } from '../auth/auth.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
@@ -11,7 +11,7 @@ import { ReportingService } from './reporting.service'
 @ApiTags('reporting')
 @Controller('reporting')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@RequirePermission('dashboard.view')
+@RequireAnyPermission('dashboard.view', 'stats.view')
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
@@ -35,6 +35,7 @@ export class ReportingController {
 
   @Get('my-pipeline')
   @RequirePermission()
+  @RequireAnyPermission()
   @ApiOkResponse({ description: '当前登录人的开放商机金额构成与健康度摘要' })
   myPipeline(@CurrentUser() user: AuthUser) {
     return this.reportingService.myPipeline(user)

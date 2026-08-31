@@ -6,6 +6,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     requiresAbility?: Ability
+    requiresAnyAbility?: Ability[]
     guestOnly?: boolean
     title?: string
   }
@@ -31,7 +32,9 @@ const router = createRouter({
           path: '',
           redirect: () => {
             const auth = useAuthStore()
-            if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
+            if (auth.hasAnyAbility(['dashboard.view', 'stats.view'])) {
+              return { name: 'management-dashboard' }
+            }
             if (auth.hasAbility('customer.write')) return { name: 'week-view' }
             return { name: 'customers' }
           },
@@ -40,7 +43,10 @@ const router = createRouter({
           path: 'management',
           name: 'management-dashboard',
           component: () => import('@/pages/ManagementDashboardPage.vue'),
-          meta: { title: '管理看板', requiresAbility: 'dashboard.view' },
+          meta: {
+            title: '管理看板',
+            requiresAnyAbility: ['dashboard.view', 'stats.view'],
+          },
         },
         {
           path: 'customers',
@@ -140,11 +146,18 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'login' }
   if (to.meta.requiresAbility && !auth.hasAbility(to.meta.requiresAbility)) {
-    if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
+    if (auth.hasAnyAbility(['dashboard.view', 'stats.view'])) {
+      return { name: 'management-dashboard' }
+    }
+    return { name: 'customers' }
+  }
+  if (to.meta.requiresAnyAbility && !auth.hasAnyAbility(to.meta.requiresAnyAbility)) {
     return { name: 'customers' }
   }
   if (to.meta.guestOnly && auth.isLoggedIn) {
-    if (auth.hasAbility('dashboard.view')) return { name: 'management-dashboard' }
+    if (auth.hasAnyAbility(['dashboard.view', 'stats.view'])) {
+      return { name: 'management-dashboard' }
+    }
     if (auth.hasAbility('customer.write')) return { name: 'week-view' }
     return { name: 'customers' }
   }

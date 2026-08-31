@@ -42,6 +42,7 @@ interface NavItem {
   title: string
   description: string
   ability?: Ability
+  anyAbility?: Ability[]
 }
 
 interface NavGroup {
@@ -100,7 +101,7 @@ const navGroups: NavGroup[] = [
         icon: 'management',
         title: '经营分析',
         description: '团队、商机与重点客户',
-        ability: 'dashboard.view',
+        anyAbility: ['dashboard.view', 'stats.view'],
       },
       {
         index: '/claims',
@@ -143,7 +144,11 @@ const visibleNavGroups = computed(() =>
   navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.ability || auth.hasAbility(item.ability)),
+      items: group.items.filter(
+        (item) =>
+          (!item.ability || auth.hasAbility(item.ability)) &&
+          (!item.anyAbility || auth.hasAnyAbility(item.anyAbility)),
+      ),
     }))
     .filter((group) => group.items.length > 0),
 )

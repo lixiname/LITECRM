@@ -66,7 +66,7 @@ async function handleLogin() {
   try {
     await auth.login(form.username.trim(), form.password)
     void router.push(
-      auth.hasAbility('dashboard.view')
+      auth.hasAnyAbility(['dashboard.view', 'stats.view'])
         ? '/management'
         : auth.hasAbility('customer.write')
           ? '/week-view'

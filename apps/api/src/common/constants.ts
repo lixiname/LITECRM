@@ -41,7 +41,7 @@ export const ROLE_ABILITIES: Record<Role, readonly Ability[]> = {
   admin: [...ABILITIES],
 }
 
-// 角色 → 数据范围（组织树自动推导；admin/assistant 短路为 full，§6.1）
+// 角色 → 数据范围（组织树自动推导；full 的具体可见人员仍按角色解释，§6.1）
 export const ROLE_DATA_SCOPE: Record<Role, DataScope> = {
   sales: 'self',
   executive: 'team',

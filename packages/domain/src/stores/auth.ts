@@ -43,6 +43,10 @@ export const useAuthStore = defineStore('auth', {
       (s) =>
       (ability: Ability): boolean =>
         s.capabilities.includes(ability),
+    hasAnyAbility:
+      (s) =>
+      (abilities: Ability[]): boolean =>
+        abilities.some((ability) => s.capabilities.includes(ability)),
   },
 
   actions: {

@@ -48,14 +48,16 @@ describe('AppSidebarNav', () => {
     expect(wrapper.text()).toContain('分级名额客户等级上限与人员覆盖')
   })
 
-  it('只读角色不显示填报、管理和系统入口，也不留下空分组', () => {
+  it('助理显示只读经营分析，不显示填报、审批和系统入口', () => {
     const wrapper = mountNavigation(['stats.view', 'export'])
     expect(wrapper.text()).toContain('客户与销售')
     expect(wrapper.text()).toContain('客户经营')
+    expect(wrapper.text()).toContain('管理协同')
+    expect(wrapper.text()).toContain('经营分析')
     expect(wrapper.text()).not.toContain('工作台')
     expect(wrapper.text()).not.toContain('我的工作')
     expect(wrapper.text()).not.toContain('费用记录')
-    expect(wrapper.text()).not.toContain('管理协同')
+    expect(wrapper.text()).not.toContain('客户接管')
     expect(wrapper.text()).not.toContain('系统设置')
   })
 })
