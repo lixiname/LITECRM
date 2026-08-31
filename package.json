@@ -20,6 +20,7 @@
     "db:migrate": "pnpm --filter @crm/api db:migrate",
     "db:migrate:runtime": "pnpm --filter @crm/api db:migrate:runtime",
     "db:bootstrap": "pnpm --filter @crm/api db:bootstrap",
+    "db:bootstrap:verify": "pnpm --filter @crm/api db:bootstrap:verify",
     "db:seed": "pnpm --filter @crm/api db:seed",
     "db:seed:demo": "pnpm --filter @crm/api db:seed:demo",
     "projections:check": "pnpm --filter @crm/api projections:check",

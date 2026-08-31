@@ -1,7 +1,7 @@
 // apps/api/scripts/seed.ts
-// 正式 seed 流程（M1 权限补强 + M5 字典驱动）：初始化 4 角色账号 + 组织树 + 基础字典，幂等可重复执行
+// 开发 seed 流程（M1 权限补强 + M5 字典驱动）：初始化 5 角色账号 + 组织树 + 基础字典，幂等可重复执行
 // 运行：pnpm --filter @crm/api db:seed
-// 组织树：admin → manager(executive) → sales1/sales2；assistant 独立（full 只读）
+// 组织树：management → manager(executive) → sales1/sales2；admin/assistant 独立
 import { and, eq, sql } from 'drizzle-orm'
 import * as bcrypt from 'bcryptjs'
 import { db } from '../src/common/db/db'
@@ -32,12 +32,19 @@ export const SEED_ACCOUNTS: SeedAccount[] = [
     role: 'admin',
   },
   {
+    username: 'management',
+    password: 'Crm@123456',
+    displayName: '纯管理负责人',
+    jobTitle: '总经理',
+    role: 'management',
+  },
+  {
     username: 'manager',
     password: 'Crm@123456',
     displayName: '华东销售经理',
     jobTitle: '区域销售经理',
     role: 'executive',
-    reportsTo: 'admin',
+    reportsTo: 'management',
   },
   {
     username: 'sales1',
@@ -106,7 +113,7 @@ export async function seedAccounts(): Promise<string[]> {
 export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }[] = [
   // 拜访类型（visit_type）
   { dimension: 'visit_type', name: 'new_customer', label: '新客户开发' },
-  { dimension: 'visit_type', name: 'existing_maintenance', label: '存量维护' },
+  { dimension: 'visit_type', name: 'existing_maintenance', label: '老客户维护' },
   { dimension: 'visit_type', name: 'industry_relation', label: '行业关系' },
   // 商机发现渠道（opportunity_source）
   { dimension: 'opportunity_source', name: 'referral', label: '转介绍' },
@@ -122,8 +129,8 @@ export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }
   { dimension: 'complaint_type', name: 'billing', label: '开票' },
   { dimension: 'complaint_type', name: 'other', label: '其他' },
   // 客户行业（industry）与具体领域（sub_industry）是两个正交维度，不建立父子约束。
-  { dimension: 'industry', name: 'manufacturing', label: '制造业' },
-  { dimension: 'industry', name: 'electronics', label: '电子行业' },
+  { dimension: 'industry', name: 'waste_gas_water', label: '废气废水' },
+  { dimension: 'industry', name: 'electrophoresis', label: '电泳' },
   { dimension: 'industry', name: 'electroplating', label: '电镀' },
   { dimension: 'industry', name: 'pcb', label: 'PCB' },
   { dimension: 'industry', name: 'energy_storage', label: '储能' },
@@ -140,12 +147,19 @@ export const SEED_DIMENSIONS: { dimension: string; name: string; label: string }
   { dimension: 'source', name: 'other', label: '其他' },
   // 客户类型（customer_type）
   { dimension: 'customer_type', name: 'end_user', label: '终端用户' },
-  { dimension: 'customer_type', name: 'integrator', label: '系统集成商' },
+  { dimension: 'customer_type', name: 'equipment_vendor', label: '设备商' },
+  { dimension: 'customer_type', name: 'engineering_contractor', label: '工程商' },
   { dimension: 'customer_type', name: 'dealer', label: '经销商' },
   // 产品线（product_line）
   { dimension: 'product_line', name: 'pump', label: '泵浦' },
   { dimension: 'product_line', name: 'filtration_system', label: '成套过滤设备' },
   { dimension: 'product_line', name: 'consumables', label: '滤材与耗材' },
+  { dimension: 'product_line', name: 'filter_barrel', label: '滤桶' },
+  // 成交交易性质（trade_type，可多选）
+  { dimension: 'trade_type', name: 'equipment', label: '设备' },
+  { dimension: 'trade_type', name: 'consumable', label: '耗材' },
+  { dimension: 'trade_type', name: 'part', label: '配件' },
+  { dimension: 'trade_type', name: 'service', label: '服务' },
   // 联系人岗位类别（原始职务仍保存为自由文本）
   { dimension: 'contact_function', name: 'business_owner', label: '企业负责人' },
   { dimension: 'contact_function', name: 'procurement', label: '采购／商务' },
@@ -264,13 +278,18 @@ export const CITY_GROUPS: Record<string, [string, string][]> = {
   ],
 }
 
-export const SALES_REGION_SEEDS = [
+export const SALES_REGION_SEEDS: {
+  code: string
+  name: string
+  divisionCode?: string
+}[] = [
   { code: 'jiangsu', name: '江苏', divisionCode: '320000' },
   { code: 'ningbo', name: '宁波', divisionCode: '330200' },
   { code: 'wenzhou', name: '温州', divisionCode: '330300' },
   { code: 'taizhou', name: '台州', divisionCode: '331000' },
   { code: 'guangdong', name: '广东', divisionCode: '440000' },
   { code: 'hebei', name: '河北', divisionCode: '130000' },
+  { code: 'pump', name: '泵浦' },
 ]
 
 export async function seedGeography(): Promise<void> {
@@ -305,13 +324,15 @@ export async function seedGeography(): Promise<void> {
         set: { name: region.name, sortOrder, isActive: true },
       })
       .returning({ id: salesRegions.id })
-    await db
-      .insert(salesRegionAreas)
-      .values({ salesRegionId: saved.id, divisionCode: region.divisionCode })
-      .onConflictDoUpdate({
-        target: salesRegionAreas.divisionCode,
-        set: { salesRegionId: saved.id },
-      })
+    if (region.divisionCode) {
+      await db
+        .insert(salesRegionAreas)
+        .values({ salesRegionId: saved.id, divisionCode: region.divisionCode })
+        .onConflictDoUpdate({
+          target: salesRegionAreas.divisionCode,
+          set: { salesRegionId: saved.id },
+        })
+    }
   }
 
   // 兼容历史名称字段：能精确匹配的旧客户补齐稳定编码和销售大区。
