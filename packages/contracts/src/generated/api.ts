@@ -1178,6 +1178,8 @@ export interface components {
             username: string;
             /** @description 显示名 */
             displayName: string;
+            /** @description 人员职位（界面身份回显） */
+            jobTitle?: string | null;
             /** @description 角色 */
             role: components["schemas"]["Role"];
         };
@@ -1226,6 +1228,8 @@ export interface components {
             username: string;
             /** @description 显示名 */
             displayName: string;
+            /** @description 人员职位 */
+            jobTitle?: string | null;
             /** @description 角色 */
             role: components["schemas"]["Role"];
             /** @description 手机号（钉钉绑定预留） */
@@ -1253,6 +1257,8 @@ export interface components {
             password: string;
             /** @description 显示名 */
             displayName: string;
+            /** @description 人员职位（仅用于身份展示，不参与权限） */
+            jobTitle?: string;
             /** @description 角色 */
             role: components["schemas"]["Role"];
             /** @description 直属上级 ID（组织树） */
@@ -1267,6 +1273,8 @@ export interface components {
             version: number;
             /** @description 显示名 */
             displayName?: string;
+            /** @description 人员职位（null=未设置，不参与权限） */
+            jobTitle?: string | null;
             /** @description 角色 */
             role?: components["schemas"]["Role"];
             /** @description 直属上级 ID（组织树，null=顶层） */

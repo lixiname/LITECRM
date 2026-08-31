@@ -15,7 +15,7 @@
           <span class="app-layout__avatar" aria-hidden="true">{{ userInitial }}</span>
           <span class="app-layout__identity">
             <strong>{{ auth.user?.displayName }}</strong>
-            <small>{{ roleLabel }}</small>
+            <small>{{ auth.user?.jobTitle ?? '职位未设置' }}</small>
           </span>
           <el-button link class="app-layout__logout" @click="handleLogout">退出</el-button>
         </div>
@@ -48,16 +48,6 @@ const sectionLabel = computed(() => {
   return '系统设置'
 })
 const userInitial = computed(() => auth.user?.displayName?.slice(0, 1) ?? '用')
-const roleLabel = computed(() => {
-  const labels = {
-    sales: '销售人员',
-    executive: '管理人员',
-    assistant: '协同人员',
-    admin: '系统管理员',
-  }
-  return auth.user?.role ? labels[auth.user.role] : ''
-})
-
 function handleLogout() {
   auth.logout()
   void router.push('/login')

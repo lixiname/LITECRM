@@ -2468,6 +2468,11 @@
             "type": "string",
             "description": "显示名"
           },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "人员职位（界面身份回显）"
+          },
           "role": {
             "description": "角色",
             "allOf": [
@@ -2592,6 +2597,11 @@
             "type": "string",
             "description": "显示名"
           },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "人员职位"
+          },
           "role": {
             "description": "角色",
             "allOf": [
@@ -2651,6 +2661,10 @@
             "type": "string",
             "description": "显示名"
           },
+          "jobTitle": {
+            "type": "string",
+            "description": "人员职位（仅用于身份展示，不参与权限）"
+          },
           "role": {
             "description": "角色",
             "allOf": [
@@ -2684,6 +2698,11 @@
           "displayName": {
             "type": "string",
             "description": "显示名"
+          },
+          "jobTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "人员职位（null=未设置，不参与权限）"
           },
           "role": {
             "description": "角色",

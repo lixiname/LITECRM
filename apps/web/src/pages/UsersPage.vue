@@ -10,10 +10,13 @@
       <el-table v-if="!error && users?.length" v-loading="loading" :data="users" border>
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="displayName" label="显示名" min-width="120" />
+        <el-table-column prop="jobTitle" label="职位" min-width="120">
+          <template #default="{ row }">{{ (row as User).jobTitle ?? '未设置' }}</template>
+        </el-table-column>
         <el-table-column label="上级" min-width="130">
           <template #default="{ row }">{{ getUserName((row as User).reportsToId) }}</template>
         </el-table-column>
-        <el-table-column label="角色" min-width="100">
+        <el-table-column label="系统角色" min-width="100">
           <template #default="{ row }">
             {{ ROLE_LABELS[row.role as Role] }}
           </template>
@@ -70,7 +73,16 @@
         <el-form-item label="显示名" required>
           <el-input v-model="dialog.displayName" placeholder="显示名称" />
         </el-form-item>
-        <el-form-item label="角色" required>
+        <el-form-item label="职位">
+          <el-input
+            v-model="dialog.jobTitle"
+            maxlength="50"
+            show-word-limit
+            placeholder="例如：销售工程师、区域销售经理"
+          />
+          <small class="users__field-help">仅用于身份展示，不影响系统权限</small>
+        </el-form-item>
+        <el-form-item label="系统角色" required>
           <el-select v-model="dialog.role" style="width: 100%">
             <el-option
               v-for="(label, value) in ROLE_LABELS"
@@ -155,6 +167,7 @@ const dialog = reactive({
   username: '',
   password: '',
   displayName: '',
+  jobTitle: '',
   role: 'sales' as Role,
   reportsToId: '',
   phone: '',
@@ -184,6 +197,7 @@ function openAdd() {
   dialog.username = ''
   dialog.password = ''
   dialog.displayName = ''
+  dialog.jobTitle = ''
   dialog.role = 'sales'
   dialog.reportsToId = ''
   dialog.phone = ''
@@ -198,6 +212,7 @@ function openEdit(u: User) {
   dialog.username = u.username
   dialog.password = ''
   dialog.displayName = u.displayName
+  dialog.jobTitle = u.jobTitle ?? ''
   dialog.role = u.role as Role
   dialog.reportsToId = u.reportsToId ?? ''
   dialog.phone = u.phone ?? ''
@@ -224,6 +239,7 @@ async function saveUser() {
       const dto: UpdateUserInput = {
         version: dialog.version,
         displayName,
+        jobTitle: dialog.jobTitle.trim() || null,
         role: dialog.role,
         reportsToId: dialog.reportsToId || null,
         phone: dialog.phone.trim() || undefined,
@@ -236,6 +252,7 @@ async function saveUser() {
         username: dialog.username.trim(),
         password: dialog.password,
         displayName,
+        jobTitle: dialog.jobTitle.trim() || undefined,
         role: dialog.role,
         reportsToId: dialog.reportsToId || undefined,
         phone: dialog.phone.trim() || undefined,
@@ -313,5 +330,11 @@ async function resetPassword(user: User) {
 .users__card {
   width: 100%;
   max-width: none;
+}
+.users__field-help {
+  display: block;
+  margin-top: 4px;
+  color: var(--crm-color-text-tertiary);
+  line-height: 1.4;
 }
 </style>

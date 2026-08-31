@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator'
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator'
 import { ROLES, type Role } from '../../common/constants'
 
 // 创建用户（admin，user.manage）：密码 ≥8 位，角色限定枚举
@@ -18,6 +18,12 @@ export class CreateUserDto {
   @IsString()
   @MinLength(1, { message: '显示名不能为空' })
   displayName!: string
+
+  @ApiPropertyOptional({ description: '人员职位（仅用于身份展示，不参与权限）' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  jobTitle?: string
 
   @ApiProperty({ description: '角色', enum: ROLES, enumName: 'Role' })
   @IsIn(ROLES)

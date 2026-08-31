@@ -18,16 +18,24 @@ export interface SeedAccount {
   username: string
   password: string
   displayName: string
+  jobTitle: string
   role: string
   reportsTo?: string // 上级用户名（组织树）
 }
 
 export const SEED_ACCOUNTS: SeedAccount[] = [
-  { username: 'admin', password: 'Admin@123456', displayName: '系统管理员', role: 'admin' },
+  {
+    username: 'admin',
+    password: 'Admin@123456',
+    displayName: '系统管理员',
+    jobTitle: '系统管理员',
+    role: 'admin',
+  },
   {
     username: 'manager',
     password: 'Crm@123456',
     displayName: '华东销售经理',
+    jobTitle: '区域销售经理',
     role: 'executive',
     reportsTo: 'admin',
   },
@@ -35,6 +43,7 @@ export const SEED_ACCOUNTS: SeedAccount[] = [
     username: 'sales1',
     password: 'Crm@123456',
     displayName: '销售甲',
+    jobTitle: '销售工程师',
     role: 'sales',
     reportsTo: 'manager',
   },
@@ -42,10 +51,17 @@ export const SEED_ACCOUNTS: SeedAccount[] = [
     username: 'sales2',
     password: 'Crm@123456',
     displayName: '销售乙',
+    jobTitle: '销售工程师',
     role: 'sales',
     reportsTo: 'manager',
   },
-  { username: 'assistant', password: 'Crm@123456', displayName: '业务助理', role: 'assistant' },
+  {
+    username: 'assistant',
+    password: 'Crm@123456',
+    displayName: '业务助理',
+    jobTitle: '销售内勤',
+    role: 'assistant',
+  },
 ]
 
 // 幂等：账号已存在则更新（displayName/密码/角色/上级/启用），不存在的则插入
@@ -64,6 +80,7 @@ export async function seedAccounts(): Promise<string[]> {
       .values({
         username: acc.username,
         displayName: acc.displayName,
+        jobTitle: acc.jobTitle,
         passwordHash,
         role: acc.role,
         reportsToId,
@@ -72,6 +89,7 @@ export async function seedAccounts(): Promise<string[]> {
         target: users.username,
         set: {
           displayName: acc.displayName,
+          jobTitle: acc.jobTitle,
           passwordHash,
           role: acc.role,
           reportsToId,

@@ -12,6 +12,9 @@ export class UserDto {
   @ApiProperty({ description: '显示名' })
   displayName!: string
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: '人员职位' })
+  jobTitle!: string | null
+
   @ApiProperty({ description: '角色', enum: ROLES, enumName: 'Role' })
   role!: Role
 

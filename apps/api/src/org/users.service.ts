@@ -34,6 +34,7 @@ export class UsersService {
         username: dto.username,
         passwordHash,
         displayName: dto.displayName,
+        jobTitle: normalizeJobTitle(dto.jobTitle),
         role: dto.role,
         reportsToId: dto.reportsToId ?? null,
         phone: dto.phone ?? null,
@@ -64,6 +65,7 @@ export class UsersService {
       .update(users)
       .set({
         displayName: dto.displayName ?? existing.displayName,
+        jobTitle: dto.jobTitle === undefined ? existing.jobTitle : normalizeJobTitle(dto.jobTitle),
         role: dto.role ?? existing.role,
         reportsToId: dto.reportsToId === undefined ? existing.reportsToId : dto.reportsToId,
         phone: dto.phone === undefined ? existing.phone : dto.phone,
@@ -107,6 +109,7 @@ export class UsersService {
         id: users.id,
         username: users.username,
         displayName: users.displayName,
+        jobTitle: users.jobTitle,
         role: users.role,
         phone: users.phone,
         reportsToId: users.reportsToId,
@@ -137,6 +140,7 @@ type UserRow = Pick<
   | 'id'
   | 'username'
   | 'displayName'
+  | 'jobTitle'
   | 'role'
   | 'phone'
   | 'reportsToId'
@@ -151,6 +155,7 @@ export function toUserDto(u: UserRow) {
     id: u.id,
     username: u.username,
     displayName: u.displayName,
+    jobTitle: u.jobTitle,
     role: u.role as Role,
     phone: u.phone,
     reportsToId: u.reportsToId,
@@ -160,4 +165,9 @@ export function toUserDto(u: UserRow) {
     createdAt: u.createdAt,
     version: u.version,
   }
+}
+
+function normalizeJobTitle(value: string | null | undefined): string | null {
+  const normalized = value?.trim()
+  return normalized ? normalized : null
 }

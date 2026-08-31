@@ -68,6 +68,7 @@ export class AuthService {
         id: user.id,
         username: user.username,
         displayName: user.displayName,
+        jobTitle: user.jobTitle,
         role: user.role,
       },
       accessToken: tokens.access,

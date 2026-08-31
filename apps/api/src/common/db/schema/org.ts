@@ -26,6 +26,7 @@ export const users = pgTable(
     ...baseColumns,
     username: text('username').notNull(),
     displayName: text('display_name').notNull(),
+    jobTitle: text('job_title'), // 人员职位：只用于身份回显，不参与权限与数据范围推导
     phone: text('phone'), // 钉钉绑定预留（§9.1）
     passwordHash: text('password_hash').notNull(),
     tokenVersion: integer('token_version').default(0).notNull(), // 改密/停用使 token 失效（§6.5）

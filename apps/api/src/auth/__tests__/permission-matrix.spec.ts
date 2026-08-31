@@ -36,7 +36,7 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
     expect(res.status).toBe(200)
     return res.body as {
       accessToken: string
-      user: { role: string }
+      user: { role: string; jobTitle: string | null }
       capabilities: string[]
       dataScope: string
     }
@@ -60,6 +60,7 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
     it('executive：team 范围 + 经营看板，无系统配置', async () => {
       const res = await login('manager', 'Crm@123456')
       expect(res.user.role).toBe('executive')
+      expect(res.user.jobTitle).toBe('区域销售经理')
       expect(res.dataScope).toBe('team')
       expect(res.capabilities).toContain('dashboard.view')
       expect(res.capabilities).toContain('customer.write')
@@ -69,6 +70,7 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
     it('sales：self 范围 + 基础填报，无经营看板', async () => {
       const res = await login('sales1', 'Crm@123456')
       expect(res.user.role).toBe('sales')
+      expect(res.user.jobTitle).toBe('销售工程师')
       expect(res.dataScope).toBe('self')
       expect(res.capabilities).toContain('customer.write')
       expect(res.capabilities).toContain('customer.transfer')

@@ -118,7 +118,7 @@ const navGroups: NavGroup[] = [
         index: '/users',
         icon: 'users',
         title: '用户与组织',
-        description: '账号、角色与组织关系',
+        description: '账号、职位与组织关系',
         ability: 'user.manage',
       },
       {

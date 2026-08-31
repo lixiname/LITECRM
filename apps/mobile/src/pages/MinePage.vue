@@ -75,7 +75,7 @@
     <van-cell-group inset title="当前用户" class="mine__profile">
       <van-cell title="姓名" :value="auth.user?.displayName" />
       <van-cell title="账号" :value="auth.user?.username" />
-      <van-cell title="角色" :value="ROLE_LABELS[auth.user?.role ?? 'sales']" />
+      <van-cell title="职位" :value="auth.user?.jobTitle ?? '未设置'" />
       <van-cell title="数据范围" :value="DATA_SCOPE_LABELS[auth.dataScope ?? 'self']" />
     </van-cell-group>
 
@@ -104,7 +104,6 @@ import {
   getSalesPlan,
   listAlerts,
   markAlertRead,
-  ROLE_LABELS,
   useAuthStore,
   useQuery,
   type SalesPlan,

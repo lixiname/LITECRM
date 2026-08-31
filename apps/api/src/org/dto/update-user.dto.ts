@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator'
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+} from 'class-validator'
 import { ROLES, type Role } from '../../common/constants'
 
 // 更新用户（admin，user.manage）：字段均可选
@@ -13,6 +22,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   displayName?: string
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: '人员职位（null=未设置，不参与权限）',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  jobTitle?: string | null
 
   @ApiPropertyOptional({ description: '角色', enum: ROLES, enumName: 'Role' })
   @IsOptional()
