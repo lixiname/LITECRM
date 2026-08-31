@@ -78,6 +78,9 @@
         <el-descriptions-item label="成交时间">{{
           formatTime(opp.deal.occurredAt)
         }}</el-descriptions-item>
+        <el-descriptions-item label="交易性质">{{
+          tradeTypeLabel(opp.deal.tradeTypes)
+        }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
@@ -147,6 +150,9 @@ const { data: sourceOptions } = useQuery('catalog:opportunity_source', () =>
 const { data: productLineOptions } = useQuery('catalog:product_line', () =>
   listDimensionOptions('product_line'),
 )
+const { data: tradeTypeOptions } = useQuery('catalog:trade_type', () =>
+  listDimensionOptions('trade_type'),
+)
 const commands = ref<InstanceType<typeof OpportunityCommandDialogs>>()
 const routeCommandOpened = ref(false)
 const isOpen = computed(() => opp.value?.stage === 'intent' || opp.value?.stage === 'following')
@@ -180,6 +186,12 @@ function productLineLabel(productLines: string[]): string {
     .map(
       (value) => productLineOptions.value?.find((option) => option.name === value)?.label ?? value,
     )
+    .join('、')
+}
+function tradeTypeLabel(tradeTypes: string[]): string {
+  if (!tradeTypes.length) return '-'
+  return tradeTypes
+    .map((value) => tradeTypeOptions.value?.find((option) => option.name === value)?.label ?? value)
     .join('、')
 }
 function formatTime(value: string | undefined | null): string {

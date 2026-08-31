@@ -162,7 +162,7 @@ export interface Deal {
   id: string
   customerId: string
   amount: string
-  tradeType: string | null
+  tradeTypes: string[]
   occurredAt: string
   sourceOpportunityId: string
   sourceQuoteId: string | null

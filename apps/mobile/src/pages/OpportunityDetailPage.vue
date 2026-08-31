@@ -51,6 +51,7 @@
       >
         <van-cell title="成交金额" :value="money(opportunity.deal.amount)" />
         <van-cell title="客户下单时间" :value="dateTime(opportunity.deal.occurredAt)" />
+        <van-cell title="交易性质" :value="tradeTypeLabel(opportunity.deal.tradeTypes)" />
       </van-cell-group>
 
       <van-cell-group inset title="商机动态" class="opportunity-detail__section">
@@ -99,6 +100,15 @@
         />
         <van-field v-model="winSheet.occurredAt" label="下单日期" type="date" required />
         <van-field v-model="winSheet.amount" label="成交金额" type="number" required />
+        <van-field label="交易性质">
+          <template #input>
+            <van-checkbox-group v-model="winSheet.tradeTypes" direction="horizontal">
+              <van-checkbox v-for="option in tradeTypeOptions" :key="option.id" :name="option.name">
+                {{ option.label }}
+              </van-checkbox>
+            </van-checkbox-group>
+          </template>
+        </van-field>
         <van-field v-model="winSheet.note" label="备注" placeholder="可选" />
         <van-button block round type="success" native-type="submit" :loading="acting">
           确认成交
@@ -140,6 +150,7 @@ import { showConfirmDialog, showToast } from 'vant'
 import {
   closeOpportunity,
   getOpportunity,
+  listDimensionOptions,
   OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
   OPPORTUNITY_INITIAL_AMOUNT_BASIS_OPTIONS,
   OPPORTUNITY_RISK_LABELS,
@@ -149,6 +160,7 @@ import {
   winOpportunity,
   type OpportunityActivityItem,
   type OpportunityStage,
+  type DimensionOption,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -166,8 +178,15 @@ const winSheet = reactive({
   visible: false,
   occurredAt: localInput(new Date()),
   amount: '',
+  tradeTypes: [] as string[],
   note: '',
 })
+const tradeTypeOptions = ref<DimensionOption[]>([])
+void listDimensionOptions('trade_type')
+  .then((options) => {
+    tradeTypeOptions.value = options.filter((option) => option.isActive)
+  })
+  .catch(() => undefined)
 const closeSheet = reactive({
   visible: false,
   result: 'lost' as 'lost' | 'demand_disappeared',
@@ -190,6 +209,7 @@ function openWin() {
   const quote = currentQuote.value
   winSheet.occurredAt = localInput(new Date())
   winSheet.amount = quote?.amount ?? opportunity.value?.referenceAmount ?? ''
+  winSheet.tradeTypes = []
   winSheet.note = ''
   winSheet.visible = true
 }
@@ -219,6 +239,7 @@ async function submitWin() {
       version: opportunity.value.version,
       occurredAt: winSheet.occurredAt,
       amount: Number(winSheet.amount),
+      tradeTypes: winSheet.tradeTypes,
       note: winSheet.note.trim() || undefined,
     })
     showToast('成交已确认')
@@ -295,6 +316,12 @@ function money(value?: string | null): string {
   return value === undefined || value === null || value === ''
     ? '-'
     : `¥${Number(value).toLocaleString('zh-CN')}`
+}
+function tradeTypeLabel(tradeTypes: string[]): string {
+  if (!tradeTypes.length) return '-'
+  return tradeTypes
+    .map((value) => tradeTypeOptions.value.find((option) => option.name === value)?.label ?? value)
+    .join('、')
 }
 function dateTime(value?: string | null): string {
   if (!value) return '-'

@@ -32,7 +32,7 @@ export const users = pgTable(
     tokenVersion: integer('token_version').default(0).notNull(), // 改密/停用使 token 失效（§6.5）
     loginFailedCount: integer('login_failed_count').default(0).notNull(), // 防爆破
     lockedUntil: timestamp('locked_until', { withTimezone: true }), // 锁定截止（null=未锁）
-    role: text('role').notNull(), // sales/executive/assistant/admin
+    role: text('role').notNull(), // sales/executive/management/assistant/admin
     reportsToId: uuid('reports_to_id'), // 汇报树单源（§6.1），外键在 extra config 定义（自引用）
     salesRegionId: uuid('sales_region_id').references(() => salesRegions.id), // 人员所属管理大区，只用于统计分组，不进权限模型
     isActive: boolean('is_active').default(true).notNull(),
@@ -40,7 +40,10 @@ export const users = pgTable(
   },
   (table) => [
     uniqueIndex('users_username_uq').on(table.username),
-    check('users_role_check', sql`${table.role} in ('sales','executive','assistant','admin')`),
+    check(
+      'users_role_check',
+      sql`${table.role} in ('sales','executive','management','assistant','admin')`,
+    ),
     // 自引用外键：汇报树（引用 users 自身，须放 extra config 避免 TS 循环推断）
     foreignKey({
       columns: [table.reportsToId],

@@ -1154,7 +1154,7 @@ export interface components {
          * @description 角色
          * @enum {string}
          */
-        Role: "sales" | "executive" | "assistant" | "admin";
+        Role: "sales" | "executive" | "management" | "assistant" | "admin";
         AuthUserDto: {
             /** @description 用户 ID */
             id: string;
@@ -1722,8 +1722,8 @@ export interface components {
             /** @description 成交金额 */
             amount: number;
             productLine?: string;
-            /** @description 交易性质（字典：trade_type） */
-            tradeType?: string;
+            /** @description 交易性质（字典：trade_type，可多选） */
+            tradeTypes?: string[];
             note?: string;
         };
         CloseOpportunityDto: {

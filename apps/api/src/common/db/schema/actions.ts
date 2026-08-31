@@ -209,7 +209,7 @@ export const deals = pgTable(
     occurredAt: date('occurred_at').notNull(),
     amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
     productLine: text('product_line'),
-    tradeType: text('trade_type'),
+    tradeTypes: jsonb('trade_types').$type<string[]>().default([]).notNull(),
     note: text('note'),
     sourceOpportunityId: uuid('source_opportunity_id')
       .notNull()
@@ -219,7 +219,6 @@ export const deals = pgTable(
     entryRefId: uuid('entry_ref_id'),
   },
   (table) => [
-    check('deals_trade_type_check_hidden', sql`true`),
     uniqueIndex('deals_source_opportunity_uq').on(table.sourceOpportunityId),
     index('deals_customer_idx').on(table.customerId),
   ],

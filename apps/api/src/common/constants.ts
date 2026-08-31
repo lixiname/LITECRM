@@ -1,7 +1,7 @@
 // 权限基础设施：角色、能力点、数据范围（规格 §6.1 / §6.2）
 // 混合访问控制：RBAC 管操作（能力点）× 组织树管数据范围，服务端唯一裁决
 
-export const ROLES = ['sales', 'executive', 'assistant', 'admin'] as const
+export const ROLES = ['sales', 'executive', 'management', 'assistant', 'admin'] as const
 export type Role = (typeof ROLES)[number]
 
 export const DATA_SCOPES = ['self', 'team', 'full'] as const
@@ -17,7 +17,7 @@ export const ABILITIES = [
   'customer.restore', // 恢复无效客户（区域负责人/管理员）
   'customer.import', // 客户 Excel 批量导入（管理员）
   'approve.claim', // 接管审批
-  'dashboard.view', // 经营看板（漏斗/储备/转化，方案 A 专属 executive）
+  'dashboard.view', // 经营看板（executive / management 按组织树查看）
   'stats.view', // 全量统计（只读）
   'export', // 导出
   'user.manage', // 系统配置/用户管理
@@ -37,6 +37,7 @@ export const ROLE_ABILITIES: Record<Role, readonly Ability[]> = {
     'approve.claim',
     'dashboard.view',
   ],
+  management: ['dashboard.view'],
   assistant: ['stats.view', 'export'],
   admin: [...ABILITIES],
 }
@@ -45,6 +46,7 @@ export const ROLE_ABILITIES: Record<Role, readonly Ability[]> = {
 export const ROLE_DATA_SCOPE: Record<Role, DataScope> = {
   sales: 'self',
   executive: 'team',
+  management: 'team',
   assistant: 'full',
   admin: 'full',
 }

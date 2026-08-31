@@ -173,7 +173,9 @@ export class OpportunityCommandsService {
   async win(id: string, dto: WinOpportunityDto, actor: AuthUser) {
     const opportunity = await this.opportunityAccess.getEditable(id, actor)
     this.opportunityAccess.assertOpen(opportunity.stage)
-    if (dto.tradeType) await this.catalogService.assertDimensionValue('trade_type', dto.tradeType)
+    for (const tradeType of dto.tradeTypes ?? []) {
+      await this.catalogService.assertDimensionValue('trade_type', tradeType)
+    }
 
     try {
       return await db.transaction(async (tx) => {
@@ -216,7 +218,7 @@ export class OpportunityCommandsService {
             occurredAt,
             amount: String(dto.amount),
             productLine: dto.productLine ?? null,
-            tradeType: dto.tradeType ?? null,
+            tradeTypes: dto.tradeTypes ?? [],
             note: dto.note ?? null,
             sourceOpportunityId: id,
             sourceQuoteId: currentQuote?.id ?? null,

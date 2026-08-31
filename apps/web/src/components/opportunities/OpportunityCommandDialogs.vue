@@ -85,6 +85,13 @@
       <el-form-item label="成交金额" required
         ><el-input v-model.number="winForm.amount" type="number"
       /></el-form-item>
+      <el-form-item label="交易性质">
+        <el-checkbox-group v-model="winForm.tradeTypes">
+          <el-checkbox v-for="option in tradeTypeOptions" :key="option.id" :value="option.name">
+            {{ option.label }}
+          </el-checkbox>
+        </el-checkbox-group>
+      </el-form-item>
     </el-form>
     <el-alert
       type="info"
@@ -121,10 +128,12 @@ import { ElMessage } from 'element-plus'
 import {
   addOpportunityFollowUp,
   closeOpportunity,
+  listDimensionOptions,
   OPPORTUNITY_FOLLOW_UP_METHOD_OPTIONS,
   winOpportunity,
   type OpportunityDetail,
   type OpportunityQuote,
+  type DimensionOption,
   type SalesPlan,
 } from '@crm/domain'
 
@@ -153,7 +162,9 @@ const quoteForm = reactive({
 const winForm = reactive({
   occurredAt: localDate(new Date()),
   amount: undefined as number | undefined,
+  tradeTypes: [] as string[],
 })
+const tradeTypeOptions = ref<DimensionOption[]>([])
 const closeForm = reactive({ result: 'lost' as 'lost' | 'demand_disappeared', reason: '' })
 const activeQuotes = computed(() =>
   props.opportunity.quotes.filter((quote) => quote.status === 'active'),
@@ -177,6 +188,14 @@ function openProgress(plan?: SalesPlan, occurredDate?: string) {
 function openWin() {
   const quote = currentQuote.value
   winForm.amount = quote ? Number(quote.amount) : undefined
+  winForm.tradeTypes = []
+  if (!tradeTypeOptions.value.length) {
+    void listDimensionOptions('trade_type')
+      .then((options) => {
+        tradeTypeOptions.value = options.filter((option) => option.isActive)
+      })
+      .catch(() => undefined)
+  }
   showWin.value = true
 }
 function openClose() {
@@ -245,6 +264,7 @@ async function handleWin() {
         version: props.opportunity.version,
         occurredAt: winForm.occurredAt,
         amount: winForm.amount!,
+        tradeTypes: winForm.tradeTypes,
       }),
     '成交已确认',
   )

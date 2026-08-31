@@ -6,6 +6,7 @@ export type Role = components['schemas']['Role']
 export const ROLE_LABELS: Record<Role, string> = {
   sales: '销售',
   executive: '经理',
+  management: '纯管理',
   assistant: '助理',
   admin: '管理员',
 }

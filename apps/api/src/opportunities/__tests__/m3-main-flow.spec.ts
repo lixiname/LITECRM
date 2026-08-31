@@ -237,6 +237,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
         version: afterQuote.body.version,
         occurredAt: '2026-09-03',
         amount: 620000,
+        tradeTypes: ['equipment', 'service'],
       })
     expect(won.status).toBe(201)
     expect(won.body.opportunity.stage).toBe('won')
@@ -249,6 +250,7 @@ describe('M3 主链路（登录→建客户→拜访→商机→成交）', () =
       .limit(1)
     expect(deal).toBeDefined()
     expect(Number(deal.amount)).toBe(620000)
+    expect(deal.tradeTypes).toEqual(['equipment', 'service'])
     expect(deal.sourceQuoteId).toBe(formalQuote.body.id)
 
     const [opp] = await db.select().from(opportunities).where(eq(opportunities.id, oppId)).limit(1)

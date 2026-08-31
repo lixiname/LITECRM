@@ -11,7 +11,7 @@ import { users } from '../../common/db/schema'
 
 // 权限矩阵（M1 多角色端到端）：真实 DB + 完整 Nest 应用（含全局 prefix/校验管道）
 // 依赖：本地 docker db 或 CI postgres service；beforeAll 幂等 seed
-describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', () => {
+describe('权限矩阵（§6.1/6.2：5 角色 × 能力点 × 数据范围）', () => {
   let app: INestApplication
   let accessService: AccessService
 
@@ -64,6 +64,15 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
       expect(res.dataScope).toBe('team')
       expect(res.capabilities).toContain('dashboard.view')
       expect(res.capabilities).toContain('customer.write')
+      expect(res.capabilities).not.toContain('user.manage')
+    })
+
+    it('management：team 范围 + 经营看板，无业务填报', async () => {
+      const res = await login('management', 'Crm@123456')
+      expect(res.user.role).toBe('management')
+      expect(res.dataScope).toBe('team')
+      expect(res.capabilities).toContain('dashboard.view')
+      expect(res.capabilities).not.toContain('customer.write')
       expect(res.capabilities).not.toContain('user.manage')
     })
 
@@ -196,7 +205,10 @@ describe('权限矩阵（§6.1/6.2：4 角色 × 能力点 × 数据范围）', 
         role: 'assistant',
       })
       const salesBusinessUsers = all
-        .filter((item) => item.role === 'sales' || item.role === 'executive')
+        .filter(
+          (item) =>
+            item.role === 'sales' || item.role === 'executive' || item.role === 'management',
+        )
         .map((item) => item.id)
       expect([...assistantVisible].sort()).toEqual([...salesBusinessUsers].sort())
       expect(assistantVisible).not.toContain(adminId)

@@ -2466,7 +2466,7 @@
       },
       "Role": {
         "type": "string",
-        "enum": ["sales", "executive", "assistant", "admin"],
+        "enum": ["sales", "executive", "management", "assistant", "admin"],
         "description": "角色"
       },
       "AuthUserDto": {
@@ -3843,9 +3843,12 @@
           "productLine": {
             "type": "string"
           },
-          "tradeType": {
-            "type": "string",
-            "description": "交易性质（字典：trade_type）"
+          "tradeTypes": {
+            "description": "交易性质（字典：trade_type，可多选）",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "note": {
             "type": "string"

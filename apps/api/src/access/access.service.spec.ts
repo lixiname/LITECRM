@@ -7,12 +7,15 @@ describe('AccessService 权限语义（§6.1 / §6.2）', () => {
   it('数据范围按角色推导', () => {
     expect(service.getDataScope('sales')).toBe('self')
     expect(service.getDataScope('executive')).toBe('team')
+    expect(service.getDataScope('management')).toBe('team')
     expect(service.getDataScope('assistant')).toBe('full')
     expect(service.getDataScope('admin')).toBe('full')
   })
 
-  it('能力点判定：经营看板仅 executive（方案 A）', () => {
+  it('能力点判定：executive 和 management 可查看经营看板', () => {
     expect(service.can('executive', 'dashboard.view')).toBe(true)
+    expect(service.can('management', 'dashboard.view')).toBe(true)
+    expect(service.can('management', 'customer.write')).toBe(false)
     expect(service.can('sales', 'dashboard.view')).toBe(false)
     expect(service.can('admin', 'dashboard.view')).toBe(true)
   })

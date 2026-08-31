@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator'
+import { ArrayUnique, IsArray, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator'
 import { IsBusinessDate } from '../../common/business-date'
 
 export class WinOpportunityDto {
@@ -22,10 +22,12 @@ export class WinOpportunityDto {
   @IsString()
   productLine?: string
 
-  @ApiPropertyOptional({ description: '交易性质（字典：trade_type）' })
+  @ApiPropertyOptional({ description: '交易性质（字典：trade_type，可多选）', type: [String] })
   @IsOptional()
-  @IsString()
-  tradeType?: string
+  @IsArray()
+  @ArrayUnique()
+  @IsString({ each: true })
+  tradeTypes?: string[]
 
   @ApiPropertyOptional()
   @IsOptional()
