@@ -14,12 +14,14 @@ import {
   followUpActions,
   opportunities,
   opportunityQuotes,
+  salesRegions,
   users,
   visitRecords,
 } from '../common/db/schema'
 
 const ids = {
   reportSales: '90000000-0000-4000-8000-000000000001',
+  salesRegion: '90000000-0000-4000-8000-000000000002',
   customer: '91000000-0000-4000-8000-000000000001',
   openOpportunity: '92000000-0000-4000-8000-000000000001',
   wonOpportunity: '92000000-0000-4000-8000-000000000002',
@@ -94,6 +96,7 @@ describe('管理看板 reporting 域', () => {
         .where(sql`${dailyExpenses.id} in (${ids.submittedExpense}, ${ids.draftExpense})`)
       await tx.delete(customers).where(eq(customers.id, ids.customer))
       await tx.delete(users).where(eq(users.id, ids.reportSales))
+      await tx.delete(salesRegions).where(eq(salesRegions.id, ids.salesRegion))
     })
   }
 
@@ -103,6 +106,12 @@ describe('管理看板 reporting 域', () => {
     const yesterday = new Date(now.getTime() - 86_400_000)
     const today = businessDate(now)
     await db.transaction(async (tx) => {
+      await tx.insert(salesRegions).values({
+        id: ids.salesRegion,
+        code: 'REPORT_EAST',
+        name: 'REPORT_华东大区',
+        sortOrder: 1,
+      })
       await tx.insert(users).values({
         id: ids.reportSales,
         username: 'report_sales',
@@ -110,6 +119,7 @@ describe('管理看板 reporting 域', () => {
         passwordHash: managerPasswordHash,
         role: 'sales',
         reportsToId: managerId,
+        salesRegionId: ids.salesRegion,
       })
       await tx.insert(customers).values({
         id: ids.customer,
@@ -257,6 +267,19 @@ describe('管理看板 reporting 域', () => {
       amount: 125000,
     })
     expect(pipeline.body.flow.won).toEqual({ count: 1, amount: 200000 })
+    expect(pipeline.body.byRegion).toEqual([
+      expect.objectContaining({
+        salesRegionId: ids.salesRegion,
+        salesRegionName: 'REPORT_华东大区',
+        memberCount: 1,
+        openAmount: 125000,
+        wonAmount: 200000,
+      }),
+    ])
+    expect(pipeline.body.byOwner[0]).toMatchObject({
+      ownerId: ids.reportSales,
+      salesRegionId: ids.salesRegion,
+    })
 
     const team = await request(app.getHttpServer())
       .get(`/api/reporting/team?start=${start}&end=${end}&ownerId=${ids.reportSales}`)
@@ -266,6 +289,17 @@ describe('管理看板 reporting 域', () => {
     )
     expect(sales1.visits).toBe(1)
     expect(sales1.overdueCount).toBe(1)
+    expect(sales1.salesRegionName).toBe('REPORT_华东大区')
+    expect(sales1.topPlans).toEqual([
+      expect.objectContaining({ id: ids.action, customerName: 'REPORT_重点客户' }),
+    ])
+
+    const regionFiltered = await request(app.getHttpServer())
+      .get(`/api/reporting/team?start=${start}&end=${end}&salesRegionId=${ids.salesRegion}`)
+      .set(auth)
+    expect(regionFiltered.body.members).toEqual(
+      expect.arrayContaining([expect.objectContaining({ ownerId: ids.reportSales })]),
+    )
 
     const keyCustomers = await request(app.getHttpServer())
       .get(`/api/reporting/key-customers?start=${start}&end=${end}&ownerId=${ids.reportSales}`)

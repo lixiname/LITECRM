@@ -8,11 +8,12 @@
 
     <el-card class="management-dashboard__filters" shadow="never">
       <div class="management-dashboard__filter-row">
-        <el-button-group>
+        <el-button-group v-if="activeTab !== 'team'">
           <el-button @click="setCurrentWeek">本周</el-button>
           <el-button @click="setCurrentMonth">本月</el-button>
         </el-button-group>
         <el-date-picker
+          v-if="activeTab !== 'team'"
           v-model="dateRange"
           type="daterange"
           value-format="YYYY-MM-DD"
@@ -48,6 +49,7 @@
           />
         </el-select>
         <el-select
+          v-if="activeTab !== 'team' && activeTab !== 'expenses'"
           v-model="filters.productLine"
           clearable
           placeholder="全部产品线"
@@ -62,9 +64,7 @@
         </el-select>
         <el-button :loading="loading" @click="reload">刷新</el-button>
       </div>
-      <small
-        >当前商机池按今日存量统计，不受日期范围影响；日期用于期间推进、成交、团队活动和费用。销售大区和产品线仅影响商机与重点客户。</small
-      >
+      <small>{{ filterHint }}</small>
     </el-card>
 
     <el-card class="management-dashboard__body" shadow="never">
@@ -80,7 +80,12 @@
       <div v-if="!error" v-loading="loading" class="management-dashboard__content">
         <ReportingOverviewPanel v-if="activeTab === 'overview' && overview" :data="overview" />
         <PipelineReportPanel v-else-if="activeTab === 'pipeline' && pipeline" :data="pipeline" />
-        <TeamReportPanel v-else-if="activeTab === 'team' && team" :data="team" :filters="filters" />
+        <TeamReportPanel
+          v-else-if="activeTab === 'team' && team"
+          :data="team"
+          :filters="teamEffectiveFilters"
+          @range-change="changeTeamRange"
+        />
         <KeyCustomerReportPanel
           v-else-if="activeTab === 'customers' && keyCustomers"
           :data="keyCustomers"
@@ -92,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import AppPageHeader from '../components/AppPageHeader.vue'
 import AppQueryState from '../components/AppQueryState.vue'
@@ -136,6 +141,7 @@ const expenses = ref<ExpenseReport>()
 
 const today = new Date()
 const dateRange = ref<[string, string]>([monthStart(today), localDate(today)])
+const teamRange = ref<[string, string]>([localDate(today), localDate(today)])
 const filters = reactive<ReportingFilters>({
   start: dateRange.value[0],
   end: dateRange.value[1],
@@ -143,6 +149,17 @@ const filters = reactive<ReportingFilters>({
   salesRegionId: undefined,
   productLine: undefined,
 })
+const teamEffectiveFilters = computed<ReportingFilters>(() => ({
+  start: teamRange.value[0],
+  end: teamRange.value[1],
+  ownerId: filters.ownerId,
+  salesRegionId: filters.salesRegionId,
+}))
+const filterHint = computed(() =>
+  activeTab.value === 'team'
+    ? '团队动态在页内按天/按周切换；销售大区按人员所属大区筛选，不改变组织树权限。'
+    : '当前商机池按今日存量统计；销售大区按人员所属大区归集，日期用于期间推进、成交和费用。',
+)
 
 onMounted(async () => {
   try {
@@ -166,7 +183,8 @@ async function reload() {
   try {
     if (activeTab.value === 'overview') overview.value = await getReportingOverview(filters)
     else if (activeTab.value === 'pipeline') pipeline.value = await getPipelineReport(filters)
-    else if (activeTab.value === 'team') team.value = await getTeamReport(filters)
+    else if (activeTab.value === 'team')
+      team.value = await getTeamReport(teamEffectiveFilters.value)
     else if (activeTab.value === 'customers')
       keyCustomers.value = await getKeyCustomerReport(filters)
     else expenses.value = await getExpenseReport(filters)
@@ -177,6 +195,10 @@ async function reload() {
   }
 }
 function loadActiveTab() {
+  void reload()
+}
+function changeTeamRange(range: [string, string]) {
+  teamRange.value = range
   void reload()
 }
 function applyFilters() {

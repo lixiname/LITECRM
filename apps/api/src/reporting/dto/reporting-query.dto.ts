@@ -18,7 +18,7 @@ export class ReportingQueryDto {
   @IsUUID()
   ownerId?: string
 
-  @ApiPropertyOptional({ description: '销售大区 ID（仅客户/商机类指标）' })
+  @ApiPropertyOptional({ description: '人员所属销售大区 ID（只用于统计分组/筛选）' })
   @IsOptional()
   @IsUUID()
   salesRegionId?: string

@@ -12,6 +12,9 @@ export interface ReportingMember {
   id: string
   displayName: string
   role: string
+  salesRegionId: string | null
+  salesRegionName: string | null
+  salesRegionSortOrder: number | null
 }
 
 export interface MetricValue {
@@ -42,6 +45,9 @@ export interface PipelinePool {
 export interface PipelineOwnerRow {
   ownerId: string
   ownerName: string
+  salesRegionId: string | null
+  salesRegionName: string | null
+  salesRegionSortOrder: number | null
   openCount: number
   openAmount: number
   estimateAmount: number
@@ -55,6 +61,14 @@ export interface PipelineOwnerRow {
   wonAmount: number
 }
 
+export interface PipelineRegionRow extends Omit<
+  PipelineOwnerRow,
+  'ownerId' | 'ownerName' | 'salesRegionName'
+> {
+  salesRegionName: string
+  memberCount: number
+}
+
 export interface PipelineReport {
   range: { start: string; end: string }
   pool: PipelinePool
@@ -66,6 +80,7 @@ export interface PipelineReport {
     lost: MetricValue
     closedWinRate: number | null
   }
+  byRegion: PipelineRegionRow[]
   byOwner: PipelineOwnerRow[]
 }
 
@@ -76,6 +91,9 @@ export interface MyPipelineSummary {
 export interface TeamMemberReport {
   ownerId: string
   ownerName: string
+  salesRegionId: string | null
+  salesRegionName: string | null
+  salesRegionSortOrder: number | null
   visits: number
   opportunityFollowUps: number
   quotes: number
@@ -85,6 +103,13 @@ export interface TeamMemberReport {
   pendingCount: number
   overdueCount: number
   completedPlanCount: number
+  topPlans: {
+    id: string
+    customerId: string | null
+    customerName: string
+    content: string
+    plannedAt: string
+  }[]
   topOverdue: {
     id: string
     customerId: string | null

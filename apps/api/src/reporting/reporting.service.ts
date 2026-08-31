@@ -24,7 +24,14 @@ import type { ReportingQueryDto } from './dto/reporting-query.dto'
 const OPEN_STAGES = new Set(['intent', 'following'])
 const DAY_MS = 86_400_000
 
-type Member = { id: string; displayName: string; role: string }
+type Member = {
+  id: string
+  displayName: string
+  role: string
+  salesRegionId: string | null
+  salesRegionName: string | null
+  salesRegionSortOrder: number | null
+}
 type Range = { start: string; end: string }
 
 type PipelineOpportunity = {
@@ -70,8 +77,16 @@ export class ReportingService {
   async members(actor: AuthUser): Promise<Member[]> {
     const visible = await this.accessService.getVisibleUserIds(actor)
     return db
-      .select({ id: users.id, displayName: users.displayName, role: users.role })
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        role: users.role,
+        salesRegionId: users.salesRegionId,
+        salesRegionName: salesRegions.name,
+        salesRegionSortOrder: salesRegions.sortOrder,
+      })
       .from(users)
+      .leftJoin(salesRegions, eq(users.salesRegionId, salesRegions.id))
       .where(and(inArray(users.id, visible), eq(users.isActive, true)))
       .orderBy(asc(users.displayName))
   }
@@ -126,6 +141,9 @@ export class ReportingService {
         {
           ownerId: member.id,
           ownerName: member.displayName,
+          salesRegionId: member.salesRegionId,
+          salesRegionName: member.salesRegionName,
+          salesRegionSortOrder: member.salesRegionSortOrder,
           openCount: 0,
           openAmount: 0,
           estimateAmount: 0,
@@ -225,6 +243,57 @@ export class ReportingService {
     const owners = [...byOwner.values()]
       .filter((item) => memberById.has(item.ownerId))
       .sort((a, b) => b.openAmount - a.openAmount || a.ownerName.localeCompare(b.ownerName))
+    const regionMap = new Map<
+      string,
+      Omit<(typeof owners)[number], 'ownerId' | 'ownerName'> & {
+        salesRegionId: string | null
+        salesRegionName: string
+        memberCount: number
+      }
+    >()
+    for (const owner of owners) {
+      const key = owner.salesRegionId ?? '__unassigned__'
+      const current = regionMap.get(key) ?? {
+        salesRegionId: owner.salesRegionId,
+        salesRegionName: owner.salesRegionName ?? '未分配大区',
+        salesRegionSortOrder: owner.salesRegionSortOrder,
+        memberCount: 0,
+        openCount: 0,
+        openAmount: 0,
+        estimateAmount: 0,
+        oralQuoteAmount: 0,
+        formalQuoteAmount: 0,
+        stagnantCount: 0,
+        stagnantAmount: 0,
+        overdueActionCount: 0,
+        noNextActionCount: 0,
+        wonCount: 0,
+        wonAmount: 0,
+      }
+      current.memberCount += 1
+      for (const metric of [
+        'openCount',
+        'openAmount',
+        'estimateAmount',
+        'oralQuoteAmount',
+        'formalQuoteAmount',
+        'stagnantCount',
+        'stagnantAmount',
+        'overdueActionCount',
+        'noNextActionCount',
+        'wonCount',
+        'wonAmount',
+      ] as const) {
+        current[metric] += owner[metric]
+      }
+      regionMap.set(key, current)
+    }
+    const byRegion = [...regionMap.values()].sort(
+      (a, b) =>
+        (a.salesRegionSortOrder ?? Number.MAX_SAFE_INTEGER) -
+          (b.salesRegionSortOrder ?? Number.MAX_SAFE_INTEGER) ||
+        a.salesRegionName.localeCompare(b.salesRegionName),
+    )
     return {
       range,
       pool: {
@@ -240,6 +309,7 @@ export class ReportingService {
         },
       },
       flow,
+      byRegion,
       byOwner: owners,
     }
   }
@@ -321,6 +391,9 @@ export class ReportingService {
         {
           ownerId: member.id,
           ownerName: member.displayName,
+          salesRegionId: member.salesRegionId,
+          salesRegionName: member.salesRegionName,
+          salesRegionSortOrder: member.salesRegionSortOrder,
           visits: 0,
           opportunityFollowUps: 0,
           quotes: 0,
@@ -330,6 +403,13 @@ export class ReportingService {
           pendingCount: 0,
           overdueCount: 0,
           completedPlanCount: 0,
+          topPlans: [] as {
+            id: string
+            customerId: string | null
+            customerName: string
+            content: string
+            plannedAt: string
+          }[],
           topOverdue: [] as {
             id: string
             customerId: string | null
@@ -358,7 +438,16 @@ export class ReportingService {
     for (const action of actions) {
       const item = result.get(action.ownerId)!
       const plannedInRange = this.inRange(action.plannedAt, range)
-      if (action.status === 'pending' && plannedInRange) item.pendingCount += 1
+      if (action.status === 'pending' && plannedInRange) {
+        item.pendingCount += 1
+        item.topPlans.push({
+          id: action.id,
+          customerId: action.customerId,
+          customerName: action.customerName,
+          content: action.content,
+          plannedAt: action.plannedAt,
+        })
+      }
       if (action.status === 'completed' && plannedInRange) item.completedPlanCount += 1
       if (action.status === 'pending' && action.plannedAt < today) {
         item.overdueCount += 1
@@ -372,6 +461,8 @@ export class ReportingService {
       }
     }
     for (const item of result.values()) {
+      item.topPlans.sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
+      item.topPlans = item.topPlans.slice(0, 3)
       item.topOverdue.sort((a, b) => a.plannedAt.localeCompare(b.plannedAt))
       item.topOverdue = item.topOverdue.slice(0, 3)
     }
@@ -386,7 +477,6 @@ export class ReportingService {
       eq(customers.status, 'active'),
       inArray(customers.grade, ['S', 'A']),
     ]
-    if (query.salesRegionId) conditions.push(eq(customers.salesRegionId, query.salesRegionId))
     if (query.productLine) {
       conditions.push(sql`exists (
         select 1 from ${opportunities}
@@ -612,11 +702,21 @@ export class ReportingService {
       throw new BadRequestException('所选人员不在当前管理范围内')
     }
     const targetIds = query.ownerId ? [query.ownerId] : visible
+    const conditions: SQL[] = [inArray(users.id, targetIds), eq(users.isActive, true)]
+    if (query.salesRegionId) conditions.push(eq(users.salesRegionId, query.salesRegionId))
     const members = await db
-      .select({ id: users.id, displayName: users.displayName, role: users.role })
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        role: users.role,
+        salesRegionId: users.salesRegionId,
+        salesRegionName: salesRegions.name,
+        salesRegionSortOrder: salesRegions.sortOrder,
+      })
       .from(users)
-      .where(and(inArray(users.id, targetIds), eq(users.isActive, true)))
-      .orderBy(asc(users.displayName))
+      .leftJoin(salesRegions, eq(users.salesRegionId, salesRegions.id))
+      .where(and(...conditions))
+      .orderBy(asc(salesRegions.sortOrder), asc(users.displayName))
     return { targetIds: members.map((item) => item.id), members }
   }
 
@@ -649,7 +749,6 @@ export class ReportingService {
       }
     }
     const conditions: SQL[] = [inArray(customers.ownerId, targetIds)]
-    if (query.salesRegionId) conditions.push(eq(customers.salesRegionId, query.salesRegionId))
     if (query.productLine) {
       conditions.push(sql`exists (
         select 1 from ${opportunityProductLines}

@@ -1,55 +1,95 @@
 <template>
   <div class="team-panel">
-    <div class="team-panel__grid">
-      <button
-        v-for="member in data.members"
-        :key="member.ownerId"
-        type="button"
-        class="team-panel__member"
-        @click="openWeek(member)"
-      >
-        <div class="team-panel__member-head">
-          <strong>{{ member.ownerName }}</strong>
-          <el-tag v-if="member.overdueCount" type="danger" effect="plain">
-            逾期 {{ member.overdueCount }}
-          </el-tag>
-          <el-tag v-else type="success" effect="plain">无逾期</el-tag>
-        </div>
-        <div class="team-panel__numbers">
-          <span
-            ><b>{{ member.actualRecordCount }}</b
-            ><small>实际记录</small></span
-          >
-          <span
-            ><b>{{ member.pendingCount }}</b
-            ><small>本期待办</small></span
-          >
-          <span
-            ><b>{{ member.quotes }}</b
-            ><small>报价</small></span
-          >
-          <span
-            ><b>{{ member.visits }}</b
-            ><small>拜访</small></span
-          >
-        </div>
-        <div class="team-panel__mix">
-          跟进 {{ member.opportunityFollowUps }} · 客诉处理 {{ member.complaintRecords }} · 报价额
-          {{ money(member.quoteAmount) }}
-        </div>
-        <div v-if="member.topOverdue.length" class="team-panel__overdue">
-          <small>最早逾期</small>
-          <span
-            >{{ member.topOverdue[0]?.customerName }} · {{ member.topOverdue[0]?.content }}</span
-          >
-        </div>
-        <div class="team-panel__open">查看期间内容 →</div>
-      </button>
+    <div class="team-panel__toolbar">
+      <el-segmented v-model="mode" :options="modeOptions" @change="changeMode" />
+      <div class="team-panel__period">
+        <el-button text aria-label="上一期" @click="movePeriod(-1)">‹</el-button>
+        <strong>{{ periodLabel }}</strong>
+        <el-button text aria-label="下一期" @click="movePeriod(1)">›</el-button>
+        <el-button size="small" @click="goCurrent">
+          {{ mode === 'day' ? '回到今天' : '回到本周' }}
+        </el-button>
+      </div>
     </div>
+
+    <section v-for="group in regionGroups" :key="group.key" class="team-panel__region">
+      <header class="team-panel__region-head">
+        <div>
+          <strong>{{ group.name }}</strong>
+          <small>{{ group.members.length }} 人</small>
+        </div>
+        <span>
+          实际记录 {{ sum(group.members, 'actualRecordCount') }} · 待执行
+          {{ sum(group.members, 'pendingCount') }} · 逾期
+          {{ sum(group.members, 'overdueCount') }}
+        </span>
+      </header>
+
+      <el-table
+        :data="group.members"
+        border
+        row-class-name="team-panel__row"
+        @row-click="openPeriod"
+      >
+        <el-table-column prop="ownerName" label="人员" min-width="115" fixed />
+        <el-table-column v-if="mode === 'day'" label="当前状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="statusOf(row as TeamMemberReport).type" effect="plain">
+              {{ statusOf(row as TeamMemberReport).label }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="pendingCount"
+          :label="mode === 'day' ? '今日待执行' : '本周待执行'"
+          width="105"
+          align="right"
+        />
+        <el-table-column prop="completedPlanCount" label="已执行计划" width="105" align="right" />
+        <el-table-column prop="actualRecordCount" label="实际记录" width="95" align="right" />
+        <el-table-column prop="visits" label="拜访" width="70" align="right" />
+        <el-table-column prop="opportunityFollowUps" label="商机推进" width="90" align="right" />
+        <el-table-column prop="quotes" label="报价" width="70" align="right" />
+        <el-table-column label="报价金额" min-width="115" align="right">
+          <template #default="{ row }">{{ money((row as TeamMemberReport).quoteAmount) }}</template>
+        </el-table-column>
+        <el-table-column label="逾期" width="75" align="right">
+          <template #default="{ row }">
+            <span :class="{ 'team-panel__danger': (row as TeamMemberReport).overdueCount > 0 }">
+              {{ (row as TeamMemberReport).overdueCount }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="mode === 'day' ? '今日重点' : '需要关注'" min-width="250">
+          <template #default="{ row }">
+            <span v-if="mode === 'day' && (row as TeamMemberReport).topPlans[0]">
+              {{ (row as TeamMemberReport).topPlans[0]?.customerName }} ·
+              {{ (row as TeamMemberReport).topPlans[0]?.content }}
+              <small v-if="(row as TeamMemberReport).topPlans.length > 1" class="team-panel__muted">
+                等 {{ (row as TeamMemberReport).topPlans.length }} 项
+              </small>
+            </span>
+            <span v-else-if="(row as TeamMemberReport).topOverdue[0]">
+              {{ (row as TeamMemberReport).topOverdue[0]?.customerName }} ·
+              {{ (row as TeamMemberReport).topOverdue[0]?.content }}
+            </span>
+            <span
+              v-else-if="mode === 'day' && (row as TeamMemberReport).actualRecordCount > 0"
+              class="team-panel__muted"
+            >
+              已产生 {{ (row as TeamMemberReport).actualRecordCount }} 条实际记录
+            </span>
+            <span v-else class="team-panel__muted">{{
+              mode === 'day' ? '暂无安排' : '暂无逾期'
+            }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
 
     <el-drawer
       v-model="drawerVisible"
-      :title="`${selected?.ownerName ?? ''} · 期间内容`"
+      :title="`${selected?.ownerName ?? ''} · ${mode === 'day' ? '当日内容' : '本周内容'}`"
       size="88%"
       destroy-on-close
     >
@@ -63,24 +103,24 @@
         <section v-for="day in days" :key="day.date" class="team-panel__day">
           <header>
             <strong>{{ day.label }}</strong>
-            <small>{{ day.plans.length }} 项待办/计划 · {{ day.records.length }} 条实际记录</small>
+            <small>{{ day.plans.length }} 项计划 · {{ day.records.length }} 条实际记录</small>
           </header>
           <div class="team-panel__day-body">
             <div>
-              <h4>待执行与已结束计划</h4>
+              <h4>计划与执行</h4>
               <div v-for="plan in day.plans" :key="plan.id" class="team-panel__line">
                 <el-tag :type="plan.status === 'pending' ? 'primary' : 'info'" size="small">
                   {{
                     plan.status === 'pending'
                       ? '待执行'
                       : plan.status === 'completed'
-                        ? '已完成'
+                        ? '已执行'
                         : '已取消'
                   }}
                 </el-tag>
                 <span>{{ plan.customerName }} · {{ plan.content }}</span>
               </div>
-              <small v-if="!day.plans.length" class="team-panel__empty">无计划</small>
+              <small v-if="!day.plans.length" class="team-panel__muted">无计划</small>
             </div>
             <div>
               <h4>已发生</h4>
@@ -92,7 +132,7 @@
                 <el-tag type="success" size="small">{{ recordLabel(record.type) }}</el-tag>
                 <span>{{ record.customerName }} · {{ record.summary }}</span>
               </div>
-              <small v-if="!day.records.length" class="team-panel__empty">无业务记录</small>
+              <small v-if="!day.records.length" class="team-panel__muted">无业务记录</small>
             </div>
           </div>
         </section>
@@ -113,6 +153,13 @@ import {
 } from '@crm/domain'
 
 const props = defineProps<{ data: TeamReport; filters: ReportingFilters }>()
+const emit = defineEmits<{ 'range-change': [range: [string, string]] }>()
+const mode = ref<'day' | 'week'>('day')
+const anchor = ref(new Date(`${props.filters.start}T00:00:00`))
+const modeOptions = [
+  { label: '今日团队', value: 'day' },
+  { label: '本周个人', value: 'week' },
+]
 const selected = ref<TeamMemberReport>()
 const week = ref<ActionWeekView>()
 const drawerVisible = ref(false)
@@ -120,6 +167,31 @@ const weekLoading = ref(false)
 
 type ActualRecord =
   ActionWeekView['businessRecords'][number] | ActionWeekView['complaintRecords'][number]
+const regionGroups = computed(() => {
+  const groups = new Map<string, { key: string; name: string; members: TeamMemberReport[] }>()
+  for (const member of props.data.members) {
+    const key = member.salesRegionId ?? '__unassigned__'
+    const group = groups.get(key) ?? {
+      key,
+      name: member.salesRegionName ?? '未分配大区',
+      members: [],
+    }
+    group.members.push(member)
+    groups.set(key, group)
+  }
+  return [...groups.values()]
+})
+const periodLabel = computed(() => {
+  if (mode.value === 'day') {
+    return anchor.value.toLocaleDateString('zh-CN', {
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short',
+    })
+  }
+  const [start, end] = currentRange()
+  return `${shortDate(start)} — ${shortDate(end)}`
+})
 const days = computed(() => {
   const result: {
     date: string
@@ -129,7 +201,7 @@ const days = computed(() => {
   }[] = []
   const cursor = new Date(`${props.filters.start}T00:00:00`)
   const end = new Date(`${props.filters.end}T00:00:00`)
-  while (cursor <= end && result.length < 31) {
+  while (cursor <= end && result.length < 7) {
     const date = localDate(cursor)
     result.push({
       date,
@@ -150,20 +222,66 @@ const days = computed(() => {
   return result
 })
 
-async function openWeek(member: TeamMemberReport) {
+function changeMode() {
+  anchor.value = new Date()
+  emit('range-change', currentRange())
+}
+function movePeriod(direction: number) {
+  const next = new Date(anchor.value)
+  next.setDate(next.getDate() + direction * (mode.value === 'day' ? 1 : 7))
+  anchor.value = next
+  emit('range-change', currentRange())
+}
+function goCurrent() {
+  anchor.value = new Date()
+  emit('range-change', currentRange())
+}
+function currentRange(): [string, string] {
+  if (mode.value === 'day') {
+    const date = localDate(anchor.value)
+    return [date, date]
+  }
+  const monday = new Date(anchor.value)
+  const day = monday.getDay() || 7
+  monday.setDate(monday.getDate() - day + 1)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  return [localDate(monday), localDate(sunday)]
+}
+async function openPeriod(member: TeamMemberReport) {
   selected.value = member
   drawerVisible.value = true
   weekLoading.value = true
   try {
     week.value = await getWeekView(props.filters.start, props.filters.end, member.ownerId)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '期间内容加载失败')
+    ElMessage.error(error instanceof Error ? error.message : '内容加载失败')
   } finally {
     weekLoading.value = false
   }
 }
+function sum(
+  members: TeamMemberReport[],
+  key: 'actualRecordCount' | 'pendingCount' | 'overdueCount',
+) {
+  return members.reduce((total, member) => total + member[key], 0)
+}
+function statusOf(member: TeamMemberReport): {
+  label: string
+  type: 'danger' | 'success' | 'primary' | 'info'
+} {
+  if (member.overdueCount > 0) return { label: '需关注', type: 'danger' }
+  if (member.actualRecordCount > 0 || member.completedPlanCount > 0) {
+    return { label: '已推进', type: 'success' }
+  }
+  if (member.pendingCount > 0) return { label: '待执行', type: 'primary' }
+  return { label: '未安排', type: 'info' }
+}
 function localDate(date: Date): string {
   return date.toLocaleDateString('sv-SE')
+}
+function shortDate(value: string): string {
+  return value.slice(5).replace('-', '/')
 }
 function dateText(value: string): string {
   return new Date(value).toLocaleDateString('zh-CN')
@@ -184,68 +302,55 @@ function recordLabel(type: ActualRecord['type']): string {
 </script>
 
 <style scoped>
-.team-panel__grid {
+.team-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: var(--crm-spacing-md);
+  gap: var(--crm-spacing-lg);
 }
-.team-panel__member {
-  display: grid;
-  gap: var(--crm-spacing-md);
-  padding: var(--crm-spacing-lg);
-  border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-card);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.team-panel__member:hover {
-  border-color: var(--el-color-primary-light-5);
-  box-shadow: 0 5px 18px rgb(31 35 41 / 8%);
-}
-.team-panel__member-head,
+.team-panel__toolbar,
+.team-panel__period,
+.team-panel__region-head,
+.team-panel__region-head > div,
 .team-panel__day header {
   display: flex;
   align-items: center;
+}
+.team-panel__toolbar,
+.team-panel__region-head,
+.team-panel__day header {
   justify-content: space-between;
-  gap: var(--crm-spacing-md);
 }
-.team-panel__numbers {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--crm-spacing-sm);
+.team-panel__period {
+  gap: var(--crm-spacing-xs);
 }
-.team-panel__numbers span {
-  display: grid;
-  gap: 2px;
-  padding: var(--crm-spacing-sm);
-  border-radius: var(--crm-radius-sm);
-  background: var(--crm-color-bg-page);
+.team-panel__period strong {
+  min-width: 160px;
   text-align: center;
 }
-.team-panel__numbers b {
-  font-size: var(--crm-font-size-lg);
+.team-panel__region {
+  display: grid;
+  gap: var(--crm-spacing-sm);
 }
-.team-panel__numbers small,
-.team-panel__mix,
-.team-panel__empty {
+.team-panel__region-head {
+  padding: 0 2px;
+}
+.team-panel__region-head > div {
+  gap: var(--crm-spacing-sm);
+}
+.team-panel__region-head small,
+.team-panel__region-head span,
+.team-panel__muted {
   color: var(--crm-color-text-secondary);
 }
-.team-panel__overdue {
-  display: grid;
-  gap: 4px;
-  padding: var(--crm-spacing-sm);
-  border-left: 3px solid var(--el-color-danger);
-  background: var(--el-color-danger-light-9);
+.team-panel__danger {
+  color: var(--el-color-danger);
+  font-weight: 600;
 }
-.team-panel__open {
-  color: var(--crm-color-primary);
-  text-align: right;
+:deep(.team-panel__row) {
+  cursor: pointer;
 }
 .team-panel__week {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--crm-spacing-md);
 }
 .team-panel__older-overdue {
@@ -262,6 +367,7 @@ function recordLabel(type: ActualRecord['type']): string {
   border-radius: var(--crm-radius-md);
 }
 .team-panel__day header {
+  gap: var(--crm-spacing-md);
   padding: var(--crm-spacing-md);
   border-bottom: 1px solid var(--crm-color-border);
   background: var(--crm-color-bg-page);
