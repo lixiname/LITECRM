@@ -8,7 +8,7 @@ import type { AuthUser } from '../auth/auth.service'
 import { PlanningService } from './planning.service'
 import { CreateBusinessWeekDto } from './dto/create-business-week.dto'
 import { CreatePlanItemDto } from './dto/create-plan-item.dto'
-import { CreateCommentDto } from './dto/create-comment.dto'
+import { CreatePlanCommentDto } from './dto/create-comment.dto'
 
 // 周计划与指导意见（§8.7）
 @ApiTags('planning')
@@ -57,23 +57,27 @@ export class PlanningController {
     return this.planningService.addPlanItem(id, dto, user)
   }
 
-  // ===== 指导意见 =====
+  // ===== 计划指导留言 =====
 
-  @Post('comments')
-  @ApiCreatedResponse({ description: '发布指导意见（上级对下属）' })
-  createComment(@Body() dto: CreateCommentDto, @CurrentUser() user: AuthUser) {
-    return this.planningService.createComment(dto, user)
+  @Get('sales-plans/:id/comments')
+  @ApiOkResponse({ description: '读取一条可见计划的全部指导留言' })
+  listPlanComments(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.planningService.listPlanComments(id, user)
   }
 
-  @Get('comments/unread')
-  @ApiOkResponse({ description: '我的未读意见' })
-  listUnread(@CurrentUser() user: AuthUser) {
-    return this.planningService.listUnreadComments(user)
+  @Post('sales-plans/:id/comments')
+  @ApiCreatedResponse({ description: '递归上级给下属的待执行计划发布指导留言' })
+  createPlanComment(
+    @Param('id') id: string,
+    @Body() dto: CreatePlanCommentDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.planningService.createPlanComment(id, dto, user)
   }
 
-  @Post('comments/:id/read')
-  @ApiOkResponse({ description: '标记已读' })
-  markRead(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.planningService.markCommentRead(id, user)
+  @Post('sales-plans/:id/comments/read')
+  @ApiOkResponse({ description: '计划负责人将该计划全部指导留言标记为已读' })
+  markPlanCommentsRead(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.planningService.markPlanCommentsRead(id, user)
   }
 }

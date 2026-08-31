@@ -66,6 +66,7 @@ export class AlertsService {
       })
 
     if (alert.type === 'management_comment') {
+      const commentId = key.slice('management-comment:'.length)
       await db
         .update(managementComments)
         .set({
@@ -75,7 +76,7 @@ export class AlertsService {
         })
         .where(
           and(
-            eq(managementComments.id, alert.targetId),
+            eq(managementComments.id, commentId),
             eq(managementComments.ownerId, actor.id),
             isNull(managementComments.readAt),
           ),
@@ -138,20 +139,32 @@ export class AlertsService {
 
   private async listComments(actor: AuthUser): Promise<Omit<AlertItem, 'read'>[]> {
     const rows = await db
-      .select({ comment: managementComments, authorName: users.displayName })
+      .select({
+        comment: managementComments,
+        authorName: users.displayName,
+        customerId: followUpActions.customerId,
+      })
       .from(managementComments)
       .innerJoin(users, eq(managementComments.authorId, users.id))
+      .innerJoin(
+        followUpActions,
+        and(
+          eq(managementComments.targetType, 'follow_up_action'),
+          eq(managementComments.targetId, followUpActions.id),
+        ),
+      )
       .where(eq(managementComments.ownerId, actor.id))
       .orderBy(desc(managementComments.createdAt))
       .limit(20)
-    return rows.map(({ comment, authorName }) => ({
+    return rows.map(({ comment, authorName, customerId }) => ({
       key: `management-comment:${comment.id}`,
       type: 'management_comment',
-      title: `管理指导 · ${authorName}`,
+      title: `计划指导 · ${authorName}`,
       summary: comment.content,
       occurredAt: comment.createdAt.toISOString(),
       severity: 'info',
-      targetId: comment.id,
+      targetId: comment.targetId,
+      customerId: customerId ?? undefined,
     }))
   }
 

@@ -1,27 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsIn, IsString, IsUUID, MinLength } from 'class-validator'
-import { COMMENT_TARGET_TYPES, type CommentTargetType } from '../../common/constants'
+import { IsString, MaxLength, MinLength } from 'class-validator'
 
-// 指导意见（§8.7：author 须为被指导者上级；多态目标）
-export class CreateCommentDto {
-  @ApiProperty({
-    description: '目标类型',
-    enum: COMMENT_TARGET_TYPES,
-    enumName: 'CommentTargetType',
-  })
-  @IsIn(COMMENT_TARGET_TYPES)
-  targetType!: CommentTargetType
-
-  @ApiProperty({ description: '目标 ID（周计划/计划项/拜访）' })
-  @IsUUID()
-  targetId!: string
-
-  @ApiProperty({ description: '被指导人 ID' })
-  @IsUUID()
-  ownerId!: string
-
-  @ApiProperty({ description: '意见内容' })
+// 计划指导留言：目标计划和接收人均由 URL 中的计划 ID 在服务端确定。
+export class CreatePlanCommentDto {
+  @ApiProperty({ description: '指导留言内容', maxLength: 500 })
   @IsString()
   @MinLength(1, { message: '意见内容不能为空' })
+  @MaxLength(500, { message: '意见内容不能超过 500 个字符' })
   content!: string
 }

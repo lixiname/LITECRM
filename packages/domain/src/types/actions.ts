@@ -40,6 +40,20 @@ export interface SalesPlan {
   updatedAt: string
   customerName?: string
   opportunityName?: string | null
+  guidanceCount?: number
+  unreadGuidanceCount?: number
+}
+
+export interface SalesPlanComment {
+  id: string
+  targetId: string
+  ownerId: string
+  ownerName: string
+  authorId: string
+  authorName: string
+  content: string
+  readAt: string | null
+  createdAt: string
 }
 
 export type FollowUpAction = SalesPlan

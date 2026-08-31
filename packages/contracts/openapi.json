@@ -1888,43 +1888,9 @@
         "tags": ["planning"]
       }
     },
-    "/comments": {
-      "post": {
-        "operationId": "PlanningController_createComment",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCommentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "发布指导意见（上级对下属）"
-          }
-        },
-        "tags": ["planning"]
-      }
-    },
-    "/comments/unread": {
+    "/sales-plans/{id}/comments": {
       "get": {
-        "operationId": "PlanningController_listUnread",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "我的未读意见"
-          }
-        },
-        "tags": ["planning"]
-      }
-    },
-    "/comments/{id}/read": {
-      "post": {
-        "operationId": "PlanningController_markRead",
+        "operationId": "PlanningController_listPlanComments",
         "parameters": [
           {
             "name": "id",
@@ -1937,7 +1903,57 @@
         ],
         "responses": {
           "200": {
-            "description": "标记已读"
+            "description": "读取一条可见计划的全部指导留言"
+          }
+        },
+        "tags": ["planning"]
+      },
+      "post": {
+        "operationId": "PlanningController_createPlanComment",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "递归上级给下属的待执行计划发布指导留言"
+          }
+        },
+        "tags": ["planning"]
+      }
+    },
+    "/sales-plans/{id}/comments/read": {
+      "post": {
+        "operationId": "PlanningController_markPlanCommentsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "计划负责人将该计划全部指导留言标记为已读"
           }
         },
         "tags": ["planning"]
@@ -4005,36 +4021,16 @@
         },
         "required": ["plannedAt", "planKind", "customerId", "content"]
       },
-      "CommentTargetType": {
-        "type": "string",
-        "enum": ["weekly_plan", "follow_up_action", "visit"],
-        "description": "目标类型"
-      },
-      "CreateCommentDto": {
+      "CreatePlanCommentDto": {
         "type": "object",
         "properties": {
-          "targetType": {
-            "description": "目标类型",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CommentTargetType"
-              }
-            ]
-          },
-          "targetId": {
-            "type": "string",
-            "description": "目标 ID（周计划/计划项/拜访）"
-          },
-          "ownerId": {
-            "type": "string",
-            "description": "被指导人 ID"
-          },
           "content": {
             "type": "string",
-            "description": "意见内容"
+            "description": "指导留言内容",
+            "maxLength": 500
           }
         },
-        "required": ["targetType", "targetId", "ownerId", "content"]
+        "required": ["content"]
       },
       "CreateExpenseDto": {
         "type": "object",

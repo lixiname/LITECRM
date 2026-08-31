@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, asc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
+import { and, asc, count, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
 import { db, type DbClient } from '../common/db/db'
@@ -12,6 +12,7 @@ import {
   complaints,
   customers,
   followUpActions,
+  managementComments,
   opportunities,
   salesPlanReschedules,
   users,
@@ -366,7 +367,36 @@ export class SalesPlansService {
         .where(and(ownerCondition, sql`${followUpActions.plannedAt} between ${start} and ${end}`))
         .orderBy(asc(followUpActions.plannedAt)),
     ])
-    return { overdue, plans: ranged }
+    const planIds = [...new Set([...overdue, ...ranged].map((item) => item.id))]
+    const commentRows = planIds.length
+      ? await db
+          .select({
+            planId: managementComments.targetId,
+            total: count(managementComments.id),
+            unread:
+              sql<number>`count(*) filter (where ${managementComments.readAt} is null)`.mapWith(
+                Number,
+              ),
+          })
+          .from(managementComments)
+          .where(
+            and(
+              eq(managementComments.targetType, 'follow_up_action'),
+              inArray(managementComments.targetId, planIds),
+            ),
+          )
+          .groupBy(managementComments.targetId)
+      : []
+    const commentsByPlan = new Map(commentRows.map((item) => [item.planId, item]))
+    const enrich = <T extends (typeof ranged)[number]>(item: T) => {
+      const comments = commentsByPlan.get(item.id)
+      return {
+        ...item,
+        guidanceCount: comments?.total ?? 0,
+        unreadGuidanceCount: actor.id === ownerId ? (comments?.unread ?? 0) : 0,
+      }
+    }
+    return { overdue: overdue.map(enrich), plans: ranged.map(enrich) }
   }
 
   async findOne(id: string, actor: AuthUser) {

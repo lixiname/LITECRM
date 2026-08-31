@@ -4,19 +4,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from 'drizzle-orm'
 import { AccessService } from '../access/access.service'
 import type { AuthUser } from '../auth/auth.service'
 import { db } from '../common/db/db'
 import {
   businessWeeks,
+  alertReads,
   followUpActions,
   managementComments,
+  users,
   weeklyPlans,
 } from '../common/db/schema'
 import { SalesPlansService } from '../follow-up-actions/follow-up-actions.service'
 import type { CreateBusinessWeekDto } from './dto/create-business-week.dto'
-import type { CreateCommentDto } from './dto/create-comment.dto'
+import type { CreatePlanCommentDto } from './dto/create-comment.dto'
 import type { CreatePlanItemDto } from './dto/create-plan-item.dto'
 
 @Injectable()
@@ -91,45 +93,118 @@ export class PlanningService {
     return this.addPlanItemByDate(dto, actor)
   }
 
-  async createComment(dto: CreateCommentDto, actor: AuthUser) {
-    if (dto.ownerId === actor.id) throw new ForbiddenException('不能给自己留言')
-    const isManager = await this.accessService.isManagerOf(actor.id, dto.ownerId)
-    if (!isManager && actor.role !== 'admin') throw new ForbiddenException('仅上级可发布指导意见')
+  async createPlanComment(planId: string, dto: CreatePlanCommentDto, actor: AuthUser) {
+    const plan = await this.findPlanForComments(planId, actor)
+    if (plan.status !== 'pending') throw new ConflictException('已结束计划不再接受新的指导留言')
+    if (actor.role === 'admin' || !this.accessService.can(actor.role, 'dashboard.view')) {
+      throw new ForbiddenException('仅承担团队管理职责的上级可发布指导留言')
+    }
+    const isManager = await this.accessService.isManagerOf(actor.id, plan.ownerId)
+    if (!isManager) throw new ForbiddenException('仅计划负责人的上级可发布指导留言')
     const [comment] = await db
       .insert(managementComments)
       .values({
-        targetType: dto.targetType,
-        targetId: dto.targetId,
-        ownerId: dto.ownerId,
+        targetType: 'follow_up_action',
+        targetId: planId,
+        ownerId: plan.ownerId,
         authorId: actor.id,
-        content: dto.content,
+        content: dto.content.trim(),
       })
       .returning()
     return comment
   }
 
-  async listUnreadComments(actor: AuthUser) {
-    return db
+  async listPlanComments(planId: string, actor: AuthUser) {
+    await this.findPlanForComments(planId, actor)
+    const comments = await db
       .select()
       .from(managementComments)
       .where(
-        and(eq(managementComments.ownerId, actor.id), sql`${managementComments.readAt} is null`),
+        and(
+          eq(managementComments.targetType, 'follow_up_action'),
+          eq(managementComments.targetId, planId),
+        ),
       )
-      .orderBy(desc(managementComments.createdAt))
+      .orderBy(asc(managementComments.createdAt))
+    const userIds = [...new Set(comments.flatMap((item) => [item.authorId, item.ownerId]))]
+    const people = userIds.length
+      ? await db
+          .select({ id: users.id, displayName: users.displayName })
+          .from(users)
+          .where(inArray(users.id, userIds))
+      : []
+    const nameById = new Map(people.map((item) => [item.id, item.displayName]))
+    return comments.map((item) => ({
+      ...item,
+      authorName: nameById.get(item.authorId) ?? '未知人员',
+      ownerName: nameById.get(item.ownerId) ?? '未知人员',
+    }))
   }
 
-  async markCommentRead(id: string, actor: AuthUser) {
-    const [updated] = await db
-      .update(managementComments)
-      .set({
-        readAt: new Date(),
-        updatedAt: new Date(),
-        version: sql`${managementComments.version} + 1`,
+  async markPlanCommentsRead(planId: string, actor: AuthUser) {
+    const [plan] = await db
+      .select({ ownerId: followUpActions.ownerId })
+      .from(followUpActions)
+      .where(and(eq(followUpActions.id, planId), eq(followUpActions.ownerId, actor.id)))
+      .limit(1)
+    if (!plan) throw new NotFoundException('计划不存在或不属于当前用户')
+    const unread = await db
+      .select({ id: managementComments.id })
+      .from(managementComments)
+      .where(
+        and(
+          eq(managementComments.targetType, 'follow_up_action'),
+          eq(managementComments.targetId, planId),
+          eq(managementComments.ownerId, actor.id),
+          isNull(managementComments.readAt),
+        ),
+      )
+    if (!unread.length) return { readCount: 0 }
+    const readAt = new Date()
+    await db.transaction(async (tx) => {
+      await tx
+        .update(managementComments)
+        .set({
+          readAt,
+          updatedAt: readAt,
+          version: sql`${managementComments.version} + 1`,
+        })
+        .where(
+          inArray(
+            managementComments.id,
+            unread.map((item) => item.id),
+          ),
+        )
+      await tx
+        .insert(alertReads)
+        .values(
+          unread.map((item) => ({
+            userId: actor.id,
+            alertKey: `management-comment:${item.id}`,
+            readAt,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [alertReads.userId, alertReads.alertKey],
+          set: { readAt, updatedAt: readAt, version: sql`${alertReads.version} + 1` },
+        })
+    })
+    return { readCount: unread.length }
+  }
+
+  private async findPlanForComments(planId: string, actor: AuthUser) {
+    const visibleOwnerIds = await this.accessService.getVisibleUserIds(actor)
+    const [plan] = await db
+      .select({
+        id: followUpActions.id,
+        ownerId: followUpActions.ownerId,
+        status: followUpActions.status,
       })
-      .where(and(eq(managementComments.id, id), eq(managementComments.ownerId, actor.id)))
-      .returning()
-    if (!updated) throw new NotFoundException('意见不存在')
-    return updated
+      .from(followUpActions)
+      .where(and(eq(followUpActions.id, planId), inArray(followUpActions.ownerId, visibleOwnerIds)))
+      .limit(1)
+    if (!plan) throw new NotFoundException('计划不存在或无权查看')
+    return plan
   }
 
   async findBusinessWeekByDate(date: string) {

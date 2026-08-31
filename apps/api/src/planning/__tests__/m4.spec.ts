@@ -474,16 +474,13 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
     expect(Number(list.body[0].dining)).toBe(200)
   })
 
-  it('指导意见：上级可发、下属未读红点、标记已读', async () => {
+  it('计划指导：上级可留言、负责人可查看并批量标记已读，管理员不能越过汇报树', async () => {
     const manager = await login('manager', 'Crm@123456')
     const sales1 = await login('sales1', 'Crm@123456')
-    const sales1Id = (
-      (await db.execute(sql`SELECT id FROM users WHERE username='sales1'`)).rows[0] as {
-        id: string
-      }
-    ).id
+    const sales2 = await login('sales2', 'Crm@123456')
+    const admin = await login('admin', 'Admin@123456')
     const customer = await createCustomer(sales1.accessToken, 'M4_意见客户')
-    const visitRes = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .post('/api/visits')
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
@@ -493,26 +490,68 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
         nextActionAt: '2026-09-10',
         nextActionContent: '再次拜访客户',
       })
-    const visitId = visitRes.body.id
+    const [plan] = await db
+      .select()
+      .from(followUpActions)
+      .where(sql`${followUpActions.customerId} = ${customer.id}`)
+      .limit(1)
 
     const comment = await request(app.getHttpServer())
-      .post('/api/comments')
+      .post(`/api/sales-plans/${plan.id}/comments`)
       .set('Authorization', `Bearer ${manager.accessToken}`)
-      .send({ targetType: 'visit', targetId: visitId, ownerId: sales1Id, content: '记得跟进报价' })
+      .send({ content: '记得跟进报价' })
     expect(comment.status).toBe(201)
+    expect(comment.body).toMatchObject({
+      targetType: 'follow_up_action',
+      targetId: plan.id,
+      ownerId: plan.ownerId,
+      content: '记得跟进报价',
+    })
 
-    const unread = await request(app.getHttpServer())
-      .get('/api/comments/unread')
+    const [peerComment, adminComment] = await Promise.all([
+      request(app.getHttpServer())
+        .post(`/api/sales-plans/${plan.id}/comments`)
+        .set('Authorization', `Bearer ${sales2.accessToken}`)
+        .send({ content: '同级不能留言' }),
+      request(app.getHttpServer())
+        .post(`/api/sales-plans/${plan.id}/comments`)
+        .set('Authorization', `Bearer ${admin.accessToken}`)
+        .send({ content: '管理员不能发布业务指导' }),
+    ])
+    expect(peerComment.status).toBe(404)
+    expect(adminComment.status).toBe(403)
+
+    const comments = await request(app.getHttpServer())
+      .get(`/api/sales-plans/${plan.id}/comments`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
-    expect(unread.body).toHaveLength(1)
+    expect(comments.status).toBe(200)
+    expect(comments.body).toEqual([
+      expect.objectContaining({ authorName: '华东销售经理', readAt: null }),
+    ])
+
+    const week = await request(app.getHttpServer())
+      .get('/api/week-view?start=2026-09-07&end=2026-09-13')
+      .set('Authorization', `Bearer ${sales1.accessToken}`)
+    expect(week.body.plans[0]).toMatchObject({ guidanceCount: 1, unreadGuidanceCount: 1 })
 
     const read = await request(app.getHttpServer())
-      .post(`/api/comments/${comment.body.id}/read`)
+      .post(`/api/sales-plans/${plan.id}/comments/read`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
     expect(read.status).toBe(201)
-    const unread2 = await request(app.getHttpServer())
-      .get('/api/comments/unread')
+    expect(read.body).toEqual({ readCount: 1 })
+    const commentsAfterRead = await request(app.getHttpServer())
+      .get(`/api/sales-plans/${plan.id}/comments`)
       .set('Authorization', `Bearer ${sales1.accessToken}`)
-    expect(unread2.body).toHaveLength(0)
+    expect(commentsAfterRead.body[0].readAt).not.toBeNull()
+
+    await db
+      .update(followUpActions)
+      .set({ status: 'completed', completedAt: new Date() })
+      .where(sql`${followUpActions.id} = ${plan.id}`)
+    const closedComment = await request(app.getHttpServer())
+      .post(`/api/sales-plans/${plan.id}/comments`)
+      .set('Authorization', `Bearer ${manager.accessToken}`)
+      .send({ content: '结束后不能新增' })
+    expect(closedComment.status).toBe(409)
   })
 })

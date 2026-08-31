@@ -30,9 +30,3 @@ export function getMyPlan(
 }
 
 /** 周览点空白加计划（§2.4 日历式）：按日期自动定位业务周 + 确保周计划 */
-/** 我的未读意见 */
-export function listUnreadComments(): Promise<
-  { id: string; content: string; authorId: string; createdAt: string }[]
-> {
-  return apiGet('/comments/unread')
-}

@@ -99,7 +99,12 @@ describe('M5 实时提醒与已读状态', () => {
     expect(salesAlerts.body.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ key: `overdue-action:${action.id}`, read: false }),
-        expect.objectContaining({ key: `management-comment:${comment.id}`, read: false }),
+        expect.objectContaining({
+          key: `management-comment:${comment.id}`,
+          targetId: action.id,
+          customerId: customer.id,
+          read: false,
+        }),
       ]),
     )
 

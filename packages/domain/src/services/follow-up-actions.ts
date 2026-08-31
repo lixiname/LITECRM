@@ -1,5 +1,5 @@
 import type { components } from '@crm/contracts'
-import type { SalesPlan } from '../types/actions'
+import type { SalesPlan, SalesPlanComment } from '../types/actions'
 import { apiGet, apiPost } from './http'
 
 export type CreateSalesPlanInput = components['schemas']['CreateSalesPlanDto']
@@ -36,4 +36,16 @@ export interface SalesPlanReschedule {
 
 export function getSalesPlanReschedules(id: string): Promise<SalesPlanReschedule[]> {
   return apiGet(`/sales-plans/${id}/reschedules`)
+}
+
+export function listSalesPlanComments(id: string): Promise<SalesPlanComment[]> {
+  return apiGet(`/sales-plans/${id}/comments`)
+}
+
+export function createSalesPlanComment(id: string, content: string): Promise<SalesPlanComment> {
+  return apiPost(`/sales-plans/${id}/comments`, { content })
+}
+
+export function markSalesPlanCommentsRead(id: string): Promise<{ readCount: number }> {
+  return apiPost(`/sales-plans/${id}/comments/read`, {})
 }

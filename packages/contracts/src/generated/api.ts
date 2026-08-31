@@ -900,7 +900,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/comments": {
+    "/sales-plans/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanningController_listPlanComments"];
+        put?: never;
+        post: operations["PlanningController_createPlanComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sales-plans/{id}/comments/read": {
         parameters: {
             query?: never;
             header?: never;
@@ -909,39 +925,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["PlanningController_createComment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/comments/unread": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["PlanningController_listUnread"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/comments/{id}/read": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["PlanningController_markRead"];
+        post: operations["PlanningController_markPlanCommentsRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1817,19 +1801,8 @@ export interface components {
             /** @description 备注 */
             notes?: string;
         };
-        /**
-         * @description 目标类型
-         * @enum {string}
-         */
-        CommentTargetType: "weekly_plan" | "follow_up_action" | "visit";
-        CreateCommentDto: {
-            /** @description 目标类型 */
-            targetType: components["schemas"]["CommentTargetType"];
-            /** @description 目标 ID（周计划/计划项/拜访） */
-            targetId: string;
-            /** @description 被指导人 ID */
-            ownerId: string;
-            /** @description 意见内容 */
+        CreatePlanCommentDto: {
+            /** @description 指导留言内容 */
             content: string;
         };
         CreateExpenseDto: {
@@ -3373,47 +3346,7 @@ export interface operations {
             };
         };
     };
-    PlanningController_createComment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCommentDto"];
-            };
-        };
-        responses: {
-            /** @description 发布指导意见（上级对下属） */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlanningController_listUnread: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 我的未读意见 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PlanningController_markRead: {
+    PlanningController_listPlanComments: {
         parameters: {
             query?: never;
             header?: never;
@@ -3424,7 +3357,51 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 标记已读 */
+            /** @description 读取一条可见计划的全部指导留言 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_createPlanComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanCommentDto"];
+            };
+        };
+        responses: {
+            /** @description 递归上级给下属的待执行计划发布指导留言 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlanningController_markPlanCommentsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 计划负责人将该计划全部指导留言标记为已读 */
             200: {
                 headers: {
                     [name: string]: unknown;
