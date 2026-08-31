@@ -33,7 +33,10 @@ cp .env.example .env
 # 4. 应用数据库迁移（首次）
 pnpm db:migrate
 
-# 5. 启动开发服务（三个终端，或各自单独跑）
+# 5. 首次开发环境写入测试账号和默认字典（正式环境禁止使用）
+pnpm db:seed
+
+# 6. 启动开发服务（三个终端，或各自单独跑）
 pnpm dev:web      # 桌面端 http://localhost:5173
 pnpm dev:mobile   # 移动端 http://localhost:5174
 pnpm dev:api      # API http://localhost:3001/api
@@ -46,6 +49,7 @@ Windows 上如果后端热更新进程因进程树权限报 `taskkill ... Access
 - 后端测试依赖真实 PostgreSQL 表结构。新机器、空数据库和 GitHub Actions 都必须先执行迁移，再运行 `pnpm test`；否则出现 `relation "users" does not exist` 一类错误，含义是数据库尚未初始化，不是测试造数失败。
 - 客户名称模糊检索使用 PostgreSQL `pg_trgm`。首份迁移已声明 `CREATE EXTENSION IF NOT EXISTS pg_trgm`；使用本机 PostgreSQL 且 `crm` 账号没有扩展权限时，仍需先由管理员账号执行上面的扩展安装命令。
 - Windows 上若 `drizzle-kit migrate` 出现 `uv_os_get_passwd ... ENOMEM`，可改用 `pnpm --filter @crm/api db:migrate:runtime`。它执行仓库中同一批已提交 SQL 迁移，不是运行时自动同步表结构。
+- 云端首次部署必须将结构迁移、正式基础数据初始化和服务启动分开执行；完整顺序和数据保护边界见 [`docs/01-当前有效/云端部署与数据库运维.md`](docs/01-当前有效/云端部署与数据库运维.md)。
 - CI 使用每次全新的 PostgreSQL 容器，执行顺序固定为：安装依赖 → 数据库迁移 → Lint → 类型检查 → 测试 → 构建 → 契约无差异。不要依赖开发机上已经存在的表、扩展或历史迁移记录。
 - 判断迁移是否完整，必须至少在空数据库上验证一次；“已有开发库可以继续迁移”不能替代全新建库验证。
 
@@ -58,6 +62,7 @@ Windows 上如果后端热更新进程因进程树权限报 `taskkill ... Access
 | `pnpm contracts:generate`                                   | 后端 DTO → Swagger → 契约类型重新生成   |
 | `pnpm contracts:check`                                      | 校验契约生成物无 diff（CI 用）          |
 | `pnpm db:generate` / `pnpm db:migrate` / `pnpm db:studio`   | Drizzle 迁移生成 / 应用 / Studio 可视化 |
+| `pnpm db:migrate:runtime` / `pnpm db:bootstrap`             | 正式环境增量迁移 / 仅补缺的首次初始化   |
 | `pnpm --filter @crm/api db:migrate:runtime`                 | Windows 迁移命令异常时的等价执行入口    |
 | `pnpm format`                                               | Prettier 全量格式化                     |
 

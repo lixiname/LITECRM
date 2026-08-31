@@ -18,6 +18,8 @@
     "contracts:check": "pnpm --filter @crm/contracts check",
     "db:generate": "pnpm --filter @crm/api db:generate",
     "db:migrate": "pnpm --filter @crm/api db:migrate",
+    "db:migrate:runtime": "pnpm --filter @crm/api db:migrate:runtime",
+    "db:bootstrap": "pnpm --filter @crm/api db:bootstrap",
     "db:seed": "pnpm --filter @crm/api db:seed",
     "db:seed:demo": "pnpm --filter @crm/api db:seed:demo",
     "projections:check": "pnpm --filter @crm/api projections:check",

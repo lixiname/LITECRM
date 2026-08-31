@@ -543,6 +543,11 @@ async function seedDemoBusinessData() {
   await seedGeography()
 }
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('正式环境禁止写入演示业务数据。')
+  process.exit(1)
+}
+
 seedDemoBusinessData()
   .then(() => {
     console.log('演示数据完成：4 个客户，覆盖团队报价池、成交、重点客户风险、行动、客诉和费用')

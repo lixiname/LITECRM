@@ -190,14 +190,14 @@ type DivisionSeed = {
   parentCode?: string
 }
 
-const PROVINCES: DivisionSeed[] = [
+export const PROVINCES: DivisionSeed[] = [
   { code: '130000', name: '河北省', level: 'province' },
   { code: '320000', name: '江苏省', level: 'province' },
   { code: '330000', name: '浙江省', level: 'province' },
   { code: '440000', name: '广东省', level: 'province' },
 ]
 
-const CITY_GROUPS: Record<string, [string, string][]> = {
+export const CITY_GROUPS: Record<string, [string, string][]> = {
   '130000': [
     ['130100', '石家庄市'],
     ['130200', '唐山市'],
@@ -264,7 +264,7 @@ const CITY_GROUPS: Record<string, [string, string][]> = {
   ],
 }
 
-const SALES_REGION_SEEDS = [
+export const SALES_REGION_SEEDS = [
   { code: 'jiangsu', name: '江苏', divisionCode: '320000' },
   { code: 'ningbo', name: '宁波', divisionCode: '330200' },
   { code: 'wenzhou', name: '温州', divisionCode: '330300' },
@@ -337,6 +337,10 @@ export async function seedGeography(): Promise<void> {
 
 // 主模块执行（ts-node scripts/seed.ts 直接跑；被测试 import 时不触发副作用）
 if (require.main === module) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('正式环境禁止运行开发 seed；请使用 pnpm db:bootstrap 初始化基础数据。')
+    process.exit(1)
+  }
   Promise.all([seedAccounts(), seedDimensions(), seedGeography()])
     .then(([names]) => {
       console.log(`seed 完成：账号 ${names.join(', ')} + 字典 ${SEED_DIMENSIONS.length} 项`)
