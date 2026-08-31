@@ -101,7 +101,7 @@ describe('客户 Excel 冷启动导入', () => {
     })
   })
 
-  it('下载模板以第一行说明、第二行表头、第三行数据的结构生成', async () => {
+  it('下载模板明确标注必填列、提供自动忽略的示例行，并保留自动映射', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/customers/imports/template')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -116,13 +116,35 @@ describe('客户 Excel 冷启动导入', () => {
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(response.body as ExcelJS.Buffer)
     const sheet = workbook.getWorksheet('客户导入')
-    expect(sheet?.getCell('A1').text).toContain('第 2 行为字段名称')
+    expect(sheet?.getCell('A1').text).toContain('红色 * 表示必填或条件必填')
     expect(['A2', 'B2', 'C2'].map((cell) => sheet?.getCell(cell).text)).toEqual([
-      '客户名称',
-      '是否存量客户',
-      '负责人账号',
+      '客户名称 *',
+      '是否存量客户 *',
+      '负责人账号 *',
     ])
+    const nameHeader = sheet?.getCell('A2').value as ExcelJS.CellRichTextValue
+    expect(nameHeader.richText[1]?.font?.color).toEqual({ argb: 'FFFF5C5C' })
+    expect(sheet?.getCell('A3').text).toContain('【示例】')
+    expect(JSON.stringify(sheet?.getCell('B2').note)).toContain('条件必填')
+    expect(sheet?.getCell('B4').dataValidation).toMatchObject({ type: 'list' })
+    expect(sheet?.getCell('M4').dataValidation).toMatchObject({ type: 'list' })
     expect(sheet?.views[0]).toMatchObject({ state: 'frozen', ySplit: 2 })
+
+    sheet!.getCell('A4').value = 'IMPORT_模板真实客户'
+    sheet!.getCell('B4').value = '否'
+    const filledBuffer = Buffer.from(await workbook.xlsx.writeBuffer())
+    const uploaded = await request(app.getHttpServer())
+      .post('/api/customers/imports')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .attach('file', filledBuffer, 'customers.xlsx')
+    expect(uploaded.status).toBe(201)
+    expect(uploaded.body.totalRows).toBe(1)
+    expect(uploaded.body.sampleRows[0].rowNumber).toBe(4)
+    expect(uploaded.body.suggestedMapping).toMatchObject({
+      name: '客户名称 *',
+      preCrmDealConfirmed: '是否存量客户 *',
+      ownerUsername: '负责人账号 *',
+    })
   })
 
   it('继续兼容第一行直接作为表头的旧导入文件', async () => {

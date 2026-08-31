@@ -15,8 +15,9 @@ import type { CustomerImportField, PreviewCustomerImportDto } from './dto/custom
 
 const MAX_IMPORT_ROWS = 2000
 const MAX_HEADER_SCAN_ROWS = 10
+const TEMPLATE_EXAMPLE_MARKER = '【示例】'
 const TEMPLATE_INSTRUCTION =
-  '填写说明：第 2 行为字段名称，请勿删除或修改；请从第 3 行开始填写客户数据。客户名称始终必填；按 Excel 逐行指定客户属性时须填“是否存量客户”；导入在案客户且未设置默认负责人时须填“负责人账号”；其余字段可按现有资料填写。'
+  '填写说明：第 2 行为字段名称，请勿删除或修改。红色 * 表示必填或条件必填：客户名称始终必填；选择“逐行指定客户关系”时须填是否存量客户；导入在案客户且未选择默认负责人时须填负责人账号。第 3 行是系统自动忽略的示例，请覆盖、删除或从第 4 行开始填写。'
 
 const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   name: ['客户名称', '名称', '公司名称', 'name'],
@@ -58,6 +59,47 @@ const TEMPLATE_FIELD_ORDER: CustomerImportField[] = [
   'notes',
 ]
 
+const TEMPLATE_REQUIRED_FIELDS: Partial<
+  Record<CustomerImportField, { kind: 'always' | 'conditional'; note: string }>
+> = {
+  name: { kind: 'always', note: '始终必填：客户法人主体名称。' },
+  preCrmDealConfirmed: {
+    kind: 'conditional',
+    note: '条件必填：导入设置选择“逐行指定客户关系”时，每行填写“是”或“否”。',
+  },
+  ownerUsername: {
+    kind: 'conditional',
+    note: '条件必填：导入在案客户且页面未选择默认负责人时，填写系统中的用户名或显示名。',
+  },
+}
+
+const TEMPLATE_COLUMN_WIDTHS: Partial<Record<CustomerImportField, number>> = {
+  name: 34,
+  preCrmDealConfirmed: 18,
+  ownerUsername: 22,
+  unifiedSocialCreditCode: 24,
+  address: 30,
+  contactPhone: 18,
+  preCrmSalesAmount: 22,
+  notes: 34,
+}
+
+const TEMPLATE_EXAMPLE_VALUES: Partial<Record<CustomerImportField, string | number>> = {
+  name: `${TEMPLATE_EXAMPLE_MARKER}苏州清源环保设备有限公司`,
+  preCrmDealConfirmed: '是',
+  ownerUsername: '请替换为系统用户名',
+  customerCode: 'ERP-EXAMPLE-001',
+  unifiedSocialCreditCode: '91320594MA0000000X',
+  province: '江苏省',
+  city: '苏州市',
+  address: '苏州工业园区示例路 88 号',
+  grade: 'A',
+  contactName: '张工',
+  contactPhone: '13800000000',
+  preCrmSalesAmount: 120000,
+  notes: '示例行会被系统自动忽略，请覆盖或删除',
+}
+
 type RawRow = Record<string, string | number | boolean | null>
 
 type ExistingCustomerImportMatch = {
@@ -76,10 +118,13 @@ export class CustomerImportService {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('客户导入')
     const headers = TEMPLATE_FIELD_ORDER.map((field) => HEADER_ALIASES[field][0])
-    sheet.columns = headers.map((header) => ({ key: header, width: 18 }))
+    sheet.columns = TEMPLATE_FIELD_ORDER.map((field) => ({
+      key: field,
+      width: TEMPLATE_COLUMN_WIDTHS[field] ?? 18,
+    }))
     sheet.mergeCells(1, 1, 1, headers.length)
     sheet.getCell('A1').value = TEMPLATE_INSTRUCTION
-    sheet.getRow(1).height = 34
+    sheet.getRow(1).height = 46
     sheet.getRow(1).alignment = { vertical: 'middle', wrapText: true }
     sheet.getRow(1).font = { color: { argb: 'FF7A4F01' } }
     sheet.getRow(1).fill = {
@@ -87,15 +132,58 @@ export class CustomerImportService {
       pattern: 'solid',
       fgColor: { argb: 'FFFFF4D6' },
     }
-    sheet.addRow(headers)
+    const headerRow = sheet.addRow(headers)
     sheet.getRow(2).height = 24
     sheet.getRow(2).font = { bold: true, color: { argb: 'FFFFFFFF' } }
-    sheet.getRow(2).alignment = { vertical: 'middle' }
+    sheet.getRow(2).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
     sheet.getRow(2).fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FF315F87' },
     }
+    for (const [index, field] of TEMPLATE_FIELD_ORDER.entries()) {
+      const requirement = TEMPLATE_REQUIRED_FIELDS[field]
+      if (!requirement) continue
+      const cell = headerRow.getCell(index + 1)
+      cell.value = {
+        richText: [
+          { text: HEADER_ALIASES[field][0], font: { bold: true, color: { argb: 'FFFFFFFF' } } },
+          { text: ' *', font: { bold: true, color: { argb: 'FFFF5C5C' } } },
+        ],
+      }
+      cell.note = requirement.note
+    }
+
+    const exampleRow = sheet.addRow(
+      TEMPLATE_FIELD_ORDER.map((field) => TEMPLATE_EXAMPLE_VALUES[field] ?? null),
+    )
+    exampleRow.height = 24
+    exampleRow.font = { italic: true, color: { argb: 'FF667085' } }
+    exampleRow.alignment = { vertical: 'middle' }
+    exampleRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF2F4F7' },
+    }
+
+    const relationshipColumn = sheet.getColumn(
+      TEMPLATE_FIELD_ORDER.indexOf('preCrmDealConfirmed') + 1,
+    ).letter
+    const gradeColumn = sheet.getColumn(TEMPLATE_FIELD_ORDER.indexOf('grade') + 1).letter
+    addWorksheetDataValidation(
+      sheet,
+      `${relationshipColumn}4:${relationshipColumn}${MAX_IMPORT_ROWS + 3}`,
+      {
+        type: 'list',
+        allowBlank: true,
+        formulae: ['"是,否"'],
+      },
+    )
+    addWorksheetDataValidation(sheet, `${gradeColumn}4:${gradeColumn}${MAX_IMPORT_ROWS + 3}`, {
+      type: 'list',
+      allowBlank: true,
+      formulae: ['"S,A,B,C"'],
+    })
     sheet.views = [{ state: 'frozen', ySplit: 2 }]
     sheet.autoFilter = { from: 'A2', to: `${sheet.getColumn(headers.length).letter}2` }
     const output = await workbook.xlsx.writeBuffer()
@@ -113,7 +201,7 @@ export class CustomerImportService {
     if (headers.length === 0 || headers.some((header) => !header)) {
       throw new BadRequestException('表头行必须是完整的列标题，列标题之间不能留空')
     }
-    if (new Set(headers).size !== headers.length)
+    if (new Set(headers.map(normalizeHeaderLabel)).size !== headers.length)
       throw new BadRequestException('Excel 列标题不能重复')
 
     const rows: { rowNumber: number; rawData: RawRow }[] = []
@@ -124,6 +212,7 @@ export class CustomerImportService {
       ) as RawRow
       if (Object.values(rawData).every((value) => value == null || String(value).trim() === ''))
         continue
+      if (isTemplateExampleRow(rawData)) continue
       rows.push({ rowNumber, rawData })
     }
     if (rows.length === 0) throw new BadRequestException('Excel 中没有客户数据')
@@ -439,7 +528,9 @@ function suggestMapping(headers: string[]): Partial<Record<CustomerImportField, 
   return Object.fromEntries(
     Object.entries(HEADER_ALIASES).flatMap(([field, aliases]) => {
       const header = headers.find((candidate) =>
-        aliases.some((alias) => alias.toLowerCase() === candidate.toLowerCase()),
+        aliases.some(
+          (alias) => alias.toLowerCase() === normalizeHeaderLabel(candidate).toLowerCase(),
+        ),
       )
       return header ? [[field, header]] : []
     }),
@@ -457,7 +548,7 @@ function findHeaderRowNumber(sheet: ExcelJS.Worksheet): number {
 
   const nameAliases = new Set(HEADER_ALIASES.name.map((alias) => alias.toLowerCase()))
   const recognized = candidateRows.find(({ values }) =>
-    values.some((value) => nameAliases.has(value.toLowerCase())),
+    values.some((value) => nameAliases.has(normalizeHeaderLabel(value).toLowerCase())),
   )
   if (recognized) return recognized.rowNumber
 
@@ -471,6 +562,28 @@ function isInstructionRow(values: string[]): boolean {
   if (nonEmpty.length === 0) return true
   const text = [...new Set(nonEmpty)].join(' ')
   return /^(填写|导入|使用|模板)?说明\s*[:：]/i.test(text)
+}
+
+function normalizeHeaderLabel(value: string): string {
+  return value.replace(/\s*[＊*]\s*$/, '').trim()
+}
+
+function isTemplateExampleRow(rawData: RawRow): boolean {
+  return Object.values(rawData).some(
+    (value) => typeof value === 'string' && value.trim().startsWith(TEMPLATE_EXAMPLE_MARKER),
+  )
+}
+
+function addWorksheetDataValidation(
+  sheet: ExcelJS.Worksheet,
+  range: string,
+  validation: ExcelJS.DataValidation,
+): void {
+  // ExcelJS 运行时支持范围级 dataValidations，但 Worksheet 的公开类型声明遗漏了该属性。
+  const worksheet = sheet as ExcelJS.Worksheet & {
+    dataValidations: { add(targetRange: string, rule: ExcelJS.DataValidation): void }
+  }
+  worksheet.dataValidations.add(range, validation)
 }
 
 function trimTrailingEmpty(values: string[]): string[] {
