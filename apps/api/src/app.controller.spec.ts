@@ -16,8 +16,8 @@ describe('AppController', () => {
   })
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!')
+    it('should identify the API service', () => {
+      expect(appController.getHello()).toBe('Lite CRM API')
     })
   })
 })

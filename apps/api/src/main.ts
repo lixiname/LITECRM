@@ -6,10 +6,23 @@ import { AppModule } from './app.module'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
+  const isProduction = process.env.NODE_ENV === 'production'
 
   // 全局前缀 /api：Nginx 反代约定（规格 §9.2）
   app.setGlobalPrefix('api')
-  app.enableCors()
+  const corsOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+  if (!isProduction) {
+    app.enableCors()
+  } else if (corsOrigins.length) {
+    app.enableCors({ origin: corsOrigins })
+  }
+  if (isProduction) {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1)
+  }
+  app.enableShutdownHooks()
 
   // 全局 DTO 校验（规格 §6.3：每接口必配 class-validator DTO）
   app.useGlobalPipes(
@@ -26,7 +39,9 @@ async function bootstrap() {
     .setVersion('1.0')
     .build()
   const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup('api/docs', app, document)
+  if (!isProduction || process.env.ENABLE_SWAGGER === 'true') {
+    SwaggerModule.setup('api/docs', app, document)
+  }
 
   await app.listen(process.env.PORT ?? 3001)
 }
