@@ -51,6 +51,15 @@
             <strong>{{ action.customerName }}</strong> · {{ action.content }}
           </span>
           <div class="week-view__actions">
+            <el-button
+              v-if="action.guidanceCount"
+              size="small"
+              text
+              type="primary"
+              @click.stop="openGuidance(action)"
+            >
+              指导 {{ action.guidanceCount }}<span v-if="action.unreadGuidanceCount"> · 新</span>
+            </el-button>
             <span>点击执行</span>
             <span @click.stop>
               <FollowUpActionMenu :action="action" hide-execute @command="handleActionCommand" />
@@ -116,7 +125,17 @@
                   <small v-if="action.opportunityName">{{ action.opportunityName }}</small>
                   <div :title="action.content">{{ action.content }}</div>
                   <div class="week-view__item-actions">
-                    <span>点击填报</span>
+                    <el-button
+                      v-if="action.guidanceCount"
+                      size="small"
+                      text
+                      type="primary"
+                      @click.stop="openGuidance(action)"
+                    >
+                      指导 {{ action.guidanceCount
+                      }}<span v-if="action.unreadGuidanceCount"> · 新</span>
+                    </el-button>
+                    <span v-else>点击填报</span>
                     <span @click.stop>
                       <FollowUpActionMenu
                         :action="action"
@@ -169,6 +188,15 @@
                   <small>{{
                     action.status === 'completed' ? '已执行' : action.cancelReason
                   }}</small>
+                  <el-button
+                    v-if="action.guidanceCount"
+                    size="small"
+                    text
+                    type="primary"
+                    @click.stop="openGuidance(action)"
+                  >
+                    查看指导 {{ action.guidanceCount }}
+                  </el-button>
                 </div>
               </details>
 
@@ -361,6 +389,12 @@
       :record="selectedActualRecord"
       :plan="selectedActualPlan"
     />
+    <PlanGuidanceDialog
+      v-model="guidanceVisible"
+      :plan="guidancePlan"
+      recipient-view
+      @changed="reload"
+    />
   </div>
 </template>
 
@@ -377,6 +411,7 @@ import OpportunityCommandDialogs from '../components/opportunities/OpportunityCo
 import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
 import ComplaintCommandDialog from '../components/complaints/ComplaintCommandDialog.vue'
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
+import PlanGuidanceDialog from '../components/planning/PlanGuidanceDialog.vue'
 import {
   createSalesPlan,
   businessWeekRange,
@@ -420,6 +455,8 @@ const dialogComplaint = ref<ComplaintDetail>()
 const actualDetailVisible = ref(false)
 const selectedActualRecord = ref<ActualRecordVM>()
 const selectedActualPlan = ref<SalesPlan>()
+const guidanceVisible = ref(false)
+const guidancePlan = ref<SalesPlan>()
 
 const today = new Date()
 const todayStr = fmt(today)
@@ -523,6 +560,11 @@ function goToday() {
 
 function isOverdue(action: SalesPlan): boolean {
   return action.status === 'pending' && action.plannedAt.slice(0, 10) < todayStr
+}
+
+function openGuidance(plan: SalesPlan) {
+  guidancePlan.value = plan
+  guidanceVisible.value = true
 }
 
 function disablePastDate(value: Date): boolean {

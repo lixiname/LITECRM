@@ -35,9 +35,20 @@
             <span>{{ action.content }}</span>
             <small>{{ action.plannedAt }}</small>
           </div>
-          <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
-            改期
-          </van-button>
+          <div class="plan-row__actions">
+            <van-button
+              v-if="action.guidanceCount"
+              size="mini"
+              plain
+              type="primary"
+              @click.stop="openGuidance(action)"
+            >
+              指导 {{ action.guidanceCount }}<span v-if="action.unreadGuidanceCount"> · 新</span>
+            </van-button>
+            <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
+              改期
+            </van-button>
+          </div>
         </div>
       </section>
 
@@ -118,9 +129,20 @@
               <strong>{{ action.customerName }}</strong>
               <span>{{ action.content }}</span>
             </div>
-            <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
-              改期
-            </van-button>
+            <div class="plan-row__actions">
+              <van-button
+                v-if="action.guidanceCount"
+                size="mini"
+                plain
+                type="primary"
+                @click.stop="openGuidance(action)"
+              >
+                指导 {{ action.guidanceCount }}<span v-if="action.unreadGuidanceCount"> · 新</span>
+              </van-button>
+              <van-button v-if="canWrite" size="mini" plain @click.stop="openReschedule(action)">
+                改期
+              </van-button>
+            </div>
           </div>
         </section>
 
@@ -176,6 +198,15 @@
             <span>{{ planLabel(action.planKind) }}</span>
             <strong>{{ action.customerName }}</strong>
             <small>{{ action.status === 'completed' ? '已执行' : action.cancelReason }}</small>
+            <van-button
+              v-if="action.guidanceCount"
+              size="mini"
+              plain
+              type="primary"
+              @click.stop="openGuidance(action)"
+            >
+              查看指导 {{ action.guidanceCount }}
+            </van-button>
           </div>
         </details>
 
@@ -283,6 +314,7 @@
       :max-date="rescheduleMaxDate"
       @confirm="selectRescheduleDate"
     />
+    <PlanGuidanceSheet v-model="guidanceVisible" :plan="guidancePlan" @changed="reload" />
   </div>
 </template>
 
@@ -290,6 +322,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import PlanGuidanceSheet from '../components/planning/PlanGuidanceSheet.vue'
 import {
   getSalesPlanReschedules,
   getWeekView,
@@ -355,6 +388,8 @@ const calendarMinDate = new Date(today.getFullYear() - 2, 0, 1)
 const calendarMaxDate = new Date(today.getFullYear() + 2, 11, 31)
 const showRescheduleCalendar = ref(false)
 const rescheduleMaxDate = new Date(today.getFullYear() + 2, 11, 31)
+const guidanceVisible = ref(false)
+const guidancePlan = ref<SalesPlan>()
 const {
   data: view,
   loading,
@@ -457,6 +492,10 @@ function moveSelectedDay(offset: -1 | 1) {
 }
 function executePlan(action: SalesPlan) {
   if (canWrite.value) void router.push(salesPlanExecutionRoute(action))
+}
+function openGuidance(plan: SalesPlan) {
+  guidancePlan.value = plan
+  guidanceVisible.value = true
 }
 function isOverdue(action: SalesPlan): boolean {
   return action.status === 'pending' && action.plannedAt.slice(0, 10) < todayText
@@ -777,6 +816,11 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 }
 .plan-row--overdue {
   color: var(--crm-color-danger);
+}
+.plan-row__actions {
+  display: grid;
+  gap: var(--crm-spacing-xs);
+  justify-items: end;
 }
 .plan-row__kind {
   width: fit-content;

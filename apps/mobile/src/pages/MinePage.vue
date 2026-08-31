@@ -34,7 +34,7 @@
           :key="alert.key"
           :title="alert.title"
           :label="alert.summary"
-          :is-link="alert.type !== 'management_comment'"
+          is-link
           @click="openAlert(alert)"
         >
           <template #icon>
@@ -92,12 +92,18 @@
     <div class="mine__logout">
       <van-button round block type="danger" plain @click="handleLogout">退出登录</van-button>
     </div>
+    <PlanGuidanceSheet
+      v-model="guidanceVisible"
+      :plan="guidancePlan"
+      @changed="handleGuidanceRead"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import {
   DATA_SCOPE_LABELS,
   getWeekView,
@@ -112,10 +118,13 @@ import {
 } from '@crm/domain'
 import { localDate, salesPlanExecutionRoute } from '../libs/sales-workbench'
 import MyPipelineSummaryCard from '../components/MyPipelineSummaryCard.vue'
+import PlanGuidanceSheet from '../components/planning/PlanGuidanceSheet.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const canWrite = computed(() => auth.hasAbility('customer.write'))
+const guidanceVisible = ref(false)
+const guidancePlan = ref<SalesPlan>()
 const now = new Date()
 const today = localDate(now)
 const monday = new Date(now)
@@ -152,16 +161,26 @@ function handleLogout() {
   void router.push('/login')
 }
 async function openAlert(alert: AlertItem) {
-  if (!alert.read) {
-    await markAlertRead(alert.key)
-    await reloadAlerts()
+  try {
+    if (!alert.read) {
+      await markAlertRead(alert.key)
+      await reloadAlerts()
+    }
+    if (alert.type === 'management_comment') {
+      guidancePlan.value = await getSalesPlan(alert.targetId)
+      guidanceVisible.value = true
+    } else if (alert.type === 'overdue_action') {
+      const plan = await getSalesPlan(alert.targetId)
+      execute(plan)
+    } else if (alert.customerId) {
+      void router.push(`/customers/${alert.customerId}`)
+    }
+  } catch (alertError) {
+    showToast(alertError instanceof Error ? alertError.message : '提醒打开失败')
   }
-  if (alert.type === 'overdue_action') {
-    const plan = await getSalesPlan(alert.targetId)
-    execute(plan)
-  } else if (alert.customerId) {
-    void router.push(`/customers/${alert.customerId}`)
-  }
+}
+async function handleGuidanceRead() {
+  await Promise.all([reload(), reloadAlerts()])
 }
 function planLabel(kind: SalesPlanKind): string {
   return {

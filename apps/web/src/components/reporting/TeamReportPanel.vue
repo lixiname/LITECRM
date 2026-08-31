@@ -96,9 +96,14 @@
       <div v-loading="weekLoading" class="team-panel__week">
         <div v-if="week?.overdue.length" class="team-panel__older-overdue">
           <strong>更早逾期 {{ week.overdue.length }} 项</strong>
-          <span v-for="item in week.overdue.slice(0, 5)" :key="item.id">
-            {{ dateText(item.plannedAt) }} · {{ item.customerName }} · {{ item.content }}
-          </span>
+          <div v-for="item in week.overdue.slice(0, 5)" :key="item.id" class="team-panel__line">
+            <span
+              >{{ dateText(item.plannedAt) }} · {{ item.customerName }} · {{ item.content }}</span
+            >
+            <el-button size="small" text type="primary" @click="openGuidance(item)">
+              {{ guidanceLabel(item) }}
+            </el-button>
+          </div>
         </div>
         <section v-for="day in days" :key="day.date" class="team-panel__day">
           <header>
@@ -119,6 +124,15 @@
                   }}
                 </el-tag>
                 <span>{{ plan.customerName }} · {{ plan.content }}</span>
+                <el-button
+                  v-if="plan.status === 'pending' || plan.guidanceCount"
+                  size="small"
+                  text
+                  type="primary"
+                  @click="openGuidance(plan)"
+                >
+                  {{ guidanceLabel(plan) }}
+                </el-button>
               </div>
               <small v-if="!day.plans.length" class="team-panel__muted">无计划</small>
             </div>
@@ -138,16 +152,24 @@
         </section>
       </div>
     </el-drawer>
+    <PlanGuidanceDialog
+      v-model="guidanceVisible"
+      :plan="guidancePlan"
+      can-comment
+      @changed="reloadSelectedWeek"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import PlanGuidanceDialog from '../planning/PlanGuidanceDialog.vue'
 import {
   getWeekView,
   type ActionWeekView,
   type ReportingFilters,
+  type SalesPlan,
   type TeamMemberReport,
   type TeamReport,
 } from '@crm/domain'
@@ -164,6 +186,8 @@ const selected = ref<TeamMemberReport>()
 const week = ref<ActionWeekView>()
 const drawerVisible = ref(false)
 const weekLoading = ref(false)
+const guidanceVisible = ref(false)
+const guidancePlan = ref<SalesPlan>()
 
 type ActualRecord =
   ActionWeekView['businessRecords'][number] | ActionWeekView['complaintRecords'][number]
@@ -251,14 +275,25 @@ function currentRange(): [string, string] {
 async function openPeriod(member: TeamMemberReport) {
   selected.value = member
   drawerVisible.value = true
+  await reloadSelectedWeek()
+}
+async function reloadSelectedWeek() {
+  if (!selected.value) return
   weekLoading.value = true
   try {
-    week.value = await getWeekView(props.filters.start, props.filters.end, member.ownerId)
+    week.value = await getWeekView(props.filters.start, props.filters.end, selected.value.ownerId)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '内容加载失败')
   } finally {
     weekLoading.value = false
   }
+}
+function openGuidance(plan: SalesPlan) {
+  guidancePlan.value = plan
+  guidanceVisible.value = true
+}
+function guidanceLabel(plan: SalesPlan): string {
+  return plan.guidanceCount ? `指导 ${plan.guidanceCount}` : '写指导'
 }
 function sum(
   members: TeamMemberReport[],
