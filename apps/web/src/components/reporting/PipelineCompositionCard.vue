@@ -5,6 +5,9 @@
         <span class="pipeline-composition__eyebrow">{{ title }}</span>
         <small>截至 {{ pool.asOf }} · 每个开放商机只计一次</small>
       </div>
+      <div v-if="$slots['header-action']" class="pipeline-composition__header-action">
+        <slot name="header-action" />
+      </div>
       <div class="pipeline-composition__total">
         <strong>{{ money(pool.totalAmount) }}</strong>
         <span>{{ pool.totalCount }} 个开放商机</span>
@@ -98,8 +101,14 @@ function money(value: number): string {
   align-items: center;
 }
 .pipeline-composition__header {
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--crm-spacing-lg);
+}
+.pipeline-composition__header-action {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
 }
 .pipeline-composition__header small,
 .pipeline-composition__item small {
@@ -151,41 +160,49 @@ function money(value: number): string {
 }
 .pipeline-composition__legend {
   display: grid;
-  gap: 2px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
 }
 .pipeline-composition__item {
   display: grid;
-  grid-template-columns: 10px minmax(90px, 1fr) 58px minmax(150px, auto);
-  gap: 10px;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 2px 8px;
   min-width: 0;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--crm-color-divider);
-}
-.pipeline-composition__item:last-child {
-  border-bottom: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--crm-color-divider);
+  border-radius: var(--crm-radius-sm);
+  background: var(--crm-color-bg-subtle);
 }
 .pipeline-composition__item i {
+  grid-row: 1 / 3;
+  align-self: center;
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
 }
 .pipeline-composition__item small {
+  grid-column: 2;
   margin: 0;
-  text-align: right;
+  font-size: 11px;
 }
 .pipeline-composition__item b,
 .pipeline-composition__item strong {
   font-size: 13px;
 }
 .pipeline-composition__item-value {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: center;
   display: grid;
-  grid-template-columns: minmax(95px, 1fr) 42px;
-  gap: 10px;
+  gap: 1px;
   text-align: right;
+  white-space: nowrap;
 }
 .pipeline-composition__item-value em {
   color: var(--crm-color-text-secondary);
+  font-size: 11px;
   font-style: normal;
   font-variant-numeric: tabular-nums;
 }
@@ -224,11 +241,21 @@ function money(value: number): string {
   height: 10px;
 }
 @media (max-width: 900px) {
-  .pipeline-composition__item {
-    grid-template-columns: 10px minmax(80px, 1fr) minmax(130px, auto);
+  .pipeline-composition__header {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
-  .pipeline-composition__item > small {
-    display: none;
+  .pipeline-composition__header-action {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .pipeline-composition__total {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+}
+@media (max-width: 720px) {
+  .pipeline-composition__legend {
+    grid-template-columns: 1fr;
   }
 }
 </style>

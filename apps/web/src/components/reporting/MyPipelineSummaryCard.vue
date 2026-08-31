@@ -7,10 +7,11 @@
       >
     </el-alert>
     <template v-else-if="summary">
-      <PipelineCompositionCard :pool="summary.pool" title="我的开放商机" compact />
-      <el-button class="my-pipeline-summary__link" link type="primary" @click="openMine">
-        查看我的商机 →
-      </el-button>
+      <PipelineCompositionCard :pool="summary.pool" title="我的开放商机" compact>
+        <template #header-action>
+          <el-button link type="primary" @click="openMine">查看我的商机 →</el-button>
+        </template>
+      </PipelineCompositionCard>
     </template>
   </div>
 </template>
@@ -36,12 +37,6 @@ function openMine() {
 
 <style scoped>
 .my-pipeline-summary {
-  position: relative;
   margin-bottom: var(--crm-spacing-md);
-}
-.my-pipeline-summary__link {
-  position: absolute;
-  top: var(--crm-spacing-md);
-  right: var(--crm-spacing-md);
 }
 </style>
