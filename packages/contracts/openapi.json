@@ -2122,7 +2122,7 @@
             "name": "salesRegionId",
             "required": false,
             "in": "query",
-            "description": "销售大区 ID（仅客户/商机类指标）",
+            "description": "人员所属销售大区 ID（只用于统计分组/筛选）",
             "schema": {
               "type": "string"
             }
@@ -2180,7 +2180,7 @@
             "name": "salesRegionId",
             "required": false,
             "in": "query",
-            "description": "销售大区 ID（仅客户/商机类指标）",
+            "description": "人员所属销售大区 ID（只用于统计分组/筛选）",
             "schema": {
               "type": "string"
             }
@@ -2250,7 +2250,7 @@
             "name": "salesRegionId",
             "required": false,
             "in": "query",
-            "description": "销售大区 ID（仅客户/商机类指标）",
+            "description": "人员所属销售大区 ID（只用于统计分组/筛选）",
             "schema": {
               "type": "string"
             }
@@ -2308,7 +2308,7 @@
             "name": "salesRegionId",
             "required": false,
             "in": "query",
-            "description": "销售大区 ID（仅客户/商机类指标）",
+            "description": "人员所属销售大区 ID（只用于统计分组/筛选）",
             "schema": {
               "type": "string"
             }
@@ -2366,7 +2366,7 @@
             "name": "salesRegionId",
             "required": false,
             "in": "query",
-            "description": "销售大区 ID（仅客户/商机类指标）",
+            "description": "人员所属销售大区 ID（只用于统计分组/筛选）",
             "schema": {
               "type": "string"
             }
@@ -2610,10 +2610,15 @@
             "nullable": true,
             "description": "直属上级 ID（组织树）"
           },
-          "region": {
+          "salesRegionId": {
             "type": "string",
             "nullable": true,
-            "description": "区域"
+            "description": "人员所属销售大区 ID"
+          },
+          "salesRegionName": {
+            "type": "string",
+            "nullable": true,
+            "description": "人员所属销售大区名称"
           },
           "isActive": {
             "type": "boolean",
@@ -2662,9 +2667,9 @@
             "type": "string",
             "description": "手机号（钉钉绑定预留）"
           },
-          "region": {
+          "salesRegionId": {
             "type": "string",
-            "description": "区域"
+            "description": "人员所属销售大区 ID（经营统计维度，不参与权限推导）"
           }
         },
         "required": ["username", "password", "displayName", "role"]
@@ -2697,9 +2702,10 @@
             "type": "string",
             "description": "手机号（钉钉绑定预留）"
           },
-          "region": {
+          "salesRegionId": {
             "type": "string",
-            "description": "区域"
+            "nullable": true,
+            "description": "人员所属销售大区 ID（null=未分配）"
           },
           "isActive": {
             "type": "boolean",

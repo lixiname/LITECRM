@@ -7,6 +7,7 @@ import {
   customerGradeQuotaDefaults,
   customers,
   userCustomerGradeQuotaOverrides,
+  salesRegions,
   users,
 } from '../common/db/schema'
 import type {
@@ -29,12 +30,13 @@ export class GradeQuotasService {
           username: users.username,
           displayName: users.displayName,
           role: users.role,
-          region: users.region,
+          region: salesRegions.name,
           isActive: users.isActive,
         })
         .from(users)
+        .leftJoin(salesRegions, eq(users.salesRegionId, salesRegions.id))
         .where(inArray(users.role, ['sales', 'executive']))
-        .orderBy(desc(users.isActive), asc(users.region), asc(users.displayName)),
+        .orderBy(desc(users.isActive), asc(salesRegions.sortOrder), asc(users.displayName)),
       db.select().from(userCustomerGradeQuotaOverrides),
       db
         .select({

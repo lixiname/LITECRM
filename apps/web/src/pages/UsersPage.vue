@@ -19,7 +19,9 @@
           </template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号" min-width="110" />
-        <el-table-column prop="region" label="区域" min-width="80" />
+        <el-table-column prop="salesRegionName" label="所属销售大区" min-width="120">
+          <template #default="{ row }">{{ (row as User).salesRegionName ?? '未分配' }}</template>
+        </el-table-column>
         <el-table-column label="状态" min-width="90">
           <template #default="{ row }">
             <el-tag :type="row.isActive ? 'success' : 'danger'">
@@ -97,19 +99,19 @@
         <el-form-item label="手机号">
           <el-input v-model="dialog.phone" placeholder="可选" />
         </el-form-item>
-        <el-form-item label="区域">
+        <el-form-item label="销售大区">
           <el-select
-            v-model="dialog.region"
+            v-model="dialog.salesRegionId"
             clearable
             filterable
-            placeholder="可选"
+            placeholder="可选（用于经营分组）"
             style="width: 100%"
           >
             <el-option
               v-for="region in salesRegions ?? []"
               :key="region.id"
               :label="region.name"
-              :value="region.name"
+              :value="region.id"
             />
           </el-select>
         </el-form-item>
@@ -156,7 +158,7 @@ const dialog = reactive({
   role: 'sales' as Role,
   reportsToId: '',
   phone: '',
-  region: '',
+  salesRegionId: '',
   version: 0,
 })
 
@@ -185,7 +187,7 @@ function openAdd() {
   dialog.role = 'sales'
   dialog.reportsToId = ''
   dialog.phone = ''
-  dialog.region = ''
+  dialog.salesRegionId = ''
   dialog.version = 0
 }
 
@@ -199,7 +201,7 @@ function openEdit(u: User) {
   dialog.role = u.role as Role
   dialog.reportsToId = u.reportsToId ?? ''
   dialog.phone = u.phone ?? ''
-  dialog.region = u.region ?? ''
+  dialog.salesRegionId = u.salesRegionId ?? ''
   dialog.version = u.version
 }
 
@@ -225,7 +227,7 @@ async function saveUser() {
         role: dialog.role,
         reportsToId: dialog.reportsToId || null,
         phone: dialog.phone.trim() || undefined,
-        region: dialog.region.trim() || undefined,
+        salesRegionId: dialog.salesRegionId || null,
       }
       await updateUser(dialog.id, dto)
       ElMessage.success('已更新')
@@ -237,7 +239,7 @@ async function saveUser() {
         role: dialog.role,
         reportsToId: dialog.reportsToId || undefined,
         phone: dialog.phone.trim() || undefined,
-        region: dialog.region.trim() || undefined,
+        salesRegionId: dialog.salesRegionId || undefined,
       }
       await createUser(dto)
       ElMessage.success('已新增')

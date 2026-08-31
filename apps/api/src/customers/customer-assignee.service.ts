@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { and, eq, inArray } from 'drizzle-orm'
 import { db, type DbClient } from '../common/db/db'
-import { users } from '../common/db/schema'
+import { salesRegions, users } from '../common/db/schema'
 
 type QueryClient = typeof db | DbClient
 
@@ -14,11 +14,12 @@ export class CustomerAssigneeService {
         id: users.id,
         displayName: users.displayName,
         role: users.role,
-        region: users.region,
+        region: salesRegions.name,
       })
       .from(users)
+      .leftJoin(salesRegions, eq(users.salesRegionId, salesRegions.id))
       .where(and(eq(users.isActive, true), inArray(users.role, ['sales', 'executive'])))
-      .orderBy(users.region, users.displayName)
+      .orderBy(salesRegions.sortOrder, users.displayName)
   }
 
   async assertAssignable(client: QueryClient, userId: string) {

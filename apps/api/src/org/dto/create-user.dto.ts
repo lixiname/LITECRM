@@ -33,8 +33,8 @@ export class CreateUserDto {
   @IsString()
   phone?: string
 
-  @ApiPropertyOptional({ description: '区域' })
+  @ApiPropertyOptional({ description: '人员所属销售大区 ID（经营统计维度，不参与权限推导）' })
   @IsOptional()
-  @IsString()
-  region?: string
+  @IsUUID()
+  salesRegionId?: string
 }

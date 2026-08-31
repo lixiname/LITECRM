@@ -261,13 +261,9 @@ export class OwnershipService {
       throw new ForbiddenException('无权访问该客户池')
     }
     const [match] = await db
-      .select({ id: salesRegions.id })
+      .select({ id: users.id })
       .from(users)
-      .innerJoin(
-        salesRegions,
-        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
-      )
-      .where(and(eq(users.id, actor.id), eq(salesRegions.id, salesRegionId)))
+      .where(and(eq(users.id, actor.id), eq(users.salesRegionId, salesRegionId)))
       .limit(1)
     if (!match) throw new ForbiddenException('该客户不在你的销售区域')
   }
@@ -281,11 +277,7 @@ export class OwnershipService {
     const [match] = await client
       .select({ id: users.id })
       .from(users)
-      .innerJoin(
-        salesRegions,
-        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
-      )
-      .where(and(eq(users.id, assigneeId), eq(salesRegions.id, salesRegionId)))
+      .where(and(eq(users.id, assigneeId), eq(users.salesRegionId, salesRegionId)))
       .limit(1)
     if (!match) throw new ConflictException('负责人所属区域与客户销售区域不一致')
   }

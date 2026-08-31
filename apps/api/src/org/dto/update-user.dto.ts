@@ -33,10 +33,14 @@ export class UpdateUserDto {
   @IsString()
   phone?: string
 
-  @ApiPropertyOptional({ description: '区域' })
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: '人员所属销售大区 ID（null=未分配）',
+  })
   @IsOptional()
-  @IsString()
-  region?: string
+  @IsUUID()
+  salesRegionId?: string | null
 
   @ApiPropertyOptional({ description: '是否启用' })
   @IsOptional()

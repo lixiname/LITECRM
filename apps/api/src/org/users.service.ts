@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { and, eq, or, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import * as bcrypt from 'bcryptjs'
 import { db } from '../common/db/db'
 import { salesRegions, users } from '../common/db/schema'
@@ -19,7 +19,7 @@ export class UsersService {
   constructor(private readonly authService: AuthService) {}
 
   async create(dto: CreateUserDto) {
-    await this.assertRegion(dto.region)
+    await this.assertSalesRegion(dto.salesRegionId)
     const [exists] = await db
       .select({ id: users.id })
       .from(users)
@@ -37,19 +37,19 @@ export class UsersService {
         role: dto.role,
         reportsToId: dto.reportsToId ?? null,
         phone: dto.phone ?? null,
-        region: dto.region ?? null,
+        salesRegionId: dto.salesRegionId ?? null,
       })
       .returning()
-    return toUserDto(created)
+    return this.findOne(created.id)
   }
 
   async findAll() {
-    const all = await db.select().from(users)
+    const all = await this.userQuery()
     return all.map(toUserDto)
   }
 
   async findOne(id: string) {
-    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+    const [user] = await this.userQuery().where(eq(users.id, id)).limit(1)
     if (!user) throw new NotFoundException('用户不存在')
     return toUserDto(user)
   }
@@ -58,7 +58,7 @@ export class UsersService {
     const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1)
     if (!existing) throw new NotFoundException('用户不存在')
     if (existing.version !== dto.version) throw new ConflictException('用户已被更新，请刷新后重试')
-    await this.assertRegion(dto.region)
+    await this.assertSalesRegion(dto.salesRegionId ?? undefined)
 
     const [updated] = await db
       .update(users)
@@ -67,7 +67,7 @@ export class UsersService {
         role: dto.role ?? existing.role,
         reportsToId: dto.reportsToId === undefined ? existing.reportsToId : dto.reportsToId,
         phone: dto.phone === undefined ? existing.phone : dto.phone,
-        region: dto.region === undefined ? existing.region : dto.region,
+        salesRegionId: dto.salesRegionId === undefined ? existing.salesRegionId : dto.salesRegionId,
         isActive: dto.isActive ?? existing.isActive,
         updatedAt: new Date(),
         version: sql`${users.version} + 1`,
@@ -75,7 +75,7 @@ export class UsersService {
       .where(and(eq(users.id, id), eq(users.version, dto.version)))
       .returning()
     if (!updated) throw new ConflictException('用户已被更新，请刷新后重试')
-    return toUserDto(updated)
+    return this.findOne(updated.id)
   }
 
   // 停用：isActive=false + tokenVersion+1 全端失效（§6.5）
@@ -101,24 +101,50 @@ export class UsersService {
     return this.authService.resetPassword(id)
   }
 
-  private async assertRegion(region?: string) {
-    if (!region) return
+  private userQuery() {
+    return db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        role: users.role,
+        phone: users.phone,
+        reportsToId: users.reportsToId,
+        salesRegionId: users.salesRegionId,
+        salesRegionName: salesRegions.name,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        version: users.version,
+      })
+      .from(users)
+      .leftJoin(salesRegions, eq(users.salesRegionId, salesRegions.id))
+  }
+
+  private async assertSalesRegion(salesRegionId?: string) {
+    if (!salesRegionId) return
     const [match] = await db
       .select({ id: salesRegions.id })
       .from(salesRegions)
-      .where(
-        and(
-          eq(salesRegions.isActive, true),
-          or(eq(salesRegions.name, region), eq(salesRegions.code, region)),
-        ),
-      )
+      .where(and(eq(salesRegions.isActive, true), eq(salesRegions.id, salesRegionId)))
       .limit(1)
-    if (!match) throw new BadRequestException('请选择有效的销售区域')
+    if (!match) throw new BadRequestException('请选择有效的人员所属销售大区')
   }
 }
 
 // 输出裁剪：剔除 passwordHash（db 行 → 安全 DTO）
-type UserRow = typeof users.$inferSelect
+type UserRow = Pick<
+  typeof users.$inferSelect,
+  | 'id'
+  | 'username'
+  | 'displayName'
+  | 'role'
+  | 'phone'
+  | 'reportsToId'
+  | 'salesRegionId'
+  | 'isActive'
+  | 'createdAt'
+  | 'version'
+> & { salesRegionName: string | null }
 
 export function toUserDto(u: UserRow) {
   return {
@@ -128,7 +154,8 @@ export function toUserDto(u: UserRow) {
     role: u.role as Role,
     phone: u.phone,
     reportsToId: u.reportsToId,
-    region: u.region,
+    salesRegionId: u.salesRegionId,
+    salesRegionName: u.salesRegionName,
     isActive: u.isActive,
     createdAt: u.createdAt,
     version: u.version,

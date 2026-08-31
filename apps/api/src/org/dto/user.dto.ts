@@ -21,8 +21,11 @@ export class UserDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: '直属上级 ID（组织树）' })
   reportsToId!: string | null
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: '区域' })
-  region!: string | null
+  @ApiPropertyOptional({ type: String, nullable: true, description: '人员所属销售大区 ID' })
+  salesRegionId!: string | null
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: '人员所属销售大区名称' })
+  salesRegionName!: string | null
 
   @ApiProperty({ description: '是否启用' })
   isActive!: boolean

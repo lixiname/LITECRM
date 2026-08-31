@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { baseColumns } from './common'
+import { salesRegions } from './geography'
 import type { CustomerGrade } from '../../constants'
 
 /**
@@ -32,7 +33,7 @@ export const users = pgTable(
     lockedUntil: timestamp('locked_until', { withTimezone: true }), // 锁定截止（null=未锁）
     role: text('role').notNull(), // sales/executive/assistant/admin
     reportsToId: uuid('reports_to_id'), // 汇报树单源（§6.1），外键在 extra config 定义（自引用）
-    region: text('region'), // 数据属性（不进权限模型）
+    salesRegionId: uuid('sales_region_id').references(() => salesRegions.id), // 人员所属管理大区，只用于统计分组，不进权限模型
     isActive: boolean('is_active').default(true).notNull(),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
   },

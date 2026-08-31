@@ -1004,12 +1004,8 @@ export class CustomersService {
 
   private async resolveActorSalesRegionId(actorId: string): Promise<string | null> {
     const [row] = await db
-      .select({ salesRegionId: salesRegions.id })
+      .select({ salesRegionId: users.salesRegionId })
       .from(users)
-      .leftJoin(
-        salesRegions,
-        or(eq(salesRegions.name, users.region), eq(salesRegions.code, users.region)),
-      )
       .where(eq(users.id, actorId))
       .limit(1)
     return row?.salesRegionId ?? null

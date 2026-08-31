@@ -1232,8 +1232,10 @@ export interface components {
             phone?: string | null;
             /** @description 直属上级 ID（组织树） */
             reportsToId?: string | null;
-            /** @description 区域 */
-            region?: string | null;
+            /** @description 人员所属销售大区 ID */
+            salesRegionId?: string | null;
+            /** @description 人员所属销售大区名称 */
+            salesRegionName?: string | null;
             /** @description 是否启用 */
             isActive: boolean;
             /**
@@ -1257,8 +1259,8 @@ export interface components {
             reportsToId?: string;
             /** @description 手机号（钉钉绑定预留） */
             phone?: string;
-            /** @description 区域 */
-            region?: string;
+            /** @description 人员所属销售大区 ID（经营统计维度，不参与权限推导） */
+            salesRegionId?: string;
         };
         UpdateUserDto: {
             /** @description 用户当前版本号，用于防止并发覆盖 */
@@ -1271,8 +1273,8 @@ export interface components {
             reportsToId?: string | null;
             /** @description 手机号（钉钉绑定预留） */
             phone?: string;
-            /** @description 区域 */
-            region?: string;
+            /** @description 人员所属销售大区 ID（null=未分配） */
+            salesRegionId?: string | null;
             /** @description 是否启用 */
             isActive?: boolean;
         };
@@ -3560,7 +3562,7 @@ export interface operations {
                 end?: string;
                 /** @description 组织树内人员 ID；不传表示全部可见人员 */
                 ownerId?: string;
-                /** @description 销售大区 ID（仅客户/商机类指标） */
+                /** @description 人员所属销售大区 ID（只用于统计分组/筛选） */
                 salesRegionId?: string;
                 /** @description 产品线稳定字典值（仅客户/商机类指标） */
                 productLine?: string;
@@ -3589,7 +3591,7 @@ export interface operations {
                 end?: string;
                 /** @description 组织树内人员 ID；不传表示全部可见人员 */
                 ownerId?: string;
-                /** @description 销售大区 ID（仅客户/商机类指标） */
+                /** @description 人员所属销售大区 ID（只用于统计分组/筛选） */
                 salesRegionId?: string;
                 /** @description 产品线稳定字典值（仅客户/商机类指标） */
                 productLine?: string;
@@ -3636,7 +3638,7 @@ export interface operations {
                 end?: string;
                 /** @description 组织树内人员 ID；不传表示全部可见人员 */
                 ownerId?: string;
-                /** @description 销售大区 ID（仅客户/商机类指标） */
+                /** @description 人员所属销售大区 ID（只用于统计分组/筛选） */
                 salesRegionId?: string;
                 /** @description 产品线稳定字典值（仅客户/商机类指标） */
                 productLine?: string;
@@ -3665,7 +3667,7 @@ export interface operations {
                 end?: string;
                 /** @description 组织树内人员 ID；不传表示全部可见人员 */
                 ownerId?: string;
-                /** @description 销售大区 ID（仅客户/商机类指标） */
+                /** @description 人员所属销售大区 ID（只用于统计分组/筛选） */
                 salesRegionId?: string;
                 /** @description 产品线稳定字典值（仅客户/商机类指标） */
                 productLine?: string;
@@ -3694,7 +3696,7 @@ export interface operations {
                 end?: string;
                 /** @description 组织树内人员 ID；不传表示全部可见人员 */
                 ownerId?: string;
-                /** @description 销售大区 ID（仅客户/商机类指标） */
+                /** @description 人员所属销售大区 ID（只用于统计分组/筛选） */
                 salesRegionId?: string;
                 /** @description 产品线稳定字典值（仅客户/商机类指标） */
                 productLine?: string;

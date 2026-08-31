@@ -148,6 +148,13 @@
       "when": 1788093569140,
       "tag": "0020_chief_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788139288649,
+      "tag": "0021_salty_sharon_ventura",
+      "breakpoints": true
     }
   ]
 }
