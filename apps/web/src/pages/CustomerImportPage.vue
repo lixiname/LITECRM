@@ -22,7 +22,7 @@
         <p class="customer-import__help">
           支持 .xlsx，单次最多 2,000 行。模板中的红色 * 表示必填或条件必填；第 3
           行是系统自动忽略的示例，可覆盖、删除或从第 4
-          行开始填写。客户名称始终必填；逐行指定客户关系时须填“是否存量客户”；导入在案客户且未选择默认负责人时须填“负责人账号”。
+          行开始填写。客户名称始终必填；逐行指定客户关系时须填“CRM启用前是否成交”；导入在案客户且未选择默认负责人时须填“负责人账号”。
         </p>
         <el-upload
           drag
@@ -56,7 +56,7 @@
         <el-form label-width="150px" class="customer-import__defaults">
           <el-form-item label="客户历史属性" required>
             <el-radio-group v-model="form.defaultRelationship">
-              <el-radio-button value="pre_crm_existing">全部为存量客户</el-radio-button>
+              <el-radio-button value="pre_crm_existing">全部为CRM启用前已成交客户</el-radio-button>
               <el-radio-button value="prospect">全部为潜在客户</el-radio-button>
               <el-radio-button value="per_row">按 Excel 逐行指定</el-radio-button>
             </el-radio-group>

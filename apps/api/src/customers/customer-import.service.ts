@@ -17,7 +17,7 @@ const MAX_IMPORT_ROWS = 2000
 const MAX_HEADER_SCAN_ROWS = 10
 const TEMPLATE_EXAMPLE_MARKER = '【示例】'
 const TEMPLATE_INSTRUCTION =
-  '填写说明：第 2 行为字段名称，请勿删除或修改。红色 * 表示必填或条件必填：客户名称始终必填；选择“逐行指定客户关系”时须填是否存量客户；导入在案客户且未选择默认负责人时须填负责人账号。第 3 行是系统自动忽略的示例，请覆盖、删除或从第 4 行开始填写。'
+  '填写说明：第 2 行为字段名称，请勿删除或修改。红色 * 表示必填或条件必填：客户名称始终必填；选择“逐行指定客户关系”时须填CRM启用前是否成交；导入在案客户且未选择默认负责人时须填负责人账号。第 3 行是系统自动忽略的示例，请覆盖、删除或从第 4 行开始填写。'
 
 const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   name: ['客户名称', '名称', '公司名称', 'name'],
@@ -34,7 +34,7 @@ const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   ownerUsername: ['负责人账号', '负责人', 'ownerUsername'],
   contactName: ['联系人', '联系人姓名', 'contactName'],
   contactPhone: ['联系电话', '联系人电话', '电话', 'contactPhone'],
-  preCrmDealConfirmed: ['是否存量客户', 'CRM前已成交', 'preCrmDealConfirmed'],
+  preCrmDealConfirmed: ['CRM启用前是否成交', '是否存量客户', 'CRM前已成交', 'preCrmDealConfirmed'],
   preCrmSalesAmount: ['CRM前累计成交金额', '历史成交金额', 'preCrmSalesAmount'],
   notes: ['备注', 'notes'],
 }
@@ -454,7 +454,7 @@ function normalizeImportRow(
   let preCrmDealConfirmed = dto.defaultRelationship === 'pre_crm_existing'
   if (dto.defaultRelationship === 'per_row') {
     const parsed = parseRelationship(value('preCrmDealConfirmed'))
-    if (parsed == null) return { error: '请逐行填写是否存量客户' }
+    if (parsed == null) return { error: '请逐行填写CRM启用前是否成交' }
     preCrmDealConfirmed = parsed
   }
   if (amountText && Number(amountText) > 0) preCrmDealConfirmed = true

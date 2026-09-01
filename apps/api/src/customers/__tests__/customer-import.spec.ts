@@ -119,7 +119,7 @@ describe('客户 Excel 冷启动导入', () => {
     expect(sheet?.getCell('A1').text).toContain('红色 * 表示必填或条件必填')
     expect(['A2', 'B2', 'C2'].map((cell) => sheet?.getCell(cell).text)).toEqual([
       '客户名称 *',
-      '是否存量客户 *',
+      'CRM启用前是否成交 *',
       '负责人账号 *',
     ])
     const nameHeader = sheet?.getCell('A2').value as ExcelJS.CellRichTextValue
@@ -142,7 +142,7 @@ describe('客户 Excel 冷启动导入', () => {
     expect(uploaded.body.sampleRows[0].rowNumber).toBe(4)
     expect(uploaded.body.suggestedMapping).toMatchObject({
       name: '客户名称 *',
-      preCrmDealConfirmed: '是否存量客户 *',
+      preCrmDealConfirmed: 'CRM启用前是否成交 *',
       ownerUsername: '负责人账号 *',
     })
   })

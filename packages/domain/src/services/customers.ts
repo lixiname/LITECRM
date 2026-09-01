@@ -31,7 +31,7 @@ export const CUSTOMER_IMPORT_FIELD_OPTIONS = [
   { value: 'ownerUsername', label: '负责人账号/姓名' },
   { value: 'contactName', label: '联系人' },
   { value: 'contactPhone', label: '联系电话' },
-  { value: 'preCrmDealConfirmed', label: '是否存量客户' },
+  { value: 'preCrmDealConfirmed', label: 'CRM启用前是否成交' },
   { value: 'preCrmSalesAmount', label: 'CRM 前累计成交金额' },
   { value: 'notes', label: '备注' },
 ] as const

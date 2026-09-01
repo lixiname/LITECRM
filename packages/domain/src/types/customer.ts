@@ -129,8 +129,8 @@ export const CUSTOMER_RELATIONSHIP_STAGE_OPTIONS: {
   label: string
 }[] = [
   { value: 'prospect', label: '潜在客户' },
-  { value: 'new_customer', label: '本年新客' },
-  { value: 'existing_customer', label: '存量客户' },
+  { value: 'new_customer', label: '本年新客户' },
+  { value: 'existing_customer', label: '老客户' },
 ]
 
 export interface CustomerPage {
