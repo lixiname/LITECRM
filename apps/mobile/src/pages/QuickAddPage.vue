@@ -209,7 +209,12 @@ function pickType(t: QuickRecordType) {
 async function load() {
   loading.value = true
   try {
-    const page = await listCustomers({ page: 1, pageSize: 20, keyword: keyword.value.trim() })
+    const page = await listCustomers({
+      status: 'active',
+      page: 1,
+      pageSize: 20,
+      keyword: keyword.value.trim(),
+    })
     customers.value = page.items
   } finally {
     loading.value = false

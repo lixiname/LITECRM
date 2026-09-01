@@ -1,13 +1,23 @@
 <template>
   <div class="customers">
     <van-nav-bar title="客户" left-arrow @click-left="router.push('/')">
-      <template v-if="canWrite" #right>
+      <template v-if="canWrite && portfolioStatus === 'active'" #right>
         <button class="customers__create" type="button" @click="router.push('/customers/new')">
           新建
         </button>
       </template>
     </van-nav-bar>
-    <van-search v-model="keyword" placeholder="搜索名称/城市" @search="onSearch" />
+    <van-tabs
+      v-if="canBrowsePublic"
+      v-model:active="portfolioStatus"
+      shrink
+      class="customers__tabs"
+      @change="onStatusChange"
+    >
+      <van-tab title="在案" name="active" />
+      <van-tab title="公海" name="public" />
+    </van-tabs>
+    <van-search v-model="keyword" :placeholder="searchPlaceholder" @search="onSearch" />
 
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list
@@ -33,12 +43,16 @@
               <span>{{ relationshipLabel(c.relationshipStage) }}</span>
               <span>{{ statusLabel(c.status) }}</span>
             </div>
-            <div :class="['customers__action', { 'is-overdue': isOverdue(c.nextActionAt) }]">
+            <div
+              v-if="portfolioStatus === 'active'"
+              :class="['customers__action', { 'is-overdue': isOverdue(c.nextActionAt) }]"
+            >
               下一步：{{ nextActionText(c) }}
             </div>
+            <div v-else class="customers__pool-hint">暂无负责人 · 点击查看并认领</div>
           </template>
         </van-cell>
-        <van-empty v-if="finished && !items.length" description="没有符合条件的客户" />
+        <van-empty v-if="finished && !items.length" :description="emptyDescription" />
       </van-list>
     </van-pull-refresh>
   </div>
@@ -46,7 +60,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   listCustomers,
   CUSTOMER_STATUS_OPTIONS,
@@ -61,8 +75,19 @@ import {
 } from '@crm/domain'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const canWrite = computed(() => auth.hasAbility('customer.write'))
+const canBrowsePublic = computed(() => auth.hasAbility('customer.claim'))
+const portfolioStatus = ref<'active' | 'public'>(
+  route.query.status === 'public' && canBrowsePublic.value ? 'public' : 'active',
+)
+const searchPlaceholder = computed(() =>
+  portfolioStatus.value === 'public' ? '搜索公海客户名称/城市' : '搜索在案客户名称/城市',
+)
+const emptyDescription = computed(() =>
+  portfolioStatus.value === 'public' ? '当前销售区域暂无公海客户' : '没有符合条件的在案客户',
+)
 const keyword = ref('')
 const items = ref<CustomerItem[]>([])
 const loading = ref(false)
@@ -91,6 +116,7 @@ async function onLoad() {
   try {
     const res = await listCustomers({
       keyword: keyword.value.trim(),
+      status: portfolioStatus.value,
       page: requestedPage,
       pageSize: PAGE_SIZE,
     })
@@ -107,6 +133,18 @@ async function onLoad() {
       refreshing.value = false
     }
   }
+}
+
+function onStatusChange() {
+  void router.replace({
+    query: {
+      ...route.query,
+      status: portfolioStatus.value === 'public' ? 'public' : undefined,
+    },
+  })
+  resetList()
+  loading.value = true
+  void onLoad()
 }
 
 function onSearch() {
@@ -174,6 +212,10 @@ function nextActionText(customer: CustomerItem): string {
   padding: 10px var(--crm-spacing-md);
   background: var(--crm-color-bg-page);
 }
+.customers__tabs {
+  padding-inline: var(--crm-spacing-sm);
+  background: var(--crm-color-bg-page);
+}
 .customers__create {
   border: 0;
   background: transparent;
@@ -221,5 +263,12 @@ function nextActionText(customer: CustomerItem): string {
 }
 .customers__action.is-overdue {
   color: var(--van-danger-color);
+}
+.customers__pool-hint {
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid var(--crm-color-divider);
+  color: var(--crm-color-attention);
+  font-size: 11px;
 }
 </style>

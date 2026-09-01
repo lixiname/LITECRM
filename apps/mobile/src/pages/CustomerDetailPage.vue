@@ -2,6 +2,22 @@
   <div class="detail">
     <van-nav-bar :title="detail?.name ?? '客户详情'" left-arrow @click-left="router.back()" />
 
+    <van-cell-group v-if="detail?.status === 'public'" inset title="公海客户" class="detail__pool">
+      <van-cell
+        title="当前暂无负责人"
+        :label="
+          canClaim
+            ? '认领后将进入你的在案客户，并可登记拜访和商机。'
+            : '当前账号可查看，但不能认领客户。'
+        "
+      />
+      <div v-if="canClaim" class="detail__pool-action">
+        <van-button type="primary" block :loading="claiming" @click="handleClaim">
+          认领客户
+        </van-button>
+      </div>
+    </van-cell-group>
+
     <van-cell-group
       v-if="auth.hasAbility('customer.write') && detail?.status === 'active'"
       inset
@@ -173,15 +189,18 @@
       <van-cell title="等级" :value="detail.grade" />
       <van-cell title="经营阶段" :value="relationshipLabel(detail.relationshipStage)" />
       <van-cell title="状态" :value="statusLabel(detail.status)" />
-      <van-cell title="负责人" :value="detail.ownerId === auth.user?.id ? '我' : '他人'" />
+      <van-cell title="负责人" :value="ownerLabel" />
       <van-cell title="地址" :value="detail.address ?? '-'" />
     </van-cell-group>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { showConfirmDialog, showToast } from 'vant'
 import {
+  claimCustomer,
   useQuery,
   getCustomer,
   listDimensionOptions,
@@ -202,12 +221,25 @@ const router = useRouter()
 const auth = useAuthStore()
 const customerId = route.params.id as string
 
-const { data: detail } = useQuery(`customer:detail:${customerId}`, () => getCustomer(customerId))
+const { data: detail, reload } = useQuery(`customer:detail:${customerId}`, () =>
+  getCustomer(customerId),
+)
 const { data: dimensions } = useQuery('catalog:customer-profile', async () => [
   ...(await listDimensionOptions('industry')),
   ...(await listDimensionOptions('sub_industry')),
   ...(await listDimensionOptions('contact_function')),
 ])
+const claiming = ref(false)
+const canClaim = computed(
+  () =>
+    detail.value?.status === 'public' &&
+    auth.hasAbility('customer.claim') &&
+    (auth.user?.role === 'sales' || auth.user?.role === 'executive'),
+)
+const ownerLabel = computed(() => {
+  if (!detail.value?.ownerId) return '未分配'
+  return detail.value.ownerId === auth.user?.id ? '我' : (detail.value.ownerName ?? '他人')
+})
 
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
@@ -282,6 +314,29 @@ function maskPhone(phone?: string | null): string {
 function openVisit() {
   router.push(`/customers/${customerId}/visit/new`)
 }
+
+async function handleClaim() {
+  try {
+    await showConfirmDialog({
+      title: '认领公海客户',
+      message: '认领后该客户将进入你的在案客户，并占用对应客户等级名额。是否继续？',
+      confirmButtonText: '确认认领',
+    })
+  } catch {
+    return
+  }
+
+  claiming.value = true
+  try {
+    await claimCustomer(customerId)
+    showToast('认领成功')
+    await reload()
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '认领失败')
+  } finally {
+    claiming.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -291,6 +346,9 @@ function openVisit() {
 }
 .detail__contact-tag {
   margin-right: var(--crm-spacing-xs);
+}
+.detail__pool-action {
+  padding: 0 var(--crm-spacing-md) var(--crm-spacing-md);
 }
 .customer-detail__line {
   display: flex;
