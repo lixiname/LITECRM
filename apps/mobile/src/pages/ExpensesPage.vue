@@ -20,7 +20,7 @@
         />
         <van-field
           v-model.number="form.entertainment"
-          label="招待"
+          label="娱乐招待"
           type="number"
           placeholder="元"
         />

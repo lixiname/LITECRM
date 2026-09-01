@@ -4,7 +4,10 @@
       <ReportingMetricCard label="已提交费用" :value="money(data.total.amount)" tone="primary" />
       <ReportingMetricCard label="烟酒" :value="money(data.total.tobaccoAlcohol)" />
       <ReportingMetricCard label="礼品" :value="money(data.total.gifts)" />
-      <ReportingMetricCard label="餐叙与招待" :value="money(data.total.dining + data.total.entertainment)" />
+      <ReportingMetricCard
+        label="餐叙与娱乐招待"
+        :value="money(data.total.dining + data.total.entertainment)"
+      />
       <ReportingMetricCard
         label="未提交草稿"
         :value="`${data.total.draftDays} 条`"
@@ -20,7 +23,9 @@
           <template #default="{ row }">{{ money((row as ExpenseOwnerRow).amount) }}</template>
         </el-table-column>
         <el-table-column label="烟酒" min-width="110" align="right">
-          <template #default="{ row }">{{ money((row as ExpenseOwnerRow).tobaccoAlcohol) }}</template>
+          <template #default="{ row }">{{
+            money((row as ExpenseOwnerRow).tobaccoAlcohol)
+          }}</template>
         </el-table-column>
         <el-table-column label="礼品" min-width="110" align="right">
           <template #default="{ row }">{{ money((row as ExpenseOwnerRow).gifts) }}</template>
@@ -28,8 +33,10 @@
         <el-table-column label="餐叙" min-width="110" align="right">
           <template #default="{ row }">{{ money((row as ExpenseOwnerRow).dining) }}</template>
         </el-table-column>
-        <el-table-column label="招待" min-width="110" align="right">
-          <template #default="{ row }">{{ money((row as ExpenseOwnerRow).entertainment) }}</template>
+        <el-table-column label="娱乐招待" min-width="120" align="right">
+          <template #default="{ row }">{{
+            money((row as ExpenseOwnerRow).entertainment)
+          }}</template>
         </el-table-column>
         <el-table-column label="住宿" min-width="110" align="right">
           <template #default="{ row }">{{ money((row as ExpenseOwnerRow).lodging) }}</template>
