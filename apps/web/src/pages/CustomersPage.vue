@@ -20,7 +20,7 @@
 
     <el-card class="customers__toolbar" shadow="never">
       <div class="customers__toolbar-row">
-        <el-segmented v-model="filters.status" :options="poolOptions" @change="load" />
+        <el-segmented v-model="filters.status" :options="poolOptions" />
         <span class="customers__toolbar-divider" />
         <el-input
           v-model="keyword"
@@ -29,7 +29,7 @@
           class="customers__search"
           @input="onSearch"
         />
-        <el-select v-model="filters.grade" placeholder="全部等级" clearable @change="load">
+        <el-select v-model="filters.grade" placeholder="全部等级" clearable>
           <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
         </el-select>
         <el-select v-model="filters.relationshipStage" placeholder="全部经营阶段" clearable>

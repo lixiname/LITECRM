@@ -29,17 +29,22 @@ export function useQuery<T>(
   const loading = ref(false)
   const error = ref<string | null>(null)
   const { immediate = true } = options
+  let latestRequestId = 0
 
   async function load(): Promise<void> {
+    const requestId = ++latestRequestId
     loading.value = true
     error.value = null
     try {
-      data.value = await fetcher()
+      const next = await fetcher()
+      if (requestId === latestRequestId) data.value = next
     } catch (e) {
-      data.value = null
-      error.value = e instanceof Error ? e.message : '加载失败'
+      if (requestId === latestRequestId) {
+        data.value = null
+        error.value = e instanceof Error ? e.message : '加载失败'
+      }
     } finally {
-      loading.value = false
+      if (requestId === latestRequestId) loading.value = false
     }
   }
 
