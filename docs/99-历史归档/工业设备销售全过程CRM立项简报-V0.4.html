@@ -807,32 +807,170 @@
         font-size: 14px;
       }
 
-      .process-strip {
+      .funnel-scope {
+        margin-top: 28px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .funnel-scope__head {
         display: flex;
-        align-items: stretch;
-        margin-top: 26px;
+        justify-content: space-between;
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 20px;
       }
 
-      .process-step {
-        position: relative;
-        flex: 1 1 0;
-        border-top: 3px solid var(--accent);
-        padding: 12px 18px 8px 8px;
-        text-align: center;
-        font-weight: 700;
-      }
-
-      .process-step:not(:last-child)::after {
-        content: '→';
-        position: absolute;
-        top: 10px;
-        right: -5px;
+      .funnel-scope__head p {
+        max-width: 760px;
+        margin: 6px 0 0;
         color: var(--muted);
       }
 
-      .exception-line {
-        margin: 14px 0 0;
+      .funnel-legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        min-width: 320px;
+      }
+
+      .funnel-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .funnel-legend span::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        content: '';
+      }
+
+      .funnel-legend .is-current {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .funnel-legend .is-boundary {
+        background: var(--warn-soft);
         color: var(--warn);
+      }
+
+      .funnel-legend .is-later {
+        background: var(--surface-soft);
+        color: var(--muted);
+      }
+
+      .funnel-track {
+        display: grid;
+        grid-template-columns: 1.18fr 1.12fr 1.06fr 1fr 0.94fr 0.88fr 0.82fr;
+        gap: 8px;
+        align-items: stretch;
+      }
+
+      .funnel-stage {
+        position: relative;
+        min-width: 0;
+        border-top: 4px solid var(--accent);
+        background: var(--accent-soft);
+        padding: 14px 12px 16px;
+      }
+
+      .funnel-stage:not(:last-child)::after {
+        position: absolute;
+        z-index: 1;
+        top: 50%;
+        right: -9px;
+        width: 10px;
+        height: 10px;
+        border-top: 2px solid var(--muted);
+        border-right: 2px solid var(--muted);
+        transform: translateY(-50%) rotate(45deg);
+        content: '';
+      }
+
+      .funnel-stage small,
+      .funnel-stage strong,
+      .funnel-stage span {
+        display: block;
+      }
+
+      .funnel-stage small {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .funnel-stage strong {
+        margin-bottom: 6px;
+        font-size: 15px;
+      }
+
+      .funnel-stage span {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .funnel-stage--boundary {
+        border-top-color: var(--warn);
+        background: var(--warn-soft);
+      }
+
+      .funnel-stage--boundary small {
+        color: var(--warn);
+      }
+
+      .funnel-stage--later {
+        border: 1px dashed var(--line);
+        border-top: 4px solid var(--muted);
+        background: var(--surface-soft);
+      }
+
+      .funnel-stage--later small {
+        color: var(--muted);
+      }
+
+      .funnel-notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .funnel-notes p {
+        margin: 0;
+        border-left: 3px solid var(--primary);
+        background: var(--surface-soft);
+        padding: 11px 13px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .funnel-notes p:last-child {
+        border-left-color: var(--warn);
+      }
+
+      .funnel-scope__conclusion {
+        margin: 16px 0 0;
+        border-radius: 10px;
+        background: var(--primary-soft);
+        padding: 13px 16px;
+        color: var(--primary);
+        font-weight: 800;
         text-align: center;
       }
 
@@ -913,6 +1051,24 @@
         .roadmap::before {
           display: none;
         }
+
+        .funnel-scope__head {
+          display: block;
+        }
+
+        .funnel-legend {
+          justify-content: flex-start;
+          min-width: 0;
+          margin-top: 14px;
+        }
+
+        .funnel-track {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .funnel-stage:not(:last-child)::after {
+          display: none;
+        }
       }
 
       @media (max-width: 680px) {
@@ -951,19 +1107,16 @@
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .process-strip {
-          display: grid;
+        .funnel-scope {
+          padding: 18px;
+        }
+
+        .funnel-track {
           grid-template-columns: 1fr 1fr;
-          gap: 10px;
         }
 
-        .process-step {
-          border-top-width: 2px;
-          padding-right: 8px;
-        }
-
-        .process-step::after {
-          display: none;
+        .funnel-notes {
+          grid-template-columns: 1fr;
         }
 
         .table-wrap table {
@@ -1151,8 +1304,8 @@
               <div class="capability-items">
                 <span>销售行动可见</span>
                 <span>商机漏斗可信</span>
-                <span>成交过程可追（后续）</span>
-                <span>回款风险可管（后续）</span>
+                <span>销售去向可确认</span>
+                <span>订单回款可追（后续）</span>
                 <span>客户产品结构可分析</span>
               </div>
             </div>
@@ -1188,16 +1341,64 @@
             </div>
           </div>
 
-          <div class="process-strip" aria-label="销售过程主线及后续延伸">
-            <div class="process-step">客户开发</div>
-            <div class="process-step">拜访沟通</div>
-            <div class="process-step">下一步</div>
-            <div class="process-step">具体商机</div>
-            <div class="process-step">报价跟进</div>
-            <div class="process-step">下单出货（后续）</div>
-            <div class="process-step">应收回款（后续）</div>
+          <div class="funnel-scope" aria-label="销售漏斗与CRM建设覆盖范围">
+            <div class="funnel-scope__head">
+              <div>
+                <h3>销售漏斗与系统作用范围</h3>
+                <p>以客户需求为主线管理阶段、金额、下一步和最终去向；越接近成交，进入漏斗的对象越少，但过程信息应越明确。</p>
+              </div>
+              <div class="funnel-legend" aria-label="覆盖范围图例">
+                <span class="is-current">当前重点管理</span>
+                <span class="is-boundary">当前收口边界</span>
+                <span class="is-later">后续衔接</span>
+              </div>
+            </div>
+
+            <div class="funnel-track">
+              <div class="funnel-stage">
+                <small>01 · 客户资源</small>
+                <strong>建档与经营</strong>
+                <span>客户分级、归属、公海与联系人</span>
+              </div>
+              <div class="funnel-stage">
+                <small>02 · 需求发现</small>
+                <strong>拜访与计划</strong>
+                <span>拜访记录、下次行动与逾期提醒</span>
+              </div>
+              <div class="funnel-stage">
+                <small>03 · 有效意向</small>
+                <strong>建立商机</strong>
+                <span>意向金额、需求内容、负责人和阶段</span>
+              </div>
+              <div class="funnel-stage">
+                <small>04 · 方案推进</small>
+                <strong>跟进与报价</strong>
+                <span>沟通记录、口头报价与正式报价</span>
+              </div>
+              <div class="funnel-stage funnel-stage--boundary">
+                <small>05 · 销售结案</small>
+                <strong>确认去向</strong>
+                <span>成交、丢单或需求消失</span>
+              </div>
+              <div class="funnel-stage funnel-stage--later">
+                <small>06 · 后续衔接</small>
+                <strong>订单与交付</strong>
+                <span>订单、生产进度与出货结果</span>
+              </div>
+              <div class="funnel-stage funnel-stage--later">
+                <small>07 · 后续衔接</small>
+                <strong>应收与回款</strong>
+                <span>付款节点、到账与逾期风险</span>
+              </div>
+            </div>
+
+            <div class="funnel-notes">
+              <p><strong>漏斗管理：</strong>关注各阶段的数量、金额、转化与停滞情况；无下一步、已逾期或报价后长期无反馈，应进入异常清单。</p>
+              <p><strong>客户经营：</strong>维护性拜访不必强行转成商机；只有形成明确采购需求后，才进入商机漏斗继续推进。</p>
+            </div>
+
+            <p class="funnel-scope__conclusion">本项目当前建设主线覆盖“客户资源—销售结案”；订单交付和应收回款是后续经营闭环，不作为当前阶段的能力完成承诺。</p>
           </div>
-          <p class="exception-line">无下一步、逾期或报价后长期无反馈，应自动进入异常清单并触发状态确认。</p>
         </div>
       </section>
 
@@ -1216,7 +1417,7 @@
               <tbody>
                 <tr>
                   <td>核心过程</td>
-                  <td>客户与联系人、互动时间线、下一步、待办、商机、报价协同和异常识别</td>
+                  <td>客户与联系人、互动时间线、下一步、待办、商机、报价协同、销售结案和异常识别</td>
                   <td>优先解决销售持续推进和漏斗可信问题。</td>
                 </tr>
                 <tr>
@@ -1225,7 +1426,7 @@
                   <td>先具备承载能力；具体分级规则由后续业务设计确认，不在立项阶段定死。</td>
                 </tr>
                 <tr>
-                  <td>结果闭环</td>
+                  <td>结果闭环（后续）</td>
                   <td>订单、出货、应收节点、到账和逾期，并向责任销售提供查询</td>
                   <td>CRM关联和呈现结果，ERP与财务仍是正式经营数据来源。</td>
                 </tr>
