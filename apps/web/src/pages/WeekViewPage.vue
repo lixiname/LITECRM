@@ -219,20 +219,11 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="客户" required>
-          <el-select
+          <CustomerRemoteSelect
             v-model="planForm.customerId"
-            filterable
-            style="width: 100%"
             placeholder="选择客户"
-            @change="loadOpportunityOptions"
-          >
-            <el-option
-              v-for="customer in customerOptions"
-              :key="customer.id"
-              :label="customer.name"
-              :value="customer.id"
-            />
-          </el-select>
+            @selected="selectPlanCustomer"
+          />
         </el-form-item>
         <el-form-item v-if="planForm.planKind === 'opportunity_follow_up'" label="商机" required>
           <el-select
@@ -330,19 +321,10 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="客户" required>
-          <el-select
+          <CustomerRemoteSelect
             v-model="recordDialog.customerId"
-            filterable
-            style="width: 100%"
-            @change="loadRecordOpportunities"
-          >
-            <el-option
-              v-for="customer in customerOptions"
-              :key="customer.id"
-              :label="customer.name"
-              :value="customer.id"
-            />
-          </el-select>
+            @selected="selectRecordCustomer"
+          />
         </el-form-item>
         <el-form-item v-if="recordDialog.type === 'opportunity_follow_up'" label="商机" required>
           <el-select v-model="recordDialog.opportunityId" style="width: 100%">
@@ -409,6 +391,7 @@ import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
 import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
+import CustomerRemoteSelect from '../components/customers/CustomerRemoteSelect.vue'
 import ComplaintCommandDialog from '../components/complaints/ComplaintCommandDialog.vue'
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
 import PlanGuidanceDialog from '../components/planning/PlanGuidanceDialog.vue'
@@ -420,7 +403,6 @@ import {
   getSalesPlanReschedules,
   getWeekView,
   isBusinessDate,
-  listCustomers,
   listOpportunities,
   rescheduleSalesPlan,
   shiftBusinessDate,
@@ -634,7 +616,7 @@ function localDateInput(value: string): string {
 const showDialog = ref(false)
 const dialogDate = ref('')
 const saving = ref(false)
-const customerOptions = ref<CustomerItem[]>([])
+const selectedRecordCustomer = ref<CustomerItem>()
 const opportunityOptions = ref<Opportunity[]>([])
 const recordOpportunityOptions = ref<Opportunity[]>([])
 const planForm = reactive({
@@ -667,22 +649,25 @@ async function loadRecordOpportunities() {
   )
 }
 
+function selectRecordCustomer(customer: CustomerItem | undefined) {
+  selectedRecordCustomer.value = customer
+  void loadRecordOpportunities()
+}
+
 async function continueRecord() {
   if (!recordDialog.customerId) return ElMessage.warning('请选择客户')
   if (recordDialog.type === 'opportunity_created') {
-    const customer = customerOptions.value.find((item) => item.id === recordDialog.customerId)
     recordDialog.visible = false
     opportunityCreateDialog.value?.open({
       customerId: recordDialog.customerId,
-      customerName: customer?.name,
+      customerName: selectedRecordCustomer.value?.name,
       discoveredDate: recordDialog.date,
     })
     return
   }
   if (recordDialog.type === 'customer_visit' || recordDialog.type === 'complaint_registered') {
     recordDialog.visible = false
-    const customer = customerOptions.value.find((item) => item.id === recordDialog.customerId)
-    await prepareCustomerDialog(recordDialog.customerId, customer?.name ?? '')
+    await prepareCustomerDialog(recordDialog.customerId, selectedRecordCustomer.value?.name ?? '')
     if (recordDialog.type === 'customer_visit') {
       customerBusinessDialogs.value?.openVisit(undefined, recordDialog.date)
     } else {
@@ -774,10 +759,7 @@ async function openRecordDialog(
   recordDialog.type = initialType
   recordDialog.customerId = ''
   recordDialog.opportunityId = ''
-  if (!customerOptions.value.length) {
-    const page = await listCustomers({ status: 'active', page: 1, pageSize: 50 })
-    customerOptions.value = page.items
-  }
+  selectedRecordCustomer.value = undefined
   recordDialog.visible = true
 }
 
@@ -790,15 +772,6 @@ async function onBlankClick(day: DayVM) {
     plannedAt: day.date,
     content: '',
   })
-  if (!customerOptions.value.length) {
-    try {
-      const page = await listCustomers({ status: 'active', page: 1, pageSize: 50 })
-      customerOptions.value = page.items
-    } catch (error) {
-      ElMessage.error(error instanceof Error ? error.message : '客户选项加载失败')
-      return
-    }
-  }
   showDialog.value = true
 }
 
@@ -814,6 +787,10 @@ async function loadOpportunityOptions() {
   opportunityOptions.value = page.items.filter(
     (item) => item.stage === 'intent' || item.stage === 'following',
   )
+}
+
+function selectPlanCustomer() {
+  void loadOpportunityOptions()
 }
 
 async function submitPlan() {

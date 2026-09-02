@@ -7,29 +7,7 @@
           :model-value="contextCustomerName || '当前客户'"
           disabled
         />
-        <el-select
-          v-else
-          v-model="form.customerId"
-          filterable
-          remote
-          reserve-keyword
-          :remote-method="searchCustomers"
-          :loading="customerLoading"
-          placeholder="输入客户名称检索"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="customer in customerOptions"
-            :key="customer.id"
-            :label="customer.name"
-            :value="customer.id"
-          >
-            <span>{{ customer.name }}</span>
-            <span class="opportunity-form__customer-meta">
-              {{ [customer.city, customer.grade].filter(Boolean).join(' · ') }}
-            </span>
-          </el-option>
-        </el-select>
+        <CustomerRemoteSelect v-else v-model="form.customerId" placeholder="输入客户名称检索" />
       </el-form-item>
 
       <el-form-item label="商机名称" required class="opportunity-form__wide">
@@ -158,13 +136,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import {
-  createOpportunity,
-  listCustomers,
-  listDimensionOptions,
-  type CustomerItem,
-  type DimensionOption,
-} from '@crm/domain'
+import { createOpportunity, listDimensionOptions, type DimensionOption } from '@crm/domain'
+import CustomerRemoteSelect from '../customers/CustomerRemoteSelect.vue'
 
 const props = defineProps<{ customerId?: string; customerName?: string }>()
 const emit = defineEmits<{ created: [opportunityId: string] }>()
@@ -175,8 +148,6 @@ const visible = ref(false)
 const saving = ref(false)
 const contextCustomerId = ref('')
 const contextCustomerName = ref('')
-const customerLoading = ref(false)
-const customerOptions = ref<CustomerItem[]>([])
 const sourceOptions = ref<SelectOption[]>([])
 const productLineOptions = ref<SelectOption[]>([])
 const form = reactive({
@@ -216,19 +187,6 @@ onMounted(async () => {
   }
 })
 
-async function searchCustomers(keyword = '') {
-  if (contextCustomerId.value) return
-  customerLoading.value = true
-  try {
-    const page = await listCustomers({ keyword: keyword.trim(), page: 1, pageSize: 20 })
-    customerOptions.value = page.items
-  } catch {
-    ElMessage.error('客户检索失败')
-  } finally {
-    customerLoading.value = false
-  }
-}
-
 function open(options?: { customerId?: string; customerName?: string; discoveredDate?: string }) {
   contextCustomerId.value = options?.customerId ?? props.customerId ?? ''
   contextCustomerName.value = options?.customerName ?? props.customerName ?? ''
@@ -250,7 +208,6 @@ function open(options?: { customerId?: string; customerName?: string; discovered
     firstActionAt: localDate(tomorrow()),
   })
   visible.value = true
-  if (!contextCustomerId.value) void searchCustomers()
 }
 
 async function submit() {
@@ -337,12 +294,6 @@ defineExpose({ open })
 }
 .opportunity-form__wide {
   grid-column: 1 / -1;
-}
-.opportunity-form__customer-meta {
-  float: right;
-  margin-left: var(--crm-spacing-md);
-  color: var(--crm-color-text-secondary);
-  font-size: var(--crm-font-size-sm);
 }
 @media (max-width: 720px) {
   .opportunity-form {

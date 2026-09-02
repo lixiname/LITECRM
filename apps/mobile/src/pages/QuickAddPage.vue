@@ -54,25 +54,38 @@
     </van-cell-group>
 
     <!-- 选类型后：选客户（预填日期） -->
-    <template v-if="type">
+    <template v-if="type && !selectedCustomer">
       <div class="quick-add__pick">
-        <van-search v-model="keyword" placeholder="搜索客户（名称/城市）" @search="load" />
+        <van-search
+          v-model="keyword"
+          placeholder="输入客户名称或城市"
+          @update:model-value="scheduleCustomerSearch"
+          @search="searchCustomersNow"
+        />
         <van-cell-group inset>
+          <div v-if="loading" class="quick-add__customer-loading">
+            <van-loading size="20">正在检索客户</van-loading>
+          </div>
           <van-cell
             v-for="c in customers"
             :key="c.id"
             :title="c.name"
-            :label="c.city ?? ''"
+            :label="customerMeta(c)"
             is-link
             @click="selectCustomer(c)"
           />
-          <van-cell v-if="!loading && customers.length === 0" title="暂无客户" />
+          <van-cell
+            v-if="!loading && customers.length === 0"
+            title="没有匹配的客户"
+            label="请尝试输入更完整的客户名称或城市"
+          />
         </van-cell-group>
       </div>
     </template>
 
     <van-form v-if="selectedCustomer" class="quick-add__form">
-      <van-cell-group inset :title="selectedCustomer.name">
+      <van-cell-group inset title="已选业务对象">
+        <van-cell title="客户" :value="selectedCustomer.name" is-link @click="changeCustomer" />
         <van-field
           v-if="type === 'opportunity_follow_up'"
           v-model="opportunityLabel"
@@ -132,7 +145,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
@@ -178,6 +191,8 @@ const showDateCalendar = ref(false)
 const dayPlans = ref<SalesPlan[]>([])
 const matchingPlan = ref<SalesPlan>()
 const recordOutsidePlan = ref(false)
+let customerSearchTimer: ReturnType<typeof setTimeout> | undefined
+let customerSearchRevision = 0
 const opportunityColumns = computed(() =>
   opportunities.value.map((item) => ({ text: item.name, value: item.id })),
 )
@@ -200,25 +215,62 @@ function selectOccurredDate(value: Date | Date[]) {
 }
 function pickType(t: QuickRecordType) {
   type.value = t
+  keyword.value = ''
+  customers.value = []
   selectedCustomer.value = undefined
   opportunityId.value = ''
   matchingPlan.value = undefined
   recordOutsidePlan.value = false
-  void load()
+  void loadCustomers('')
 }
-async function load() {
+
+function scheduleCustomerSearch(value: string) {
+  clearTimeout(customerSearchTimer)
+  const revision = ++customerSearchRevision
+  loading.value = true
+  customerSearchTimer = setTimeout(() => void loadCustomers(value, revision), 300)
+}
+
+function searchCustomersNow() {
+  clearTimeout(customerSearchTimer)
+  const revision = ++customerSearchRevision
+  void loadCustomers(keyword.value, revision)
+}
+
+async function loadCustomers(keywordValue: string, revision = ++customerSearchRevision) {
   loading.value = true
   try {
     const page = await listCustomers({
       status: 'active',
       page: 1,
       pageSize: 20,
-      keyword: keyword.value.trim(),
+      keyword: keywordValue.trim(),
     })
+    if (revision !== customerSearchRevision) return
     customers.value = page.items
+  } catch (error) {
+    if (revision === customerSearchRevision) {
+      customers.value = []
+      showToast(error instanceof Error ? error.message : '客户检索失败')
+    }
   } finally {
-    loading.value = false
+    if (revision === customerSearchRevision) loading.value = false
   }
+}
+
+function customerMeta(customer: CustomerItem): string {
+  return [customer.city, customer.grade ? `${customer.grade}级` : ''].filter(Boolean).join(' · ')
+}
+
+function changeCustomer() {
+  selectedCustomer.value = undefined
+  opportunities.value = []
+  opportunityId.value = ''
+  matchingPlan.value = undefined
+  recordOutsidePlan.value = false
+  keyword.value = ''
+  customers.value = []
+  void loadCustomers('')
 }
 
 async function selectCustomer(customer: CustomerItem) {
@@ -316,6 +368,11 @@ function displayDate(value: string): string {
   const parsed = new Date(`${value}T00:00:00`)
   return `${parsed.getMonth() + 1}月${parsed.getDate()}日`
 }
+
+onBeforeUnmount(() => {
+  clearTimeout(customerSearchTimer)
+  customerSearchRevision += 1
+})
 </script>
 
 <style scoped>
@@ -339,6 +396,11 @@ function displayDate(value: string): string {
   display: grid;
   gap: var(--crm-spacing-sm);
   padding: var(--crm-spacing-md);
+}
+.quick-add__customer-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--crm-spacing-lg);
 }
 .quick-add :deep(.van-cell-group__title) {
   padding-top: var(--crm-spacing-lg);
