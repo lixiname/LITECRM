@@ -49,6 +49,7 @@
         v-if="!error && page?.items.length"
         v-loading="loading"
         :data="page?.items ?? []"
+        row-class-name="customers__row"
         @row-click="(row: CustomerItem) => router.push(`/customers/${row.id}`)"
       >
         <el-table-column label="客户" min-width="220">
@@ -359,6 +360,12 @@ function isOverdue(value?: string | null): boolean {
 .customers__name {
   font-weight: 650;
   color: var(--crm-color-text-primary);
+}
+:deep(.customers__row) {
+  cursor: pointer;
+}
+:deep(.customers__row:hover) .customers__name {
+  color: var(--crm-color-primary-active);
 }
 .customers__meta,
 .customers__stack {
