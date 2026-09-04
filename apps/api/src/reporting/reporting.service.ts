@@ -11,6 +11,7 @@ import {
   deals,
   followUpActions,
   opportunities,
+  opportunityEvents,
   opportunityFollowUps,
   opportunityProductLines,
   opportunityQuotes,
@@ -45,6 +46,7 @@ type PipelineOpportunity = {
   expectedCloseDate: string | null
   closedAt: string | null
   estimatedAmount: string | null
+  initialAmount: string | null
 }
 
 type QuoteRow = {
@@ -102,6 +104,7 @@ export class ReportingService {
       range: pipeline.range,
       pipeline: {
         pool: pipeline.pool,
+        created: pipeline.flow.created,
         wonAmount: pipeline.flow.won.amount,
         closedWinRate: pipeline.flow.closedWinRate,
       },
@@ -199,7 +202,7 @@ export class ReportingService {
     }
 
     const flow = {
-      created: { count: 0, amount: 0 },
+      created: { count: 0, amount: 0, missingAmountCount: 0 },
       firstQuoted: { count: 0, amount: 0 },
       firstFormalQuoted: { count: 0, amount: 0 },
       won: { count: 0, amount: 0 },
@@ -211,7 +214,14 @@ export class ReportingService {
       const referenceAmount = this.money(latestQuote?.amount ?? opportunity.estimatedAmount)
       if (this.inRange(opportunity.createdAt, range)) {
         flow.created.count += 1
-        flow.created.amount += referenceAmount
+        // 创建事件金额是不随重新报价或结案变化的事实；旧数据仅回退原始预估。
+        const rawAmount = opportunity.initialAmount ?? opportunity.estimatedAmount
+        const amount =
+          rawAmount === null || rawAmount === undefined || rawAmount === ''
+            ? NaN
+            : Number(rawAmount)
+        if (Number.isFinite(amount) && amount >= 0) flow.created.amount += amount
+        else flow.created.missingAmountCount += 1
       }
       const firstQuote = context.firstQuote.get(opportunity.id)
       if (firstQuote && this.inRange(firstQuote.quotedAt, range)) {
@@ -768,6 +778,14 @@ export class ReportingService {
         expectedCloseDate: opportunities.expectedCloseDate,
         closedAt: opportunities.closedAt,
         estimatedAmount: opportunities.estimatedAmount,
+        initialAmount: sql<string | null>`(
+          select ${opportunityEvents.payload}->>'initialAmount'
+          from ${opportunityEvents}
+          where ${opportunityEvents.opportunityId} = ${opportunities.id}
+            and ${opportunityEvents.type} = 'created'
+          order by ${opportunityEvents.createdAt}, ${opportunityEvents.id}
+          limit 1
+        )`,
       })
       .from(opportunities)
       .innerJoin(customers, eq(opportunities.customerId, customers.id))

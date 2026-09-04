@@ -22,6 +22,11 @@ export interface MetricValue {
   amount: number
 }
 
+export interface CreatedOpportunityMetric extends MetricValue {
+  /** 旧记录无法还原首次金额时仅计数量，不用当前报价冒充。 */
+  missingAmountCount: number
+}
+
 export interface PipelineBucket extends MetricValue {
   key: 'estimate' | 'oral_quote' | 'formal_quote'
   label: string
@@ -73,7 +78,7 @@ export interface PipelineReport {
   range: { start: string; end: string }
   pool: PipelinePool
   flow: {
-    created: MetricValue
+    created: CreatedOpportunityMetric
     firstQuoted: MetricValue
     firstFormalQuoted: MetricValue
     won: MetricValue
@@ -171,6 +176,7 @@ export interface ReportingOverview {
   range: { start: string; end: string }
   pipeline: {
     pool: PipelinePool
+    created: CreatedOpportunityMetric
     wonAmount: number
     closedWinRate: number | null
   }

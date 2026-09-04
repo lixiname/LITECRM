@@ -13,6 +13,7 @@ import {
   deals,
   followUpActions,
   opportunities,
+  opportunityEvents,
   opportunityQuotes,
   salesRegions,
   users,
@@ -82,6 +83,11 @@ describe('管理看板 reporting 域', () => {
       await tx.delete(followUpActions).where(eq(followUpActions.id, ids.action))
       await tx.delete(complaints).where(eq(complaints.id, ids.complaint))
       await tx.delete(deals).where(eq(deals.id, ids.deal))
+      await tx
+        .delete(opportunityEvents)
+        .where(
+          sql`${opportunityEvents.opportunityId} in (${ids.openOpportunity}, ${ids.wonOpportunity})`,
+        )
       await tx
         .delete(opportunityQuotes)
         .where(
@@ -154,6 +160,24 @@ describe('管理看板 reporting 域', () => {
           createdAt: tenDaysAgo,
           closedAt: today,
           closeReason: '客户明确下单',
+        },
+      ])
+      await tx.insert(opportunityEvents).values([
+        {
+          opportunityId: ids.openOpportunity,
+          customerId: ids.customer,
+          actorId: ids.reportSales,
+          occurredAt: businessDate(tenDaysAgo),
+          type: 'created',
+          payload: { initialAmount: 90000 },
+        },
+        {
+          opportunityId: ids.wonOpportunity,
+          customerId: ids.customer,
+          actorId: ids.reportSales,
+          occurredAt: businessDate(tenDaysAgo),
+          type: 'created',
+          payload: { initialAmount: 180000 },
         },
       ])
       await tx.insert(opportunityQuotes).values([
@@ -314,6 +338,40 @@ describe('管理看板 reporting 域', () => {
       .set(auth)
     expect(expenses.body.total.amount).toBe(500)
     expect(expenses.body.total.draftDays).toBe(1)
+  })
+
+  it('新增读取创建事件金额，重新报价和结案不改写新增，切期间不改变当前池子', async () => {
+    const token = await login('manager')
+    const auth = { Authorization: `Bearer ${token}` }
+    const end = businessDate(new Date())
+    const start = businessDate(new Date(Date.now() - 20 * 86_400_000))
+    const url = `/api/reporting/pipeline?start=${start}&end=${end}&ownerId=${ids.reportSales}`
+    const initial = await request(app.getHttpServer()).get(url).set(auth)
+    expect(initial.status).toBe(200)
+    expect(initial.body.flow.created).toEqual({ count: 2, amount: 270000, missingAmountCount: 0 })
+    const todayOnly = await request(app.getHttpServer())
+      .get(`/api/reporting/pipeline?start=${end}&end=${end}&ownerId=${ids.reportSales}`)
+      .set(auth)
+    expect(todayOnly.body.flow.created.count).toBe(0)
+    expect(todayOnly.body.pool).toEqual(initial.body.pool)
+    await db
+      .update(opportunityQuotes)
+      .set({ amount: '160000' })
+      .where(eq(opportunityQuotes.id, ids.activeQuote))
+    const repriced = await request(app.getHttpServer()).get(url).set(auth)
+    expect(repriced.body.pool.totalAmount).toBe(160000)
+    expect(repriced.body.flow.created).toEqual(initial.body.flow.created)
+    await db
+      .update(opportunities)
+      .set({ stage: 'lost', closedAt: end })
+      .where(eq(opportunities.id, ids.openOpportunity))
+    const closed = await request(app.getHttpServer()).get(url).set(auth)
+    expect(closed.body.pool.totalCount).toBe(0)
+    expect(closed.body.flow.created).toEqual(initial.body.flow.created)
+    const overview = await request(app.getHttpServer())
+      .get(`/api/reporting/overview?start=${start}&end=${end}&ownerId=${ids.reportSales}`)
+      .set(auth)
+    expect(overview.body.pipeline.created).toEqual(initial.body.flow.created)
   })
 
   it('销售无经营看板权限；管理者单人周视图不混入整支团队', async () => {

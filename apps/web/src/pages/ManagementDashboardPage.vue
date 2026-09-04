@@ -8,20 +8,6 @@
 
     <el-card class="management-dashboard__filters" shadow="never">
       <div class="management-dashboard__filter-row">
-        <el-button-group v-if="activeTab !== 'team'">
-          <el-button @click="setCurrentWeek">本周</el-button>
-          <el-button @click="setCurrentMonth">本月</el-button>
-        </el-button-group>
-        <el-date-picker
-          v-if="activeTab !== 'team'"
-          v-model="dateRange"
-          type="daterange"
-          value-format="YYYY-MM-DD"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          range-separator="至"
-          @change="applyFilters"
-        />
         <el-select
           v-model="filters.ownerId"
           clearable
@@ -77,20 +63,33 @@
       </el-tabs>
 
       <AppQueryState :error="error" @retry="reload" />
-      <div v-if="!error" v-loading="loading" class="management-dashboard__content">
-        <ReportingOverviewPanel v-if="activeTab === 'overview' && overview" :data="overview" />
-        <PipelineReportPanel v-else-if="activeTab === 'pipeline' && pipeline" :data="pipeline" />
-        <TeamReportPanel
-          v-else-if="activeTab === 'team' && team"
-          :data="team"
-          :filters="teamEffectiveFilters"
-          @range-change="changeTeamRange"
+      <div v-loading="loading" class="management-dashboard__content">
+        <PipelineCompositionCard
+          v-if="currentPool && !error"
+          :pool="currentPool"
+          title="当前有效商机池"
+          subtitle="当前全部未结案商机 · 不受期间选择影响"
+          class="management-dashboard__pool"
         />
-        <KeyCustomerReportPanel
-          v-else-if="activeTab === 'customers' && keyCustomers"
-          :data="keyCustomers"
-        />
-        <ExpenseReportPanel v-else-if="activeTab === 'expenses' && expenses" :data="expenses" />
+        <section v-if="activeTab !== 'team'" class="management-dashboard__period">
+          <strong>期间经营情况</strong>
+          <ReportingPeriodSelector v-model="period" @update:model-value="applyFilters" />
+        </section>
+        <template v-if="!error">
+          <ReportingOverviewPanel v-if="activeTab === 'overview' && overview" :data="overview" />
+          <PipelineReportPanel v-else-if="activeTab === 'pipeline' && pipeline" :data="pipeline" />
+          <TeamReportPanel
+            v-else-if="activeTab === 'team' && team"
+            :data="team"
+            :filters="teamEffectiveFilters"
+            @range-change="changeTeamRange"
+          />
+          <KeyCustomerReportPanel
+            v-else-if="activeTab === 'customers' && keyCustomers"
+            :data="keyCustomers"
+          />
+          <ExpenseReportPanel v-else-if="activeTab === 'expenses' && expenses" :data="expenses" />
+        </template>
       </div>
     </el-card>
   </div>
@@ -106,6 +105,13 @@ import KeyCustomerReportPanel from '../components/reporting/KeyCustomerReportPan
 import PipelineReportPanel from '../components/reporting/PipelineReportPanel.vue'
 import ReportingOverviewPanel from '../components/reporting/ReportingOverviewPanel.vue'
 import TeamReportPanel from '../components/reporting/TeamReportPanel.vue'
+import PipelineCompositionCard from '../components/reporting/PipelineCompositionCard.vue'
+import ReportingPeriodSelector from '../components/reporting/ReportingPeriodSelector.vue'
+import {
+  reportingToday,
+  reportingPeriodRange,
+  type ReportingPeriod,
+} from '../components/reporting/reporting-period'
 import {
   getExpenseReport,
   getKeyCustomerReport,
@@ -139,16 +145,24 @@ const team = ref<TeamReport>()
 const keyCustomers = ref<KeyCustomerReport>()
 const expenses = ref<ExpenseReport>()
 
-const today = new Date()
-const dateRange = ref<[string, string]>([monthStart(today), localDate(today)])
-const teamRange = ref<[string, string]>([localDate(today), localDate(today)])
+const today = reportingToday()
+const period = ref<ReportingPeriod>({ kind: 'month', month: today.slice(0, 7) })
+const initialRange = reportingPeriodRange(period.value, today)
+const teamRange = ref<[string, string]>([today, today])
 const filters = reactive<ReportingFilters>({
-  start: dateRange.value[0],
-  end: dateRange.value[1],
+  start: initialRange[0],
+  end: initialRange[1],
   ownerId: undefined,
   salesRegionId: undefined,
   productLine: undefined,
 })
+const currentPool = computed(() =>
+  activeTab.value === 'overview'
+    ? overview.value?.pipeline.pool
+    : activeTab.value === 'pipeline'
+      ? pipeline.value?.pool
+      : undefined,
+)
 const teamEffectiveFilters = computed<ReportingFilters>(() => ({
   start: teamRange.value[0],
   end: teamRange.value[1],
@@ -158,7 +172,7 @@ const teamEffectiveFilters = computed<ReportingFilters>(() => ({
 const filterHint = computed(() =>
   activeTab.value === 'team'
     ? '团队动态在页内按天/按周切换；销售大区按人员所属大区筛选，不改变组织树权限。'
-    : '当前商机池按今日存量统计；销售大区按人员所属大区归集，日期用于期间推进、成交和费用。',
+    : '销售大区按人员所属大区筛选；人员、产品线条件在当前页面内生效，不改变组织树权限。',
 )
 
 onMounted(async () => {
@@ -177,21 +191,41 @@ onMounted(async () => {
   await reload()
 })
 
+let requestVersion = 0
 async function reload() {
+  const version = ++requestVersion
+  const tab = activeTab.value
+  if (tab !== 'team') {
+    const range = reportingPeriodRange(period.value)
+    filters.start = range[0]
+    filters.end = range[1]
+  }
+  const query = { ...(tab === 'team' ? teamEffectiveFilters.value : filters) }
   loading.value = true
   error.value = undefined
   try {
-    if (activeTab.value === 'overview') overview.value = await getReportingOverview(filters)
-    else if (activeTab.value === 'pipeline') pipeline.value = await getPipelineReport(filters)
-    else if (activeTab.value === 'team')
-      team.value = await getTeamReport(teamEffectiveFilters.value)
-    else if (activeTab.value === 'customers')
-      keyCustomers.value = await getKeyCustomerReport(filters)
-    else expenses.value = await getExpenseReport(filters)
+    // 快速切换月份/页签时，只提交最后一次请求；不让旧响应覆盖新选择。
+    if (tab === 'overview') {
+      const result = await getReportingOverview(query)
+      if (version === requestVersion) overview.value = result
+    } else if (tab === 'pipeline') {
+      const result = await getPipelineReport(query)
+      if (version === requestVersion) pipeline.value = result
+    } else if (tab === 'team') {
+      const result = await getTeamReport(query)
+      if (version === requestVersion) team.value = result
+    } else if (tab === 'customers') {
+      const result = await getKeyCustomerReport(query)
+      if (version === requestVersion) keyCustomers.value = result
+    } else {
+      const result = await getExpenseReport(query)
+      if (version === requestVersion) expenses.value = result
+    }
   } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : '管理看板加载失败'
+    if (version === requestVersion)
+      error.value = loadError instanceof Error ? loadError.message : '管理看板加载失败'
   } finally {
-    loading.value = false
+    if (version === requestVersion) loading.value = false
   }
 }
 function loadActiveTab() {
@@ -202,31 +236,7 @@ function changeTeamRange(range: [string, string]) {
   void reload()
 }
 function applyFilters() {
-  if (!dateRange.value?.[0] || !dateRange.value?.[1]) return
-  filters.start = dateRange.value[0]
-  filters.end = dateRange.value[1]
   void reload()
-}
-function setCurrentMonth() {
-  const current = new Date()
-  dateRange.value = [monthStart(current), localDate(current)]
-  applyFilters()
-}
-function setCurrentWeek() {
-  const current = new Date()
-  const monday = new Date(current)
-  const day = monday.getDay() || 7
-  monday.setDate(monday.getDate() - day + 1)
-  const sunday = new Date(monday)
-  sunday.setDate(monday.getDate() + 6)
-  dateRange.value = [localDate(monday), localDate(sunday)]
-  applyFilters()
-}
-function localDate(date: Date): string {
-  return date.toLocaleDateString('sv-SE')
-}
-function monthStart(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`
 }
 </script>
 
@@ -264,6 +274,27 @@ function monthStart(date: Date): string {
 .management-dashboard__content {
   min-height: 360px;
   padding-top: var(--crm-spacing-xs);
+}
+.management-dashboard__pool {
+  margin-bottom: var(--crm-spacing-lg);
+}
+.management-dashboard__period {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--crm-spacing-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--crm-spacing-md);
+}
+.management-dashboard__pool :deep(.pipeline-composition__item) {
+  display: flex;
+  flex-wrap: wrap;
+}
+.management-dashboard__pool :deep(.pipeline-composition__item-value) {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-left: auto;
 }
 .management-dashboard__body :deep(.el-card__body) {
   padding: 0 20px 22px;

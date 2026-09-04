@@ -1,11 +1,17 @@
 <template>
   <div class="overview-panel">
-    <section class="overview-panel__headline">
-      <PipelineCompositionCard :pool="data.pipeline.pool" compact />
+    <section>
       <div class="overview-panel__period-results">
-        <div class="overview-panel__period-label">
-          期间结果 · {{ data.range.start }} 至 {{ data.range.end }}
-        </div>
+        <ReportingMetricCard
+          label="本期新增商机"
+          :value="`${data.pipeline.created.count} 个 · ${money(data.pipeline.created.amount)}`"
+          :hint="
+            data.pipeline.created.missingAmountCount
+              ? `首次登记金额；${data.pipeline.created.missingAmountCount} 个旧商机未保留初始金额`
+              : '按首次登记金额统计，结案不扣减'
+          "
+          tone="primary"
+        />
         <ReportingMetricCard
           label="本期成交"
           :value="money(data.pipeline.wonAmount)"
@@ -68,7 +74,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import type { ReportingOverview } from '@crm/domain'
-import PipelineCompositionCard from './PipelineCompositionCard.vue'
 import ReportingMetricCard from './ReportingMetricCard.vue'
 
 defineProps<{ data: ReportingOverview }>()
@@ -101,21 +106,10 @@ function percent(value: number): string {
   display: grid;
   gap: var(--crm-spacing-lg);
 }
-.overview-panel__headline {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: var(--crm-spacing-lg);
-}
 .overview-panel__period-results {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr));
   gap: var(--crm-spacing-lg);
-}
-.overview-panel__period-label {
-  grid-column: 1 / -1;
-  align-self: end;
-  color: var(--crm-color-text-secondary);
-  font-size: 12px;
 }
 .overview-panel__columns {
   display: grid;
@@ -150,10 +144,5 @@ function percent(value: number): string {
 }
 .overview-panel__risks small {
   color: var(--crm-color-text-secondary);
-}
-@media (max-width: 1100px) {
-  .overview-panel__headline {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

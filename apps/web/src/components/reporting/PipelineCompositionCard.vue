@@ -3,7 +3,7 @@
     <header class="pipeline-composition__header">
       <div>
         <span class="pipeline-composition__eyebrow">{{ title }}</span>
-        <small>截至 {{ pool.asOf }} · 每个开放商机只计一次</small>
+        <small>{{ subtitle ?? `截至 ${pool.asOf} · 每个开放商机只计一次` }}</small>
       </div>
       <div v-if="$slots['header-action']" class="pipeline-composition__header-action">
         <slot name="header-action" />
@@ -65,6 +65,7 @@ const props = withDefaults(
   defineProps<{
     pool: PipelinePool
     title?: string
+    subtitle?: string
     compact?: boolean
     showHealth?: boolean
   }>(),

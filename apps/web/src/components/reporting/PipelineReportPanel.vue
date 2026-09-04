@@ -1,12 +1,10 @@
 <template>
   <div class="pipeline-panel">
-    <PipelineCompositionCard :pool="data.pool" />
-
     <el-card shadow="never">
       <template #header>
         <div class="pipeline-panel__title">
           <span>期间推进与结果</span>
-          <small>{{ data.range.start }} 至 {{ data.range.end }}</small>
+          <small>新增按首次登记金额，结案不扣减；各项不可相加</small>
         </div>
       </template>
       <div class="pipeline-panel__flow">
@@ -16,6 +14,9 @@
           <small>{{ money(step.metric.amount) }}</small>
         </div>
       </div>
+      <small v-if="data.flow.created.missingAmountCount" class="pipeline-panel__missing-amount">
+        本期 {{ data.flow.created.missingAmountCount }} 个旧商机未保留初始金额，仅计入新增数量。
+      </small>
       <div class="pipeline-panel__rate">
         结案赢单率：
         <strong>{{
@@ -152,7 +153,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { PipelineOwnerRow, PipelineRegionRow, PipelineReport } from '@crm/domain'
-import PipelineCompositionCard from './PipelineCompositionCard.vue'
 
 const props = defineProps<{ data: PipelineReport }>()
 const router = useRouter()
@@ -238,6 +238,11 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--crm-spacing-sm);
   margin-bottom: var(--crm-spacing-lg);
+}
+.pipeline-panel__missing-amount {
+  display: block;
+  margin-bottom: var(--crm-spacing-sm);
+  color: var(--crm-color-text-secondary);
 }
 .pipeline-panel__step {
   display: grid;
