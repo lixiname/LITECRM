@@ -18,7 +18,10 @@
             <AppNavIcon :name="item.icon" />
           </span>
           <span class="app-sidebar__nav-copy">
-            <strong>{{ item.title }}</strong>
+            <span class="app-sidebar__nav-heading">
+              <strong>{{ item.title }}</strong>
+              <span v-if="item.frequent" class="app-sidebar__frequent">常用</span>
+            </span>
             <small>{{ item.description }}</small>
           </span>
         </el-menu-item>
@@ -41,6 +44,7 @@ interface NavItem {
   icon: string
   title: string
   description: string
+  frequent?: boolean
   ability?: Ability
   anyAbility?: Ability[]
 }
@@ -59,7 +63,35 @@ const navGroups: NavGroup[] = [
         icon: 'work',
         title: '我的工作',
         description: '计划、待办与每日记录',
+        frequent: true,
         ability: 'customer.write',
+      },
+      {
+        index: '/expenses',
+        icon: 'expenses',
+        title: '费用记录',
+        description: '查看与提交个人费用',
+        ability: 'customer.write',
+      },
+    ],
+  },
+  {
+    label: '管理协同',
+    items: [
+      {
+        index: '/management',
+        icon: 'management',
+        title: '经营分析',
+        description: '看板：团队进展与商机概况',
+        frequent: true,
+        anyAbility: ['dashboard.view', 'stats.view'],
+      },
+      {
+        index: '/claims',
+        icon: 'claims',
+        title: '客户接管',
+        description: '处理客户归属申请',
+        ability: 'approve.claim',
       },
     ],
   },
@@ -83,32 +115,6 @@ const navGroups: NavGroup[] = [
         icon: 'complaints',
         title: '客诉处理',
         description: '登记、跟进与解决记录',
-      },
-      {
-        index: '/expenses',
-        icon: 'expenses',
-        title: '费用记录',
-        description: '登记并查看个人费用',
-        ability: 'customer.write',
-      },
-    ],
-  },
-  {
-    label: '管理协同',
-    items: [
-      {
-        index: '/management',
-        icon: 'management',
-        title: '经营分析',
-        description: '团队、商机与重点客户',
-        anyAbility: ['dashboard.view', 'stats.view'],
-      },
-      {
-        index: '/claims',
-        icon: 'claims',
-        title: '客户接管',
-        description: '处理客户归属申请',
-        ability: 'approve.claim',
       },
     ],
   },
@@ -254,8 +260,25 @@ const visibleNavGroups = computed(() =>
   color: var(--crm-color-primary-active);
 }
 .app-sidebar__nav-copy {
+  flex: 1;
   min-width: 0;
   margin-left: 9px;
+}
+.app-sidebar__nav-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.app-sidebar__frequent {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border: 1px solid var(--crm-color-border);
+  border-radius: 4px;
+  color: var(--crm-color-text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
 }
 .app-sidebar__nav-copy strong,
 .app-sidebar__nav-copy small {

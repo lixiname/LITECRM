@@ -40,8 +40,8 @@ const auth = useAuthStore()
 // 侧边栏激活项：取一级路径（/customers/:id → /customers）
 const activeMenu = computed(() => `/${route.path.split('/')[1] ?? ''}`)
 const sectionLabel = computed(() => {
-  if (activeMenu.value === '/week-view') return '工作台'
-  if (['/customers', '/opportunities', '/complaints', '/expenses'].includes(activeMenu.value)) {
+  if (['/week-view', '/expenses'].includes(activeMenu.value)) return '工作台'
+  if (['/customers', '/opportunities', '/complaints'].includes(activeMenu.value)) {
     return '客户与销售'
   }
   if (['/management', '/claims'].includes(activeMenu.value)) return '管理协同'
