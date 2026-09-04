@@ -80,6 +80,10 @@ describe('经营看板期间选择', () => {
       )
       const selector = wrapper.getComponent(ReportingPeriodSelector)
       expect(selector.getComponent({ name: 'ElSelect' }).props('modelValue')).toBe('2026-09')
+      expect(
+        selector.findAllComponents({ name: 'ElOption' }).map((option) => option.props('value')),
+      ).toEqual(['2027-02', '2027-01', '2026-12', '2026-11', '2026-10', '2026-09'])
+      expect(selector.text()).not.toContain('显示更早年份')
       expect(wrapper.find('.el-date-editor').exists()).toBe(false)
       expect(
         wrapper
@@ -102,10 +106,10 @@ describe('经营看板期间选择', () => {
           .find((button) => button.text() === '上周')!
           .attributes('aria-pressed'),
       ).toBe('true')
-      selector.getComponent({ name: 'ElSelect' }).vm.$emit('change', '2024-02')
+      selector.getComponent({ name: 'ElSelect' }).vm.$emit('change', '2027-02')
       await flushPromises()
       expect(getReportingOverview).toHaveBeenLastCalledWith(
-        expect.objectContaining({ start: '2024-02-01', end: '2024-02-29' }),
+        expect.objectContaining({ start: '2027-02-01', end: '2027-02-28' }),
       )
       expect(
         selector
@@ -138,8 +142,8 @@ describe('经营看板期间选择', () => {
             }),
         )
       const selector = wrapper.getComponent(ReportingPeriodSelector)
-      selector.vm.$emit('update:modelValue', { kind: 'month', month: '2026-08' })
-      selector.vm.$emit('update:modelValue', { kind: 'month', month: '2026-07' })
+      selector.vm.$emit('update:modelValue', { kind: 'month', month: '2026-10' })
+      selector.vm.$emit('update:modelValue', { kind: 'month', month: '2026-11' })
       resolveNewer(overview(700))
       await flushPromises()
       resolveOlder(overview(800))

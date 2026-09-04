@@ -109,6 +109,7 @@ import PipelineCompositionCard from '../components/reporting/PipelineComposition
 import ReportingPeriodSelector from '../components/reporting/ReportingPeriodSelector.vue'
 import {
   reportingToday,
+  defaultReportingMonth,
   reportingPeriodRange,
   type ReportingPeriod,
 } from '../components/reporting/reporting-period'
@@ -146,7 +147,7 @@ const keyCustomers = ref<KeyCustomerReport>()
 const expenses = ref<ExpenseReport>()
 
 const today = reportingToday()
-const period = ref<ReportingPeriod>({ kind: 'month', month: today.slice(0, 7) })
+const period = ref<ReportingPeriod>({ kind: 'month', month: defaultReportingMonth(today) })
 const initialRange = reportingPeriodRange(period.value, today)
 const teamRange = ref<[string, string]>([today, today])
 const filters = reactive<ReportingFilters>({

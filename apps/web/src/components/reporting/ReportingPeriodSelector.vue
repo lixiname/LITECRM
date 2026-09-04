@@ -29,25 +29,15 @@
           :value="month.value"
         />
       </el-option-group>
-      <template #footer><el-button text @click="years += 1">显示更早年份</el-button></template>
     </el-select>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { reportingMonthGroups, reportingToday, type ReportingPeriod } from './reporting-period'
-const props = defineProps<{ modelValue: ReportingPeriod }>()
+import { reportingMonthGroups, type ReportingPeriod } from './reporting-period'
+defineProps<{ modelValue: ReportingPeriod }>()
 const emit = defineEmits<{ 'update:modelValue': [value: ReportingPeriod] }>()
-const years = ref(3)
-const groups = computed(() => {
-  const today = reportingToday()
-  const selectedYears =
-    props.modelValue.kind === 'month'
-      ? Number(today.slice(0, 4)) - Number(props.modelValue.month.slice(0, 4)) + 1
-      : 0
-  return reportingMonthGroups(today, Math.max(years.value, selectedYears))
-})
+const groups = reportingMonthGroups()
 </script>
 
 <style scoped>
