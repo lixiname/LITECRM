@@ -6,7 +6,7 @@
         <el-button v-if="editable" size="small" @click="emit('edit')">编辑资料</el-button>
       </div>
     </template>
-    <el-descriptions :column="2" border>
+    <el-descriptions :column="1" border>
       <el-descriptions-item label="名称">{{ customer.name }}</el-descriptions-item>
       <el-descriptions-item label="客户等级">{{ customer.grade }}</el-descriptions-item>
       <el-descriptions-item label="经营阶段">{{ relationshipLabel }}</el-descriptions-item>
@@ -43,15 +43,9 @@
         </el-tag>
       </el-descriptions-item>
       <el-descriptions-item label="负责人">{{ ownerLabel }}</el-descriptions-item>
-      <el-descriptions-item label="地址" :span="2">{{
-        customer.address ?? '-'
-      }}</el-descriptions-item>
-      <el-descriptions-item label="网址" :span="2">{{
-        customer.website ?? '-'
-      }}</el-descriptions-item>
-      <el-descriptions-item label="备注" :span="2">{{
-        customer.notes ?? '-'
-      }}</el-descriptions-item>
+      <el-descriptions-item label="地址">{{ customer.address ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="网址">{{ customer.website ?? '-' }}</el-descriptions-item>
+      <el-descriptions-item label="备注">{{ customer.notes ?? '-' }}</el-descriptions-item>
     </el-descriptions>
   </el-card>
 </template>
@@ -122,5 +116,19 @@ function dimensionLabel(dimension: CustomerDimension, value?: string | null): st
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.profile-card :deep(.el-descriptions__table) {
+  table-layout: fixed;
+}
+.profile-card :deep(.el-descriptions__label) {
+  width: 108px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.profile-card :deep(.el-descriptions__content) {
+  color: var(--crm-color-text-primary);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="customers">
-    <AppPageHeader eyebrow="Customer Portfolio" :title="pageTitle" :description="pageDescription">
+  <div class="customers operations-surface">
+    <AppPageHeader :title="pageTitle" :description="pageDescription">
       <template #actions>
         <el-button
           v-if="auth.hasAbility('customer.write') && filters.status === 'active'"
@@ -19,20 +19,28 @@
     </AppPageHeader>
 
     <el-card class="customers__toolbar" shadow="never">
-      <div class="customers__toolbar-row">
+      <div class="customers__pool-row">
         <el-segmented v-model="filters.status" :options="poolOptions" />
-        <span class="customers__toolbar-divider" />
+        <span class="customers__result-hint">每页 {{ PAGE_SIZE }} 位客户</span>
+      </div>
+      <div class="customers__toolbar-row" role="group" aria-label="筛选客户">
         <el-input
           v-model="keyword"
           placeholder="搜索客户名称或城市"
+          aria-label="搜索客户名称或城市"
           clearable
           class="customers__search"
           @input="onSearch"
         />
-        <el-select v-model="filters.grade" placeholder="全部等级" clearable>
+        <el-select v-model="filters.grade" placeholder="全部等级" aria-label="客户等级" clearable>
           <el-option v-for="g in CUSTOMER_GRADE_OPTIONS" :key="g" :label="g" :value="g" />
         </el-select>
-        <el-select v-model="filters.relationshipStage" placeholder="全部经营阶段" clearable>
+        <el-select
+          v-model="filters.relationshipStage"
+          placeholder="全部经营阶段"
+          aria-label="经营阶段"
+          clearable
+        >
           <el-option
             v-for="item in CUSTOMER_RELATIONSHIP_STAGE_OPTIONS"
             :key="item.value"
@@ -41,7 +49,6 @@
           />
         </el-select>
       </div>
-      <span class="customers__result-hint">每页显示 {{ PAGE_SIZE }} 位客户</span>
     </el-card>
 
     <el-card class="customers__card">
@@ -54,15 +61,17 @@
       >
         <el-table-column label="客户" min-width="220">
           <template #default="{ row }">
-            <div class="customers__name">{{ (row as CustomerItem).name }}</div>
+            <router-link class="customers__name" :to="`/customers/${row.id}`" @click.stop>{{
+              (row as CustomerItem).name
+            }}</router-link>
             <div class="customers__meta">
               <span>{{ locationText(row as CustomerItem) }}</span>
-              <el-tag size="small" effect="plain" :type="statusTag((row as CustomerItem).status)">
+              <span class="customers__status" :class="`is-${(row as CustomerItem).status}`">
                 {{ statusLabel((row as CustomerItem).status) }}
-              </el-tag>
-              <el-tag size="small" effect="plain">
+              </span>
+              <span>
                 {{ relationshipLabel((row as CustomerItem).relationshipStage) }}
-              </el-tag>
+              </span>
             </div>
           </template>
         </el-table-column>
@@ -254,9 +263,6 @@ function load() {
   void reload()
 }
 
-function statusTag(status: CustomerStatus): 'success' | 'warning' | 'info' {
-  return status === 'active' ? 'success' : status === 'public' ? 'warning' : 'info'
-}
 function statusLabel(status: CustomerStatus): string {
   return CUSTOMER_STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status
 }
@@ -316,34 +322,40 @@ function isOverdue(value?: string | null): boolean {
   box-shadow: var(--crm-shadow-card);
 }
 .customers__toolbar :deep(.el-card__body) {
+  padding: 0;
+}
+.customers__pool-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--crm-spacing-lg);
-  padding: 12px 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--crm-color-border);
+}
+.customers__pool-row :deep(.el-segmented) {
+  --el-segmented-item-selected-bg-color: var(--crm-color-primary);
+  --el-segmented-item-selected-color: #fff;
+  font-weight: 650;
 }
 .customers__toolbar-row {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: var(--crm-spacing-sm);
-}
-.customers__toolbar-divider {
-  width: 1px;
-  height: 24px;
-  margin-inline: 2px;
-  background: var(--crm-color-divider);
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  background: var(--crm-color-bg-subtle);
 }
 .customers__toolbar .el-select {
   width: 140px;
 }
 .customers__search {
-  width: 230px;
+  width: 300px;
+  max-width: 100%;
 }
 .customers__result-hint {
   flex: none;
   color: var(--crm-color-text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
 }
 .customers__card {
   box-shadow: var(--crm-shadow-card);
@@ -358,8 +370,14 @@ function isOverdue(value?: string | null): boolean {
   border-top: 1px solid var(--crm-color-divider);
 }
 .customers__name {
+  display: inline-block;
   font-weight: 650;
   color: var(--crm-color-text-primary);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.customers__name:hover {
+  text-decoration: underline;
 }
 :deep(.customers__row) {
   cursor: pointer;
@@ -374,9 +392,21 @@ function isOverdue(value?: string | null): boolean {
 }
 .customers__meta {
   align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   margin-top: 4px;
   color: var(--crm-color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
+}
+.customers__meta > span + span {
+  padding-left: 8px;
+  border-left: 1px solid var(--crm-color-border);
+}
+.customers__status.is-active {
+  color: var(--crm-color-success);
+}
+.customers__status.is-public {
+  color: var(--crm-color-warning);
 }
 .customers__stack {
   flex-direction: column;

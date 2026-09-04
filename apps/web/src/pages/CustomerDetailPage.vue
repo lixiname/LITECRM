@@ -1,7 +1,6 @@
 <template>
-  <div v-loading="loading" class="detail">
+  <div v-loading="loading" class="detail operations-surface">
     <AppPageHeader
-      eyebrow="Customer Record"
       :title="detail?.name ?? '客户详情'"
       description="优先查看当前商机、下一步动作与最近客户活动"
       back-to="/customers"
@@ -53,20 +52,22 @@
           <template #header>经营概览</template>
           <div class="detail__metrics">
             <div>
-              <strong>{{ detail.dealSummary?.count ?? 0 }}</strong
-              ><span>CRM成交</span>
+              <span>CRM成交</span><strong>{{ detail.dealSummary?.count ?? 0 }} 笔</strong>
             </div>
             <div>
-              <strong>{{ moneyText(detail.dealSummary?.referenceTotalAmount) }}</strong
-              ><span>累计参考成交</span>
+              <span>累计参考成交</span
+              ><strong>{{ moneyText(detail.dealSummary?.referenceTotalAmount) }}</strong>
             </div>
             <div>
-              <strong>{{
-                detail.opportunities?.filter(
-                  (item) => item.stage === 'intent' || item.stage === 'following',
-                ).length ?? 0
-              }}</strong
-              ><span>开放商机</span>
+              <span>开放商机</span>
+              <strong
+                >{{
+                  detail.opportunities?.filter(
+                    (item) => item.stage === 'intent' || item.stage === 'following',
+                  ).length ?? 0
+                }}
+                个</strong
+              >
             </div>
           </div>
         </el-card>
@@ -408,42 +409,63 @@ function handleBusinessChanged(kind: 'visit' | 'opportunity' | 'complaint', reco
 }
 .detail__workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(310px, 0.75fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
   align-items: start;
 }
 .detail__main,
 .detail__aside {
   display: grid;
-  gap: 18px;
+  min-width: 0;
+  gap: 16px;
 }
 .detail__metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--crm-spacing-sm);
 }
 .detail__metrics > div {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   min-width: 0;
-  padding: 11px;
-  border: 1px solid var(--crm-color-divider);
-  border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-soft);
+  padding: 10px 0;
+}
+.detail__metrics > div + div {
+  border-top: 1px solid var(--crm-color-divider);
 }
 .detail__metrics strong {
-  overflow: hidden;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
   color: var(--crm-color-text-primary);
   font-size: 18px;
   font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
 }
 .detail__metrics span {
-  color: var(--crm-color-text-tertiary);
-  font-size: 10px;
+  flex: none;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
 }
 .detail__dialog-alert {
   margin-bottom: var(--crm-spacing-md);
+}
+@media (max-width: 1280px) {
+  .detail :deep(.app-page-header__heading) {
+    flex-basis: 100%;
+  }
+  .detail :deep(.app-page-header__actions) {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  .detail__workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .detail__aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .detail__aside :deep(.profile-card) {
+    grid-column: 1 / -1;
+  }
 }
 </style>

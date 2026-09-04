@@ -12,10 +12,14 @@
         v-for="opportunity in sortedOpportunities"
         :key="opportunity.id"
         class="opportunity-card"
+        role="link"
+        tabindex="0"
+        :aria-label="`查看商机：${opportunity.name}`"
+        @keydown.enter="router.push(`/opportunities/${opportunity.id}`)"
         @click="router.push(`/opportunities/${opportunity.id}`)"
       >
         <div class="opportunity-card__top">
-          <div>
+          <div class="opportunity-card__identity">
             <strong>{{ opportunity.name }}</strong>
             <span class="opportunity-card__amount"
               >{{ amountText(opportunity.referenceAmount) }} ·
@@ -120,6 +124,10 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
   color: var(--crm-color-text-secondary);
   font-size: var(--crm-font-size-xs);
 }
+.opportunity-progress__hint {
+  margin-top: 3px;
+  font-weight: 400;
+}
 .opportunity-progress__list {
   display: grid;
   gap: var(--crm-spacing-md);
@@ -127,19 +135,22 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
 .opportunity-card {
   padding: 15px;
   border: 1px solid var(--crm-color-border);
-  border-radius: var(--crm-radius-lg);
+  border-radius: var(--crm-radius-md);
   background: var(--crm-color-bg-card);
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 .opportunity-card:hover {
-  border-color: #b7cdc4;
-  box-shadow: var(--crm-shadow-card);
+  border-color: var(--crm-color-primary);
+}
+.opportunity-card__identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
 }
 .opportunity-card__amount {
-  margin-left: var(--crm-spacing-sm);
+  font-variant-numeric: tabular-nums;
 }
 .opportunity-card__activity {
   display: grid;
@@ -152,7 +163,14 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
   gap: var(--crm-spacing-xs);
   align-items: baseline;
   padding: 6px 0;
-  border-bottom: 1px dashed var(--crm-color-border);
+  border-bottom: 1px solid var(--crm-color-divider);
+}
+.opportunity-card__activity > div > span:last-child {
+  overflow-wrap: anywhere;
+  color: var(--crm-color-text-secondary);
+}
+.opportunity-card__activity strong {
+  font-size: 12px;
 }
 .opportunity-card__dot {
   width: 6px;
@@ -175,9 +193,12 @@ function primaryAttention(flags: OpportunityRiskFlag[]) {
   padding: var(--crm-spacing-sm);
   border-radius: var(--crm-radius-sm);
   background: var(--crm-color-bg-soft);
+  border-left: 3px solid var(--crm-color-primary);
+  overflow-wrap: anywhere;
 }
 .opportunity-card__next.is-attention {
   background: var(--crm-color-warning-light);
+  border-left-color: var(--crm-color-warning);
 }
 .opportunity-card__attention {
   margin-top: var(--crm-spacing-sm);

@@ -228,10 +228,13 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
   align-items: center;
   justify-content: space-between;
   gap: var(--crm-spacing-md);
+  flex-wrap: wrap;
 }
 .pipeline-panel__title small,
 .pipeline-panel__rate small {
   color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  font-weight: 400;
 }
 .pipeline-panel__flow {
   display: grid;
@@ -251,6 +254,9 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
   border-radius: var(--crm-radius-sm);
   background: var(--crm-color-bg-page);
   text-align: center;
+  min-width: 0;
+  border: 1px solid var(--crm-color-divider);
+  overflow-wrap: anywhere;
 }
 .pipeline-panel__step strong {
   font-size: 24px;
@@ -286,13 +292,13 @@ function openOwnerOpportunities(row: PipelineOwnerRow) {
   white-space: nowrap;
 }
 .is-estimate {
-  background: #94a3b8;
+  background: #b5bdb9;
 }
 .is-oral_quote {
-  background: var(--crm-color-primary);
+  background: #8daaa0;
 }
 .is-formal_quote {
-  background: var(--el-color-success);
+  background: var(--crm-color-primary);
 }
 :deep(.pipeline-panel__row) {
   cursor: pointer;

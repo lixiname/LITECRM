@@ -1,17 +1,18 @@
 <template>
-  <div class="management-dashboard">
+  <div class="management-dashboard operations-surface">
     <AppPageHeader
-      eyebrow="Management Overview"
       title="经营与过程看板"
       description="先识别漏斗风险，再查看团队动作与需要介入的重要客户"
     />
 
     <el-card class="management-dashboard__filters" shadow="never">
       <div class="management-dashboard__filter-row">
+        <strong class="management-dashboard__filter-label">统计范围</strong>
         <el-select
           v-model="filters.ownerId"
           clearable
           placeholder="全部下辖人员"
+          aria-label="统计人员"
           @change="applyFilters"
         >
           <el-option
@@ -25,6 +26,7 @@
           v-model="filters.salesRegionId"
           clearable
           placeholder="全部销售大区"
+          aria-label="销售大区"
           @change="applyFilters"
         >
           <el-option
@@ -39,6 +41,7 @@
           v-model="filters.productLine"
           clearable
           placeholder="全部产品线"
+          aria-label="产品线"
           @change="applyFilters"
         >
           <el-option
@@ -53,7 +56,7 @@
       <small>{{ filterHint }}</small>
     </el-card>
 
-    <el-card class="management-dashboard__body" shadow="never">
+    <section class="management-dashboard__body" aria-label="经营看板">
       <el-tabs v-model="activeTab" @tab-change="loadActiveTab">
         <el-tab-pane label="管理概览" name="overview" />
         <el-tab-pane label="商机经营" name="pipeline" />
@@ -91,7 +94,7 @@
           <ExpenseReportPanel v-else-if="activeTab === 'expenses' && expenses" :data="expenses" />
         </template>
       </div>
-    </el-card>
+    </section>
   </div>
 </template>
 
@@ -243,16 +246,28 @@ function applyFilters() {
 
 <style scoped>
 .management-dashboard {
-  min-width: 960px;
+  min-width: 0;
   max-width: var(--crm-content-max-width);
   margin: 0 auto;
   padding: var(--crm-spacing-xl) 28px var(--crm-spacing-3xl);
 }
-.management-dashboard__filters,
-.management-dashboard__body {
+.management-dashboard__filters {
   margin: 0 0 var(--crm-spacing-lg);
   border-color: var(--crm-color-border);
   box-shadow: var(--crm-shadow-card);
+}
+.management-dashboard__body {
+  min-width: 0;
+}
+.management-dashboard__body :deep(.el-tabs__header) {
+  padding: 0 16px;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+  background: #fff;
+}
+.management-dashboard__filter-label {
+  padding-right: 8px;
+  font-size: 13px;
 }
 .management-dashboard__filters :deep(.el-card__body) {
   padding: 13px 14px;
@@ -270,7 +285,7 @@ function applyFilters() {
   display: block;
   margin-top: 9px;
   color: var(--crm-color-text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
 }
 .management-dashboard__content {
   min-height: 360px;
@@ -278,6 +293,28 @@ function applyFilters() {
 }
 .management-dashboard__pool {
   margin-bottom: var(--crm-spacing-lg);
+  border-top: 3px solid var(--crm-color-primary);
+}
+.management-dashboard__pool :deep(.pipeline-composition__header) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.management-dashboard__pool :deep(.pipeline-composition__eyebrow) {
+  font-size: 16px;
+}
+.management-dashboard__pool :deep(.pipeline-composition__legend) {
+  gap: 0;
+  border: 1px solid var(--crm-color-divider);
+  border-radius: var(--crm-radius-xs);
+  background: var(--crm-color-bg-subtle);
+}
+.management-dashboard__pool :deep(.pipeline-composition__item) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 10px 12px;
+}
+.management-dashboard__pool :deep(.pipeline-composition__item + .pipeline-composition__item) {
+  border-left: 1px solid var(--crm-color-divider);
 }
 .management-dashboard__period {
   display: flex;
@@ -286,6 +323,11 @@ function applyFilters() {
   gap: var(--crm-spacing-md);
   flex-wrap: wrap;
   margin-bottom: var(--crm-spacing-md);
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--crm-color-border-strong);
+}
+.management-dashboard__period > strong {
+  font-size: 16px;
 }
 .management-dashboard__pool :deep(.pipeline-composition__item) {
   display: flex;
@@ -297,11 +339,7 @@ function applyFilters() {
   align-items: baseline;
   margin-left: auto;
 }
-.management-dashboard__body :deep(.el-card__body) {
-  padding: 0 20px 22px;
-}
 .management-dashboard__body :deep(.el-tabs__nav-wrap::after) {
-  height: 1px;
-  background: var(--crm-color-divider);
+  display: none;
 }
 </style>

@@ -5,6 +5,7 @@ import 'element-plus/dist/index.css'
 import '@crm/design-tokens/tokens.css'
 import { useAuthStore } from '@crm/domain'
 import './style.css'
+import './styles/operations-surface.css'
 import App from './App.vue'
 import router from './router'
 

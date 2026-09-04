@@ -17,6 +17,9 @@
         <div
           class="activity-card__item"
           :class="{ 'activity-card__item--link': canOpen(item) }"
+          :role="canOpen(item) ? 'link' : undefined"
+          :tabindex="canOpen(item) ? 0 : undefined"
+          @keydown.enter="openItem(item)"
           @click="openItem(item)"
         >
           <div class="activity-card__title">
@@ -123,25 +126,35 @@ function metadataText(item: CustomerTimelineItem): string {
 }
 .activity-card__hint,
 .activity-card__meta {
-  color: var(--crm-color-text-tertiary);
+  color: var(--crm-color-text-secondary);
   font-size: var(--crm-font-size-xs);
 }
 .activity-card :deep(.el-timeline) {
   padding-left: 5px;
 }
 .activity-card :deep(.el-timeline-item__timestamp) {
-  color: var(--crm-color-text-tertiary);
-  font-size: 11px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
 }
 .activity-card :deep(.el-timeline-item__tail) {
   border-left-color: var(--crm-color-border-strong);
 }
 .activity-card__item {
-  padding: 2px 0 6px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--crm-color-divider);
+  overflow-wrap: anywhere;
   line-height: var(--crm-line-height-relaxed);
 }
 .activity-card__title {
   margin-bottom: 3px;
+  font-weight: 650;
+  align-items: flex-start;
+}
+.activity-card__header {
+  flex-wrap: wrap;
+}
+.activity-card__hint {
+  font-weight: 400;
 }
 .activity-card__item--link {
   cursor: pointer;

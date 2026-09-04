@@ -61,5 +61,8 @@ describe('CustomerActivityTimeline', () => {
     expect(wrapper.text()).toContain('过滤系统改造')
     await wrapper.get('.activity-card__item--link').trigger('click')
     expect(push).toHaveBeenCalledWith('/opportunities/opportunity-1')
+    expect(wrapper.get('.activity-card__item--link').attributes('tabindex')).toBe('0')
+    await wrapper.get('.activity-card__item--link').trigger('keydown.enter')
+    expect(push).toHaveBeenLastCalledWith('/opportunities/opportunity-1')
   })
 })

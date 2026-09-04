@@ -127,10 +127,11 @@ function percent(value: number): string {
   justify-content: space-between;
   gap: var(--crm-spacing-md);
   padding: var(--crm-spacing-md);
-  border: 0;
-  border: 1px solid transparent;
-  border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-soft);
+  flex-wrap: wrap;
+  border: 1px solid var(--crm-color-divider);
+  border-left: 3px solid var(--crm-color-warning);
+  border-radius: var(--crm-radius-xs);
+  background: var(--crm-color-bg-card);
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -144,5 +145,17 @@ function percent(value: number): string {
 }
 .overview-panel__risks small {
   color: var(--crm-color-text-secondary);
+}
+.overview-panel__risks span {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+@media (max-width: 1280px) {
+  .overview-panel__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .overview-panel__side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

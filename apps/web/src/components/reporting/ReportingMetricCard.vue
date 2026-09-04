@@ -20,12 +20,12 @@ defineProps<{
   position: relative;
   display: grid;
   gap: 5px;
-  min-height: 112px;
+  min-width: 0;
+  min-height: 106px;
   padding: 16px;
   border: 1px solid var(--crm-color-border);
   border-radius: var(--crm-radius-md);
-  background: var(--crm-color-bg-soft);
-  overflow: hidden;
+  background: var(--crm-color-bg-card);
 }
 .metric-card span,
 .metric-card small {
@@ -37,6 +37,15 @@ defineProps<{
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.metric-card span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.metric-card small {
+  font-size: 12px;
+  line-height: 1.5;
 }
 .metric-card::before {
   position: absolute;

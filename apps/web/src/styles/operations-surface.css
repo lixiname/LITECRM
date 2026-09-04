@@ -1,0 +1,105 @@
+/* 清晰度试点：显式挂载到三个桌面页面，不覆盖移动端或全局主题。 */
+.operations-surface {
+  --crm-color-text-primary: #22312c;
+  --crm-color-text-secondary: #52635b;
+  --crm-color-text-tertiary: #63746b;
+  --crm-color-border: #cdd6d1;
+  --crm-color-border-strong: #b8c6be;
+  --crm-color-divider: #dde4df;
+  --crm-color-bg-soft: #edf2ef;
+  --crm-color-bg-subtle: #f5f7f5;
+  --crm-color-success: #387d3e;
+  --crm-color-success-light: #edf6ed;
+  --crm-radius-md: 6px;
+  --crm-radius-lg: 8px;
+  --crm-shadow-card: none;
+  --el-color-success: var(--crm-color-success);
+  --el-color-success-light-3: #74a478;
+  --el-color-success-light-5: #9cbe9f;
+  --el-color-success-light-7: #c3d8c5;
+  --el-color-success-light-8: #d7e5d8;
+  --el-color-success-light-9: var(--crm-color-success-light);
+  --el-color-success-dark-2: #2d6432;
+  --el-text-color-primary: var(--crm-color-text-primary);
+  --el-text-color-regular: var(--crm-color-text-secondary);
+  --el-text-color-secondary: var(--crm-color-text-tertiary);
+  --el-text-color-placeholder: var(--crm-color-text-tertiary);
+  --el-border-color: var(--crm-color-border);
+  --el-border-color-light: var(--crm-color-divider);
+  --el-fill-color-light: var(--crm-color-bg-soft);
+  min-height: calc(100vh - var(--crm-header-height));
+  background: #eef2ef;
+}
+
+.operations-surface > header.app-page-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--crm-color-border-strong);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.operations-surface header .app-page-header__heading {
+  flex: 1 1 320px;
+}
+.operations-surface header .app-page-header__heading > div {
+  min-width: 0;
+}
+.operations-surface header .app-page-header__title {
+  overflow-wrap: anywhere;
+  letter-spacing: 0;
+}
+.operations-surface header .app-page-header__actions {
+  margin-left: auto;
+  max-width: 100%;
+}
+.operations-surface header .app-page-header__description {
+  line-height: 1.6;
+}
+.operations-surface .el-card {
+  border-color: var(--crm-color-border);
+  border-radius: var(--crm-radius-lg);
+  box-shadow: none;
+}
+.operations-surface .el-card__header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--crm-color-border);
+  background: var(--crm-color-bg-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+.operations-surface .el-card__body {
+  padding: 16px;
+}
+.operations-surface .app-page-header__actions .el-button + .el-button {
+  margin-left: 0;
+}
+.operations-surface .el-button--primary:not(.is-link, .is-plain) {
+  box-shadow: none;
+}
+.operations-surface .el-tag {
+  border-radius: 4px;
+}
+.operations-surface .el-table {
+  --el-table-header-bg-color: #e9efeb;
+  --el-table-row-hover-bg-color: #edf5f0;
+  --el-table-border-color: var(--crm-color-divider);
+  border-radius: 0;
+}
+.operations-surface .el-table th.el-table__cell {
+  height: 42px;
+  color: var(--crm-color-text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom-color: var(--crm-color-border-strong);
+}
+.operations-surface .el-table td.el-table__cell {
+  padding-block: 10px;
+}
+.operations-surface .el-table .cell {
+  padding-inline: 14px;
+}
+.operations-surface .el-tabs__item {
+  font-size: 14px;
+}
+.operations-surface .el-empty__description p {
+  color: var(--crm-color-text-secondary);
+}
