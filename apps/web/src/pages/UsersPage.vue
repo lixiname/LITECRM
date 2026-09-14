@@ -307,9 +307,9 @@ async function resetPassword(user: User) {
     return
   }
   try {
-    const temporary = await resetUserPassword(user.id)
+    const { temporaryPassword } = await resetUserPassword(user.id)
     await ElMessageBox.alert(
-      `临时密码：${temporary}\n请线下通知用户，并要求首次登录后重置。`,
+      `临时密码：${temporaryPassword}\n请线下通知用户，并要求首次登录后重置。`,
       '重置成功',
       {
         confirmButtonText: '我知道了',

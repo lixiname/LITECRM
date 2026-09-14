@@ -7,6 +7,7 @@ import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserDto } from './dto/user.dto'
+import { ResetPasswordResultDto } from './dto/reset-password-result.dto'
 
 // 用户管理：admin（user.manage）专属（§6.2）
 @Controller('users')
@@ -47,8 +48,9 @@ export class UsersController {
 
   // 重置密码：返回临时密码（仅此一次展示，§8.1）
   @Post(':id/reset-password')
-  @ApiCreatedResponse({ type: String, description: '临时密码（仅此一次展示）' })
-  resetPassword(@Param('id') id: string) {
-    return this.usersService.resetPassword(id)
+  @ApiCreatedResponse({ type: ResetPasswordResultDto, description: '重置成功' })
+  async resetPassword(@Param('id') id: string): Promise<ResetPasswordResultDto> {
+    const temporaryPassword = await this.usersService.resetPassword(id)
+    return { temporaryPassword }
   }
 }

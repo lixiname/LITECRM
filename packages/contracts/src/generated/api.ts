@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AppController_getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -1270,6 +1286,10 @@ export interface components {
             /** @description 是否启用 */
             isActive?: boolean;
         };
+        ResetPasswordResultDto: {
+            /** @description 临时密码（仅此一次展示） */
+            temporaryPassword: string;
+        };
         /** @enum {string} */
         CustomerGrade: "S" | "A" | "B" | "C";
         GradeQuotaDefaultDto: {
@@ -1857,6 +1877,23 @@ export interface operations {
             };
         };
     };
+    AppController_getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_login: {
         parameters: {
             query?: never;
@@ -2052,13 +2089,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 临时密码（仅此一次展示） */
+            /** @description 重置成功 */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": string;
+                    "application/json": components["schemas"]["ResetPasswordResultDto"];
                 };
             };
         };

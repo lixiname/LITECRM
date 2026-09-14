@@ -13,6 +13,18 @@
         "tags": ["App"]
       }
     },
+    "/health": {
+      "get": {
+        "operationId": "AppController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["App"]
+      }
+    },
     "/auth/login": {
       "post": {
         "operationId": "AuthController_login",
@@ -248,11 +260,11 @@
         ],
         "responses": {
           "201": {
-            "description": "临时密码（仅此一次展示）",
+            "description": "重置成功",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ResetPasswordResultDto"
                 }
               }
             }
@@ -2748,6 +2760,16 @@
           }
         },
         "required": ["version"]
+      },
+      "ResetPasswordResultDto": {
+        "type": "object",
+        "properties": {
+          "temporaryPassword": {
+            "type": "string",
+            "description": "临时密码（仅此一次展示）"
+          }
+        },
+        "required": ["temporaryPassword"]
       },
       "CustomerGrade": {
         "type": "string",
