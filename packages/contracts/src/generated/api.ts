@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{id}/unlock-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["UsersController_unlockLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer-grade-quotas": {
         parameters: {
             query?: never;
@@ -1244,6 +1260,11 @@ export interface components {
             isActive: boolean;
             /**
              * Format: date-time
+             * @description 登录锁定截止时间
+             */
+            lockedUntil?: string | null;
+            /**
+             * Format: date-time
              * @description 创建时间
              */
             createdAt: string;
@@ -1289,6 +1310,10 @@ export interface components {
         ResetPasswordResultDto: {
             /** @description 临时密码（仅此一次展示） */
             temporaryPassword: string;
+        };
+        UnlockUserLoginDto: {
+            /** @description 用户当前版本号，用于防止并发覆盖 */
+            version: number;
         };
         /** @enum {string} */
         CustomerGrade: "S" | "A" | "B" | "C";
@@ -2096,6 +2121,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResetPasswordResultDto"];
+                };
+            };
+        };
+    };
+    UsersController_unlockLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlockUserLoginDto"];
+            };
+        };
+        responses: {
+            /** @description 登录锁定已解除 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDto"];
                 };
             };
         };

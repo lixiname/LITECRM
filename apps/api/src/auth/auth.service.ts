@@ -45,13 +45,15 @@ export class AuthService {
       throw new UnauthorizedException('账号或密码错误')
     }
 
-    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+    const lockExpired = Boolean(user.lockedUntil && user.lockedUntil.getTime() <= Date.now())
+    if (user.lockedUntil && !lockExpired) {
       throw new UnauthorizedException('尝试次数过多，账号已锁定 15 分钟')
     }
 
     const passwordOk = await bcrypt.compare(password, user.passwordHash)
     if (!passwordOk) {
-      await this.recordFailure(user.id, user.loginFailedCount)
+      // 锁定期结束即开始新的失败计数周期，避免此后一次输错便再次锁定。
+      await this.recordFailure(user.id, lockExpired ? 0 : user.loginFailedCount)
       throw new UnauthorizedException('账号或密码错误')
     }
 
@@ -89,7 +91,12 @@ export class AuthService {
     const hash = await bcrypt.hash(newPassword, 10)
     await db
       .update(users)
-      .set({ passwordHash: hash, tokenVersion: user.tokenVersion + 1 })
+      .set({
+        passwordHash: hash,
+        tokenVersion: user.tokenVersion + 1,
+        loginFailedCount: 0,
+        lockedUntil: null,
+      })
       .where(eq(users.id, userId))
   }
 

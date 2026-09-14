@@ -25,14 +25,17 @@
         <el-table-column prop="salesRegionName" label="所属销售大区" min-width="120">
           <template #default="{ row }">{{ (row as User).salesRegionName ?? '未分配' }}</template>
         </el-table-column>
-        <el-table-column label="状态" min-width="90">
+        <el-table-column label="状态" min-width="150">
           <template #default="{ row }">
-            <el-tag :type="row.isActive ? 'success' : 'danger'">
-              {{ row.isActive ? '启用' : '停用' }}
+            <el-tag :type="userStatus(row as User).type">
+              {{ userStatus(row as User).label }}
             </el-tag>
+            <div v-if="row.isActive && isLoginLocked(row as User)" class="users__lock-until">
+              至 {{ formatLockTime((row as User).lockedUntil) }}
+            </div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="310">
           <template #default="{ row }">
             <el-button size="small" @click="openEdit(row as User)">编辑</el-button>
             <el-button
@@ -40,6 +43,14 @@
               :type="row.isActive ? 'danger' : 'success'"
               @click="toggleActive(row as User)"
               >{{ row.isActive ? '停用' : '启用' }}</el-button
+            >
+            <el-button
+              v-if="row.isActive && isLoginLocked(row as User)"
+              size="small"
+              type="warning"
+              plain
+              @click="handleUnlockLogin(row as User)"
+              >解除锁定</el-button
             >
             <el-button size="small" @click="resetPassword(row as User)">重置密码</el-button>
           </template>
@@ -150,6 +161,7 @@ import {
   ROLE_LABELS,
   type CreateUserInput,
   type UpdateUserInput,
+  unlockUserLogin,
   updateUser,
   useQuery,
   type Role,
@@ -188,6 +200,27 @@ const userNameById = computed(() => {
 function getUserName(id: string | null | undefined): string {
   if (!id) return '-'
   return userNameById.value.get(id) ?? '—'
+}
+
+function isLoginLocked(user: User): boolean {
+  return Boolean(user.lockedUntil && new Date(user.lockedUntil).getTime() > Date.now())
+}
+
+function userStatus(user: User): { label: string; type: 'success' | 'warning' | 'danger' } {
+  if (!user.isActive) return { label: '停用', type: 'danger' }
+  if (isLoginLocked(user)) return { label: '登录锁定', type: 'warning' }
+  return { label: '正常', type: 'success' }
+}
+
+function formatLockTime(value: string | null | undefined): string {
+  if (!value) return '-'
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(value))
 }
 
 function openAdd() {
@@ -321,6 +354,26 @@ async function resetPassword(user: User) {
     ElMessage.error(e instanceof Error ? e.message : '操作失败')
   }
 }
+
+async function handleUnlockLogin(user: User) {
+  try {
+    await ElMessageBox.confirm(
+      `解除 ${user.displayName} 的登录锁定并清零失败次数？`,
+      '确认解除锁定',
+      { confirmButtonText: '解除锁定', cancelButtonText: '取消', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+
+  try {
+    await unlockUserLogin(user.id, { version: user.version })
+    ElMessage.success('登录锁定已解除')
+    await reload()
+  } catch (e) {
+    ElMessage.error(e instanceof Error ? e.message : '解除锁定失败')
+  }
+}
 </script>
 
 <style scoped>
@@ -336,5 +389,11 @@ async function resetPassword(user: User) {
   margin-top: 4px;
   color: var(--crm-color-text-tertiary);
   line-height: 1.4;
+}
+.users__lock-until {
+  margin-top: 4px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.3;
 }
 </style>

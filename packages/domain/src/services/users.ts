@@ -5,6 +5,7 @@ export type User = components['schemas']['UserDto']
 export type CreateUserInput = components['schemas']['CreateUserDto']
 export type UpdateUserInput = components['schemas']['UpdateUserDto']
 export type ResetPasswordResult = components['schemas']['ResetPasswordResultDto']
+export type UnlockUserLoginInput = components['schemas']['UnlockUserLoginDto']
 
 // 用户管理（§6.2/8.1）：admin（user.manage）专属，调用方按能力点控制入口
 export function listUsers(): Promise<User[]> {
@@ -31,4 +32,9 @@ export function deactivateUser(id: string, version: number): Promise<void> {
 /** 重置密码：返回临时密码（仅此一次展示） */
 export function resetUserPassword(id: string): Promise<ResetPasswordResult> {
   return apiPost<ResetPasswordResult>(`/users/${id}/reset-password`)
+}
+
+/** 解除连续登录失败形成的临时锁定。 */
+export function unlockUserLogin(id: string, dto: UnlockUserLoginInput): Promise<User> {
+  return apiPost<User>(`/users/${id}/unlock-login`, dto)
 }

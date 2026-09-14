@@ -103,6 +103,26 @@ export class UsersService {
     return this.authService.resetPassword(id)
   }
 
+  // 解除登录防爆破锁定；不改变账号启停状态或现有 token。
+  async unlockLogin(id: string, version: number) {
+    const [existing] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+    if (!existing) throw new NotFoundException('用户不存在')
+    if (existing.version !== version) throw new ConflictException('用户已被更新，请刷新后重试')
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        loginFailedCount: 0,
+        lockedUntil: null,
+        updatedAt: new Date(),
+        version: sql`${users.version} + 1`,
+      })
+      .where(and(eq(users.id, id), eq(users.version, version)))
+      .returning({ id: users.id })
+    if (!updated) throw new ConflictException('用户已被更新，请刷新后重试')
+    return this.findOne(updated.id)
+  }
+
   private userQuery() {
     return db
       .select({
@@ -116,6 +136,7 @@ export class UsersService {
         salesRegionId: users.salesRegionId,
         salesRegionName: salesRegions.name,
         isActive: users.isActive,
+        lockedUntil: users.lockedUntil,
         createdAt: users.createdAt,
         version: users.version,
       })
@@ -146,6 +167,7 @@ type UserRow = Pick<
   | 'reportsToId'
   | 'salesRegionId'
   | 'isActive'
+  | 'lockedUntil'
   | 'createdAt'
   | 'version'
 > & { salesRegionName: string | null }
@@ -162,6 +184,7 @@ export function toUserDto(u: UserRow) {
     salesRegionId: u.salesRegionId,
     salesRegionName: u.salesRegionName,
     isActive: u.isActive,
+    lockedUntil: u.lockedUntil,
     createdAt: u.createdAt,
     version: u.version,
   }

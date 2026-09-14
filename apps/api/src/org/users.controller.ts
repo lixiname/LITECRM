@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
@@ -8,6 +20,7 @@ import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserDto } from './dto/user.dto'
 import { ResetPasswordResultDto } from './dto/reset-password-result.dto'
+import { UnlockUserLoginDto } from './dto/unlock-user-login.dto'
 
 // 用户管理：admin（user.manage）专属（§6.2）
 @Controller('users')
@@ -52,5 +65,12 @@ export class UsersController {
   async resetPassword(@Param('id') id: string): Promise<ResetPasswordResultDto> {
     const temporaryPassword = await this.usersService.resetPassword(id)
     return { temporaryPassword }
+  }
+
+  @Post(':id/unlock-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: UserDto, description: '登录锁定已解除' })
+  unlockLogin(@Param('id') id: string, @Body() dto: UnlockUserLoginDto) {
+    return this.usersService.unlockLogin(id, dto.version)
   }
 }

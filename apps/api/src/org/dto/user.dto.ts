@@ -33,6 +33,9 @@ export class UserDto {
   @ApiProperty({ description: '是否启用' })
   isActive!: boolean
 
+  @ApiPropertyOptional({ type: Date, nullable: true, description: '登录锁定截止时间' })
+  lockedUntil!: Date | null
+
   @ApiProperty({ description: '创建时间' })
   createdAt!: Date
 

@@ -273,6 +273,44 @@
         "tags": ["Users"]
       }
     },
+    "/users/{id}/unlock-login": {
+      "post": {
+        "operationId": "UsersController_unlockLogin",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnlockUserLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录锁定已解除",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["Users"]
+      }
+    },
     "/customer-grade-quotas": {
       "get": {
         "operationId": "GradeQuotasController_getOverview",
@@ -2662,6 +2700,12 @@
             "type": "boolean",
             "description": "是否启用"
           },
+          "lockedUntil": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "登录锁定截止时间"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string",
@@ -2770,6 +2814,16 @@
           }
         },
         "required": ["temporaryPassword"]
+      },
+      "UnlockUserLoginDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "description": "用户当前版本号，用于防止并发覆盖"
+          }
+        },
+        "required": ["version"]
       },
       "CustomerGrade": {
         "type": "string",
