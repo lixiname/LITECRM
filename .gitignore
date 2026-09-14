@@ -13,3 +13,6 @@ coverage/
 *.xlsx
 ~$*
 .DS_Store
+
+# Local upstream administrative-division downloads
+/docs/areas/
