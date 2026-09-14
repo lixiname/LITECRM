@@ -1307,9 +1307,9 @@ export interface components {
             /** @description 是否启用 */
             isActive?: boolean;
         };
-        ResetPasswordResultDto: {
-            /** @description 临时密码（仅此一次展示） */
-            temporaryPassword: string;
+        ResetUserPasswordDto: {
+            /** @description 管理员为用户设置的新密码 */
+            newPassword: string;
         };
         UnlockUserLoginDto: {
             /** @description 用户当前版本号，用于防止并发覆盖 */
@@ -2112,16 +2112,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetUserPasswordDto"];
+            };
+        };
         responses: {
-            /** @description 重置成功 */
-            201: {
+            /** @description 密码已重置 */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["ResetPasswordResultDto"];
-                };
+                content?: never;
             };
         };
     };

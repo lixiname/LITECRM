@@ -52,7 +52,7 @@
               @click="handleUnlockLogin(row as User)"
               >解除锁定</el-button
             >
-            <el-button size="small" @click="resetPassword(row as User)">重置密码</el-button>
+            <el-button size="small" @click="openResetPassword(row as User)">重置密码</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -144,6 +144,41 @@
         <el-button type="primary" :loading="acting" @click="saveUser">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="resetDialog.visible" title="重置密码" width="440px">
+      <p class="users__dialog-intro">
+        为 {{ resetDialog.displayName }} 设置新密码。提交后其旧密码和现有登录会话立即失效。
+      </p>
+      <el-form label-width="90px">
+        <el-form-item label="新密码" required>
+          <el-input
+            v-model="resetDialog.newPassword"
+            type="password"
+            show-password
+            maxlength="128"
+            autocomplete="new-password"
+            placeholder="8～128 位"
+          />
+        </el-form-item>
+        <el-form-item label="确认密码" required>
+          <el-input
+            v-model="resetDialog.confirmPassword"
+            type="password"
+            show-password
+            maxlength="128"
+            autocomplete="new-password"
+            placeholder="再次输入新密码"
+            @keyup.enter="submitPasswordReset"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resetDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="acting" @click="submitPasswordReset">
+          确认重置
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -185,6 +220,13 @@ const dialog = reactive({
   phone: '',
   salesRegionId: '',
   version: 0,
+})
+const resetDialog = reactive({
+  visible: false,
+  userId: '',
+  displayName: '',
+  newPassword: '',
+  confirmPassword: '',
 })
 
 const usersWithoutSelf = computed(() => {
@@ -329,29 +371,32 @@ async function toggleActive(user: User) {
   }
 }
 
-async function resetPassword(user: User) {
-  try {
-    await ElMessageBox.confirm(
-      `确定重置 ${user.displayName} 的密码吗？结果仅可展示一次。`,
-      '确认重置',
-      { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
-    )
-  } catch {
-    return
+function openResetPassword(user: User) {
+  resetDialog.visible = true
+  resetDialog.userId = user.id
+  resetDialog.displayName = user.displayName
+  resetDialog.newPassword = ''
+  resetDialog.confirmPassword = ''
+}
+
+async function submitPasswordReset() {
+  if (resetDialog.newPassword.length < 8 || resetDialog.newPassword.length > 128) {
+    return ElMessage.warning('新密码须为 8～128 位')
   }
+  if (resetDialog.newPassword !== resetDialog.confirmPassword) {
+    return ElMessage.warning('两次输入的密码不一致')
+  }
+
+  acting.value = true
   try {
-    const { temporaryPassword } = await resetUserPassword(user.id)
-    await ElMessageBox.alert(
-      `临时密码：${temporaryPassword}\n请线下通知用户，并要求首次登录后重置。`,
-      '重置成功',
-      {
-        confirmButtonText: '我知道了',
-        type: 'success',
-      },
-    )
+    await resetUserPassword(resetDialog.userId, { newPassword: resetDialog.newPassword })
+    resetDialog.visible = false
+    ElMessage.success('密码已重置，用户现有登录会话已失效')
     await reload()
   } catch (e) {
     ElMessage.error(e instanceof Error ? e.message : '操作失败')
+  } finally {
+    acting.value = false
   }
 }
 
@@ -389,6 +434,11 @@ async function handleUnlockLogin(user: User) {
   margin-top: 4px;
   color: var(--crm-color-text-tertiary);
   line-height: 1.4;
+}
+.users__dialog-intro {
+  margin: 0 0 var(--crm-spacing-lg);
+  color: var(--crm-color-text-secondary);
+  line-height: 1.6;
 }
 .users__lock-until {
   margin-top: 4px;

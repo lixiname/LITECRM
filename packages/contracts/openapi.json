@@ -258,16 +258,19 @@
             }
           }
         ],
-        "responses": {
-          "201": {
-            "description": "重置成功",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ResetPasswordResultDto"
-                }
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetUserPasswordDto"
               }
             }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "密码已重置"
           }
         },
         "tags": ["Users"]
@@ -2805,15 +2808,17 @@
         },
         "required": ["version"]
       },
-      "ResetPasswordResultDto": {
+      "ResetUserPasswordDto": {
         "type": "object",
         "properties": {
-          "temporaryPassword": {
+          "newPassword": {
             "type": "string",
-            "description": "临时密码（仅此一次展示）"
+            "description": "管理员为用户设置的新密码",
+            "minLength": 8,
+            "maxLength": 128
           }
         },
-        "required": ["temporaryPassword"]
+        "required": ["newPassword"]
       },
       "UnlockUserLoginDto": {
         "type": "object",

@@ -100,18 +100,21 @@ export class AuthService {
       .where(eq(users.id, userId))
   }
 
-  // 管理员重置（§8.1）：生成随机临时密码，token_version+1 全端失效
-  async resetPassword(userId: string): Promise<string> {
+  // 管理员重置（§8.1）：设置新密码，token_version+1 全端失效并解除登录锁定
+  async resetPassword(userId: string, newPassword: string): Promise<void> {
     const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
     if (!user) throw new ConflictException('用户不存在')
 
-    const temp = generateTempPassword()
-    const hash = await bcrypt.hash(temp, 10)
+    const hash = await bcrypt.hash(newPassword, 10)
     await db
       .update(users)
-      .set({ passwordHash: hash, tokenVersion: user.tokenVersion + 1 })
+      .set({
+        passwordHash: hash,
+        tokenVersion: user.tokenVersion + 1,
+        loginFailedCount: 0,
+        lockedUntil: null,
+      })
       .where(eq(users.id, userId))
-    return temp
   }
 
   // 无感刷新（§6.5：refresh token 换新 access+refresh，滑动续期；token_version 校验兜底）
@@ -148,12 +151,4 @@ export class AuthService {
     ])
     return { access, refresh }
   }
-}
-
-// 12 位随机临时密码（去易混淆字符 0O1lI）
-function generateTempPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
-  let s = ''
-  for (let i = 0; i < 12; i++) s += chars[Math.floor(Math.random() * chars.length)]
-  return s
 }

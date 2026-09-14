@@ -11,7 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger'
+import { ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { RequirePermission } from '../access/require-permission.decorator'
 import { PermissionsGuard } from '../access/permissions.guard'
@@ -19,7 +19,7 @@ import { UsersService } from './users.service'
 import { CreateUserDto } from './dto/create-user.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
 import { UserDto } from './dto/user.dto'
-import { ResetPasswordResultDto } from './dto/reset-password-result.dto'
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto'
 import { UnlockUserLoginDto } from './dto/unlock-user-login.dto'
 
 // 用户管理：admin（user.manage）专属（§6.2）
@@ -59,12 +59,12 @@ export class UsersController {
     return this.usersService.deactivate(id, Number(version))
   }
 
-  // 重置密码：返回临时密码（仅此一次展示，§8.1）
+  // 重置密码：管理员输入新密码，旧 token 失效并解除登录锁定（§8.1）
   @Post(':id/reset-password')
-  @ApiCreatedResponse({ type: ResetPasswordResultDto, description: '重置成功' })
-  async resetPassword(@Param('id') id: string): Promise<ResetPasswordResultDto> {
-    const temporaryPassword = await this.usersService.resetPassword(id)
-    return { temporaryPassword }
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse({ description: '密码已重置' })
+  resetPassword(@Param('id') id: string, @Body() dto: ResetUserPasswordDto): Promise<void> {
+    return this.usersService.resetPassword(id, dto.newPassword)
   }
 
   @Post(':id/unlock-login')

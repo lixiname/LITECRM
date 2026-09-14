@@ -1,4 +1,4 @@
-import type { INestApplication } from '@nestjs/common'
+import { ValidationPipe, type INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -9,7 +9,7 @@ import { UsersService } from '../users.service'
 
 describe('UsersController', () => {
   let app: INestApplication
-  const resetPassword = vi.fn().mockResolvedValue('kexxECVcEpFe')
+  const resetPassword = vi.fn().mockResolvedValue(undefined)
   const unlockLogin = vi.fn().mockResolvedValue({
     id: 'user-1',
     username: 'sales1',
@@ -38,6 +38,7 @@ describe('UsersController', () => {
       .compile()
 
     app = moduleRef.createNestApplication()
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))
     await app.init()
   })
 
@@ -45,13 +46,24 @@ describe('UsersController', () => {
     await app.close()
   })
 
-  it('以可解析的 JSON 对象返回仅展示一次的临时密码', async () => {
-    const response = await request(app.getHttpServer()).post('/users/user-1/reset-password')
+  it('接收管理员设置的新密码并返回无内容成功响应', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/users/user-1/reset-password')
+      .send({ newPassword: 'NewPassword@2026' })
 
-    expect(response.status).toBe(201)
-    expect(response.headers['content-type']).toMatch(/application\/json/)
-    expect(response.body).toEqual({ temporaryPassword: 'kexxECVcEpFe' })
-    expect(resetPassword).toHaveBeenCalledWith('user-1')
+    expect(response.status).toBe(204)
+    expect(response.text).toBe('')
+    expect(resetPassword).toHaveBeenCalledWith('user-1', 'NewPassword@2026')
+  })
+
+  it('拒绝不符合长度要求的管理员重置密码', async () => {
+    resetPassword.mockClear()
+    const response = await request(app.getHttpServer())
+      .post('/users/user-1/reset-password')
+      .send({ newPassword: 'short' })
+
+    expect(response.status).toBe(400)
+    expect(resetPassword).not.toHaveBeenCalled()
   })
 
   it('管理员可解除登录锁定并取得更新后的用户状态', async () => {

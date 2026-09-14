@@ -98,9 +98,9 @@ export class UsersService {
     if (!updated) throw new ConflictException('用户已被更新，请刷新后重试')
   }
 
-  // 重置密码：复用 auth 服务（生成临时密码 + 全端失效）
-  async resetPassword(id: string): Promise<string> {
-    return this.authService.resetPassword(id)
+  // 重置密码：复用 auth 服务（管理员设置新密码 + 全端失效 + 解除锁定）
+  async resetPassword(id: string, newPassword: string): Promise<void> {
+    return this.authService.resetPassword(id, newPassword)
   }
 
   // 解除登录防爆破锁定；不改变账号启停状态或现有 token。
