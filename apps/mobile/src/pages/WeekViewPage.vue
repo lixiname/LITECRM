@@ -88,16 +88,22 @@
       </div>
 
       <button
-        v-if="canWrite && selectedDay && selectedDay.date <= todayText"
+        v-if="canWrite && selectedDay"
         type="button"
         class="work-quick"
-        @click="goQuickAdd(selectedDay.date)"
+        @click="showAddActions = true"
       >
-        <span>{{
-          selectedDay.date === todayText ? '现场发生的事情最重要' : '补充该日实际业务事实'
-        }}</span>
+        <span>
+          {{
+            selectedDay.date > todayText
+              ? '安排该日计划'
+              : selectedDay.date === todayText
+                ? '计划与填报都从这里开始'
+                : '补录该日实际或新增后续计划'
+          }}
+        </span>
         <strong>
-          {{ selectedDay.date === todayText ? '快速记录' : '补录实际' }}
+          新增
           <b aria-hidden="true">＋</b>
         </strong>
       </button>
@@ -315,6 +321,14 @@
       @confirm="selectRescheduleDate"
     />
     <PlanGuidanceSheet v-model="guidanceVisible" :plan="guidancePlan" @changed="reload" />
+    <PlanCreateSheet v-model="planCreateVisible" :initial-date="selectedDate" @saved="reload" />
+    <van-action-sheet
+      v-model:show="showAddActions"
+      title="新增"
+      cancel-text="取消"
+      :actions="addActions"
+      @select="handleAddAction"
+    />
   </div>
 </template>
 
@@ -323,6 +337,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import PlanGuidanceSheet from '../components/planning/PlanGuidanceSheet.vue'
+import PlanCreateSheet from '../components/planning/PlanCreateSheet.vue'
 import {
   getSalesPlanReschedules,
   getWeekView,
@@ -390,6 +405,8 @@ const showRescheduleCalendar = ref(false)
 const rescheduleMaxDate = new Date(today.getFullYear() + 2, 11, 31)
 const guidanceVisible = ref(false)
 const guidancePlan = ref<SalesPlan>()
+const showAddActions = ref(false)
+const planCreateVisible = ref(false)
 const {
   data: view,
   loading,
@@ -398,6 +415,25 @@ const {
 } = useQuery('mobile:week-view', () => getWeekView(range.value.monday, range.value.sunday))
 const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, view.value))
 const selectedDay = computed(() => days.value.find((day) => day.date === selectedDate.value))
+const addActions = computed(() => {
+  const future = selectedDate.value > todayText
+  return [
+    { name: '新建客户', subname: '建立客户档案和首要联系人', value: 'customer' },
+    { name: '新增计划', subname: '安排客户拜访或商机推进', value: 'plan' },
+    {
+      name: '填写业务记录',
+      subname: future ? '未来日期不能填写实际记录' : '新商机、客户拜访、商机推进或客诉',
+      value: 'record',
+      disabled: future,
+    },
+    {
+      name: '费用填报',
+      subname: future ? '未来日期不能填写费用' : '记录当日销售费用',
+      value: 'expense',
+      disabled: future,
+    },
+  ]
+})
 
 watch(weekStart, (value) => {
   void reload()
@@ -538,8 +574,21 @@ async function submitReschedule() {
 function formatDateTime(value: string) {
   return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
-function goQuickAdd(date: string) {
-  void router.push({ path: '/quick-add', query: { source: 'week', date } })
+function handleAddAction(action: { value: string; disabled?: boolean }) {
+  if (action.disabled) return
+  showAddActions.value = false
+  if (action.value === 'customer') {
+    void router.push({ path: '/customers/new', query: { source: 'work' } })
+  } else if (action.value === 'plan') {
+    planCreateVisible.value = true
+  } else if (action.value === 'record') {
+    void router.push({ path: '/quick-add', query: { source: 'work', date: selectedDate.value } })
+  } else if (action.value === 'expense') {
+    void router.push({
+      path: '/expenses/new',
+      query: { source: 'work', date: selectedDate.value },
+    })
+  }
 }
 function openActualRecord(record: MobileActualRecord) {
   const plan = record.sourcePlanId

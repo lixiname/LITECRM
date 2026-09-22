@@ -1,62 +1,50 @@
 <template>
-  <div class="exp">
-    <van-nav-bar title="费用 · 快速记一笔" left-arrow @click-left="router.back()" />
+  <div class="expenses">
+    <van-nav-bar title="费用" right-text="填报" @click-right="router.push('/expenses/new')" />
 
-    <van-form @submit="handleSave">
-      <van-cell-group inset>
-        <van-field
-          v-model="form.expenseDate"
-          label="日期"
-          type="date"
-          :rules="[{ required: true }]"
-        />
-        <van-field v-model.number="form.dining" label="餐叙" type="number" placeholder="元" />
-        <van-field v-model.number="form.gifts" label="礼品" type="number" placeholder="元" />
-        <van-field
-          v-model.number="form.tobaccoAlcohol"
-          label="烟酒"
-          type="number"
-          placeholder="元"
-        />
-        <van-field
-          v-model.number="form.entertainment"
-          label="娱乐招待"
-          type="number"
-          placeholder="元"
-        />
-        <van-field v-model.number="form.lodging" label="住宿" type="number" placeholder="元" />
-        <van-field v-model="form.notes" label="备注" placeholder="选填" />
-      </van-cell-group>
-      <div class="exp__submit">
-        <van-button round block type="primary" native-type="submit" :loading="saving"
-          >保存</van-button
-        >
+    <section class="expenses__summary">
+      <div>
+        <span>{{ currentMonthLabel }}已提交</span>
+        <strong>¥{{ money(submittedTotal) }}</strong>
       </div>
-    </van-form>
+      <div>
+        <span>待提交草稿</span>
+        <strong>{{ draftCount }} 天</strong>
+      </div>
+    </section>
 
-    <van-loading v-if="loading" class="exp__loading" />
+    <van-loading v-if="loading" class="expenses__loading" />
     <van-empty v-else-if="loadError" :description="loadError">
       <van-button size="small" type="primary" @click="load">重新加载</van-button>
     </van-empty>
-    <van-cell-group v-else inset :title="`${currentMonthLabel}记录`">
+    <van-cell-group v-else inset :title="`${currentMonthLabel}费用记录`">
       <van-cell
-        v-for="e in items"
-        :key="e.id"
-        :title="e.expenseDate"
-        :label="`¥${totalOf(e)} · ${statusLabel(e.status)}`"
+        v-for="expense in items"
+        :key="expense.id"
+        :title="expense.expenseDate"
+        :label="expenseSummary(expense)"
+        :is-link="expense.status === 'draft'"
+        @click="expense.status === 'draft' && edit(expense)"
       >
         <template #value>
-          <van-button v-if="e.status === 'draft'" size="mini" type="success" @click="submit(e)"
-            >提交</van-button
-          >
+          <van-tag :type="statusType(expense.status)">{{ statusLabel(expense.status) }}</van-tag>
+        </template>
+        <template #right-icon>
+          <div v-if="expense.status === 'draft'" class="expenses__actions">
+            <van-button size="mini" type="success" @click.stop="submit(expense)">提交</van-button>
+            <van-button size="mini" type="danger" plain @click.stop="remove(expense)">
+              作废
+            </van-button>
+          </div>
           <van-button
-            v-if="e.status !== 'voided'"
+            v-else-if="expense.status === 'submitted'"
             size="mini"
             type="danger"
             plain
-            @click="remove(e)"
-            >作废</van-button
+            @click.stop="remove(expense)"
           >
+            作废
+          </van-button>
         </template>
       </van-cell>
       <van-empty v-if="!items.length" description="本月暂无费用记录" :image-size="56" />
@@ -65,34 +53,29 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
 import {
-  localBusinessDate,
-  upsertExpense,
   listExpenses,
+  localBusinessDate,
   submitExpense,
   voidExpense,
   type Expense,
 } from '@crm/domain'
 
 const router = useRouter()
-const form = reactive({
-  expenseDate: localBusinessDate(),
-  dining: undefined as number | undefined,
-  gifts: undefined as number | undefined,
-  tobaccoAlcohol: undefined as number | undefined,
-  entertainment: undefined as number | undefined,
-  lodging: undefined as number | undefined,
-  notes: '',
-})
 const items = ref<Expense[]>([])
-const saving = ref(false)
 const loading = ref(false)
 const loadError = ref('')
 const currentMonth = localBusinessDate().slice(0, 7)
 const currentMonthLabel = `${Number(currentMonth.slice(5))} 月`
+const submittedTotal = computed(() =>
+  items.value
+    .filter((item) => item.status === 'submitted')
+    .reduce((sum, item) => sum + totalOf(item), 0),
+)
+const draftCount = computed(() => items.value.filter((item) => item.status === 'draft').length)
 
 async function load() {
   loading.value = true
@@ -107,38 +90,37 @@ async function load() {
 }
 onMounted(load)
 
-function totalOf(e: Expense): number {
-  return [e.dining, e.gifts, e.tobaccoAlcohol, e.entertainment, e.lodging].reduce(
-    (s, v) => s + (Number(v) || 0),
-    0,
-  )
+function totalOf(expense: Expense): number {
+  return [
+    expense.dining,
+    expense.gifts,
+    expense.tobaccoAlcohol,
+    expense.entertainment,
+    expense.lodging,
+  ].reduce((sum, value) => sum + (Number(value) || 0), 0)
 }
-function statusLabel(s: string): string {
-  return s === 'submitted' ? '已提交' : s === 'voided' ? '已作废' : '草稿'
+function money(value: number): string {
+  return value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
 }
-
-async function handleSave() {
-  saving.value = true
-  try {
-    await upsertExpense({
-      expenseDate: form.expenseDate,
-      dining: form.dining,
-      gifts: form.gifts,
-      tobaccoAlcohol: form.tobaccoAlcohol,
-      entertainment: form.entertainment,
-      lodging: form.lodging,
-      notes: form.notes || undefined,
-      version: items.value.find((item) => item.expenseDate === form.expenseDate)?.version,
-    })
-    showToast('已保存')
-    await load()
-  } catch (e) {
-    showToast(e instanceof Error ? e.message : '保存失败')
-  } finally {
-    saving.value = false
-  }
+function expenseSummary(expense: Expense): string {
+  const categories = [
+    Number(expense.dining) ? `餐叙 ${money(Number(expense.dining))}` : '',
+    Number(expense.gifts) ? `礼品 ${money(Number(expense.gifts))}` : '',
+    Number(expense.tobaccoAlcohol) ? `烟酒 ${money(Number(expense.tobaccoAlcohol))}` : '',
+    Number(expense.entertainment) ? `娱乐招待 ${money(Number(expense.entertainment))}` : '',
+    Number(expense.lodging) ? `住宿 ${money(Number(expense.lodging))}` : '',
+  ].filter(Boolean)
+  return `¥${money(totalOf(expense))}${categories.length ? ` · ${categories.join('、')}` : ''}`
 }
-
+function statusLabel(status: string): string {
+  return status === 'submitted' ? '已提交' : status === 'voided' ? '已作废' : '草稿'
+}
+function statusType(status: string): 'success' | 'danger' | 'warning' {
+  return status === 'submitted' ? 'success' : status === 'voided' ? 'danger' : 'warning'
+}
+function edit(expense: Expense) {
+  void router.push({ path: '/expenses/new', query: { date: expense.expenseDate } })
+}
 async function submit(expense: Expense) {
   try {
     await submitExpense(expense.id, expense.version)
@@ -150,6 +132,15 @@ async function submit(expense: Expense) {
 }
 async function remove(expense: Expense) {
   try {
+    await showConfirmDialog({
+      title: '作废费用记录',
+      message: `${expense.expenseDate} 的费用记录将保留痕迹，但不再计入统计。`,
+      confirmButtonText: '确认作废',
+    })
+  } catch {
+    return
+  }
+  try {
     await voidExpense(expense.id, expense.version)
     showToast('费用已作废')
     await load()
@@ -160,11 +151,44 @@ async function remove(expense: Expense) {
 </script>
 
 <style scoped>
-.exp__submit {
-  margin: var(--crm-spacing-lg) var(--crm-spacing-md);
+.expenses {
+  min-height: 100vh;
+  padding-bottom: 88px;
+  background: var(--crm-color-bg-page);
 }
-.exp__loading {
+.expenses__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: var(--crm-spacing-md);
+  overflow: hidden;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-border);
+}
+.expenses__summary > div {
+  padding: var(--crm-spacing-md);
+  background: var(--crm-color-bg-card);
+}
+.expenses__summary span,
+.expenses__summary strong {
+  display: block;
+}
+.expenses__summary span {
+  color: var(--crm-color-text-secondary);
+  font-size: 11px;
+}
+.expenses__summary strong {
+  margin-top: 4px;
+  font-size: 20px;
+}
+.expenses__loading {
   display: block;
   margin: var(--crm-spacing-xl) auto;
+}
+.expenses__actions {
+  display: flex;
+  gap: var(--crm-spacing-xs);
+  margin-left: var(--crm-spacing-sm);
 }
 </style>

@@ -1,14 +1,10 @@
 <template>
   <div class="quick-add">
-    <van-nav-bar
-      :title="pageTitle"
-      :left-arrow="fromWeek"
-      @click-left="fromWeek && router.back()"
-    />
+    <van-nav-bar :title="pageTitle" left-arrow @click-left="returnToWork" />
 
     <van-cell-group
       inset
-      :title="fromWeek && date < today ? `正在补录 ${displayDate(date)} 的业务实际` : '本次记录'"
+      :title="fromWork && date < today ? `正在补录 ${displayDate(date)} 的业务实际` : '业务记录'"
       class="quick-add__date"
     >
       <van-cell
@@ -26,12 +22,12 @@
         :title="`${planLabel(planItem)} · ${planItem.customerName ?? '客户'}`"
         :label="`${formatTime(planItem.plannedAt)} · ${planItem.content}`"
         is-link
-        @click="router.push(salesPlanExecutionRoute(planItem))"
+        @click="router.replace(salesPlanExecutionRoute(planItem))"
       />
     </van-cell-group>
 
     <!-- 类型面板（移动端聚焦实际） -->
-    <van-cell-group inset title="新增或记录">
+    <van-cell-group inset title="选择业务类型">
       <van-cell
         title="新建商机"
         icon="add-square"
@@ -173,7 +169,7 @@ const fmt = (d: Date) =>
 const today = fmt(new Date())
 const todayDate = new Date(`${today}T00:00:00`)
 const calendarMinDate = new Date(todayDate.getFullYear() - 2, 0, 1)
-const fromWeek = route.query.source === 'week'
+const fromWork = route.query.source === 'work' || route.query.source === 'week'
 
 // 实际发生日期：直接进入默认今天；周视图“记录当日实际”明确携带所选日期。
 const requestedDate = isBusinessDate(route.query.date) ? route.query.date : today
@@ -203,7 +199,7 @@ const matchingPlanCta = computed(() => {
   if (!matchingPlan.value) return '按此计划填报'
   return matchingPlan.value.plannedAt.slice(0, 10) > date.value ? '提前执行此计划' : '按此计划填报'
 })
-const pageTitle = computed(() => (fromWeek && date.value < today ? '补录当日实际' : '快速记录'))
+const pageTitle = computed(() => (fromWork && date.value < today ? '补录业务记录' : '填写业务记录'))
 
 onMounted(loadPlans)
 
@@ -314,7 +310,7 @@ async function loadPlans() {
 }
 
 function executeMatchingPlan() {
-  if (matchingPlan.value) void router.push(salesPlanExecutionRoute(matchingPlan.value))
+  if (matchingPlan.value) void router.replace(salesPlanExecutionRoute(matchingPlan.value))
 }
 
 async function continueAction() {
@@ -325,22 +321,22 @@ async function continueAction() {
   saving.value = true
   try {
     if (type.value === 'opportunity_created') {
-      await router.push({
+      await router.replace({
         path: `/customers/${selectedCustomer.value.id}/opportunity/new`,
         query: { date: date.value },
       })
     } else if (type.value === 'customer_visit') {
-      await router.push({
+      await router.replace({
         path: `/customers/${selectedCustomer.value.id}/visit/new`,
         query: { date: date.value },
       })
     } else if (type.value === 'complaint_registered') {
-      await router.push({
+      await router.replace({
         path: `/customers/${selectedCustomer.value.id}/complaint/new`,
         query: { date: date.value },
       })
     } else {
-      await router.push({
+      await router.replace({
         path: `/opportunities/${opportunityId.value}/follow-up`,
         query: {
           date: date.value,
@@ -352,6 +348,10 @@ async function continueAction() {
   } finally {
     saving.value = false
   }
+}
+
+function returnToWork() {
+  void router.replace('/')
 }
 
 function planLabel(planItem: SalesPlan): string {
