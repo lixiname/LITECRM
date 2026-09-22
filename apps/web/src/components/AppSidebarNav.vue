@@ -76,9 +76,8 @@ const navGroups: NavGroup[] = [
       {
         index: '/expenses',
         icon: 'expenses',
-        title: '费用填报',
-        description: '提交与查看个人费用',
-        primaryEntry: true,
+        title: '我的费用',
+        description: '查看、提交与作废记录',
         ability: 'customer.write',
       },
     ],

@@ -103,7 +103,7 @@ const router = createRouter({
           path: 'expenses',
           name: 'expenses',
           component: () => import('@/pages/ExpensesPage.vue'),
-          meta: { title: '费用管理', requiresAbility: 'customer.write' },
+          meta: { title: '我的费用', requiresAbility: 'customer.write' },
         },
         {
           path: 'week-view',

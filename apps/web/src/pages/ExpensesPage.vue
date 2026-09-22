@@ -1,6 +1,9 @@
 <template>
   <div class="expenses">
-    <AppPageHeader title="费用管理" description="按自然月查看费用记录；快速录入由移动端完成" />
+    <AppPageHeader
+      title="我的费用"
+      description="按自然月查看、提交或作废记录；新增录入由移动端完成"
+    />
     <el-card class="expenses__card">
       <el-table v-if="!error && items?.length" v-loading="loading" :data="items" border>
         <el-table-column prop="expenseDate" label="日期" width="110" />
