@@ -190,13 +190,15 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
   it('计划改期保持同一计划并追加不可变的日期、原因与操作人历史', async () => {
     const sales1 = await login('sales1', 'Crm@123456')
     const customer = await createCustomer(sales1.accessToken, 'M4_改期留痕客户')
+    const plannedAt = businessDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+    const rescheduledAt = businessDate(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000))
     const plan = await request(app.getHttpServer())
       .post('/api/sales-plans')
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         planKind: 'customer_visit',
         customerId: customer.id,
-        plannedAt: '2026-09-15',
+        plannedAt,
         content: '拜访设备负责人',
       })
     expect(plan.status).toBe(201)
@@ -206,13 +208,13 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: plan.body.version,
-        plannedAt: '2026-09-18',
+        plannedAt: rescheduledAt,
         reason: '客户临时安排设备检修',
       })
     expect(rescheduled.status).toBe(201)
     expect(rescheduled.body.id).toBe(plan.body.id)
     expect(rescheduled.body.content).toBe('拜访设备负责人')
-    expect(rescheduled.body.plannedAt).toBe('2026-09-18')
+    expect(rescheduled.body.plannedAt).toBe(rescheduledAt)
 
     const history = await request(app.getHttpServer())
       .get(`/api/sales-plans/${plan.body.id}/reschedules`)
@@ -233,7 +235,7 @@ describe('M4 计划费用域（§8.7/§8.8）', () => {
       .set('Authorization', `Bearer ${sales1.accessToken}`)
       .send({
         version: rescheduled.body.version,
-        plannedAt: '2026-09-18',
+        plannedAt: rescheduledAt,
         reason: '只修改同一天的时刻',
       })
     expect(sameDay.status).toBe(409)
