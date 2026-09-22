@@ -37,7 +37,7 @@ import {
 } from '../common/db/schema'
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
-import { normalizeBusinessName, normalizePhone } from './customer-normalizer'
+import { normalizeBusinessName, normalizePhone, normalizeWechatId } from './customer-normalizer'
 import { scoreDuplicate, type DedupInput, type DedupScored } from './dedup'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateCustomerDto } from './dto/create-customer.dto'
@@ -68,6 +68,7 @@ export interface ImportedCustomerInput {
   status: 'active' | 'public'
   contactName?: string | null
   contactPhone?: string | null
+  contactWechatId?: string | null
   preCrmDealConfirmed: boolean
   preCrmSalesAmount?: string | null
   notes?: string | null
@@ -89,7 +90,7 @@ export class CustomersService {
   // 建档：默认 owner=建档人；名额校验与写入处于同一事务。
   // 仅 ERP 编码/信用代码唯一冲突硬拦截；名称归一化只做疑似重复提示。
   async create(dto: CreateCustomerDto, actor: AuthUser) {
-    assertContactHasPhone(dto.contacts)
+    assertContactsHaveMethod(dto.contacts)
     await Promise.all(
       dto.contacts
         .filter((contact) => contact.functionRole)
@@ -142,11 +143,12 @@ export class CustomersService {
             entrySource: 'excel_import',
           })
           .returning()
-        if (input.contactName || input.contactPhone) {
+        if (input.contactName || input.contactPhone || input.contactWechatId) {
           await tx.insert(contacts).values({
             customerId: customer.id,
             name: input.contactName ?? null,
             phone: input.contactPhone ?? null,
+            wechatId: input.contactWechatId ?? null,
             isKeyContact: true,
           })
         }
@@ -162,13 +164,15 @@ export class CustomersService {
   async checkDuplicate(dto: DedupCheckDto): Promise<DedupScored[]> {
     const key = normalizeBusinessName(dto.name)
     const phone = dto.phone ? normalizePhone(dto.phone) : null
+    const wechatId = dto.wechatId ? normalizeWechatId(dto.wechatId) : null
     if (!key) return []
 
-    const candidates = await this.queryDedupCandidates(key, phone)
+    const candidates = await this.queryDedupCandidates(key, phone, wechatId)
     const input: DedupInput = {
       name: dto.name,
       normalizedKey: key,
       phone,
+      wechatId,
       address: dto.address ?? null,
     }
 
@@ -182,8 +186,8 @@ export class CustomersService {
     return results.sort((a, b) => rank[a.confidence] - rank[b.confidence])
   }
 
-  // 候选生成（Blocking，§8.2 步③）：名称/trigram/首字 候选 + 电话命中候选（分步查询，JS 归一化比较）
-  private async queryDedupCandidates(key: string, phone: string | null) {
+  // 候选生成（Blocking，§8.2 步③）：名称/trigram/首字 + 电话/微信号精确命中候选。
+  private async queryDedupCandidates(key: string, phone: string | null, wechatId: string | null) {
     const cols = {
       id: customers.id,
       name: customers.name,
@@ -203,26 +207,43 @@ export class CustomersService {
       )
       .limit(10)
 
-    // ② 电话通道候选：联系人电话归一化后精确命中
-    let phoneIds: string[] = []
+    // ② 联系方式通道候选：电话数字归一化、微信号忽略大小写后精确命中。
+    const phoneIds = new Set<string>()
+    const wechatIds = new Set<string>()
     if (phone) {
       const hits = await db
         .select({ customerId: contacts.customerId })
         .from(contacts)
         .where(sql`regexp_replace(${contacts.phone}, '[^0-9]', '', 'g') = ${phone}`)
-      phoneIds = [...new Set(hits.map((h) => h.customerId))]
-      const missing = phoneIds.filter((id) => !nameHits.some((c) => c.id === id))
-      if (missing.length > 0) {
-        const extra = await db.select(cols).from(customers).where(inArray(customers.id, missing))
-        nameHits.push(...extra)
-      }
+      for (const hit of hits) phoneIds.add(hit.customerId)
+    }
+    if (wechatId) {
+      const hits = await db
+        .select({ customerId: contacts.customerId })
+        .from(contacts)
+        .where(sql`lower(btrim(${contacts.wechatId})) = ${wechatId}`)
+      for (const hit of hits) wechatIds.add(hit.customerId)
+    }
+    const contactMatchedIds = new Set([...phoneIds, ...wechatIds])
+    const missing = [...contactMatchedIds].filter((id) => !nameHits.some((c) => c.id === id))
+    if (missing.length > 0) {
+      const extra = await db.select(cols).from(customers).where(inArray(customers.id, missing))
+      nameHits.push(...extra)
     }
 
-    // ③ 电话匹配标记（JS 归一化比较，§8.2 电话精确=高置信度）
-    const candidates = nameHits.map((c) => ({ ...c, phoneMatched: false }))
-    if (phone && candidates.length > 0) {
+    // ③ 联系方式匹配标记（精确命中=高置信度）。
+    const candidates = nameHits.map((c) => ({
+      ...c,
+      phoneMatched: phoneIds.has(c.id),
+      wechatMatched: wechatIds.has(c.id),
+    }))
+    if ((phone || wechatId) && candidates.length > 0) {
       const contactList = await db
-        .select({ customerId: contacts.customerId, phone: contacts.phone })
+        .select({
+          customerId: contacts.customerId,
+          phone: contacts.phone,
+          wechatId: contacts.wechatId,
+        })
         .from(contacts)
         .where(
           inArray(
@@ -230,10 +251,18 @@ export class CustomersService {
             candidates.map((c) => c.id),
           ),
         )
-      const matchedIds = new Set(
+      const phoneMatchedIds = new Set(
         contactList.filter((c) => normalizePhone(c.phone ?? '') === phone).map((c) => c.customerId),
       )
-      for (const c of candidates) if (matchedIds.has(c.id)) c.phoneMatched = true
+      const wechatMatchedIds = new Set(
+        contactList
+          .filter((c) => normalizeWechatId(c.wechatId ?? '') === wechatId)
+          .map((c) => c.customerId),
+      )
+      for (const candidate of candidates) {
+        candidate.phoneMatched = phoneMatchedIds.has(candidate.id)
+        candidate.wechatMatched = wechatMatchedIds.has(candidate.id)
+      }
     }
     return candidates
   }
@@ -284,7 +313,8 @@ export class CustomersService {
             name: c.name ?? null,
             title: c.title ?? null,
             functionRole: c.functionRole ?? null,
-            phone: c.phone ?? null,
+            phone: normalizeOptionalIdentifier(c.phone),
+            wechatId: normalizeOptionalIdentifier(c.wechatId),
             isKeyContact: c.isKeyContact ?? false,
           })),
         )
@@ -835,6 +865,7 @@ export class CustomersService {
   async addContact(customerId: string, dto: CreateContactDto, actor: AuthUser) {
     const customer = await this.findVisible(customerId, actor)
     await this.assertCanContribute(customer, actor)
+    assertContactsHaveMethod([dto])
     if (dto.functionRole) {
       await this.catalogService.assertDimensionValue('contact_function', dto.functionRole)
     }
@@ -856,7 +887,8 @@ export class CustomersService {
           name: dto.name ?? null,
           title: dto.title ?? null,
           functionRole: dto.functionRole ?? null,
-          phone: dto.phone ?? null,
+          phone: normalizeOptionalIdentifier(dto.phone),
+          wechatId: normalizeOptionalIdentifier(dto.wechatId),
           isKeyContact: dto.isKeyContact ?? false,
         })
         .returning()
@@ -879,8 +911,9 @@ export class CustomersService {
     return db.transaction(async (tx) => {
       await this.lockCustomerContacts(tx, contact.customerId)
       const nextPhone = dto.phone === undefined ? contact.phone : dto.phone
-      if (!nextPhone?.trim() && contact.phone?.trim()) {
-        await this.assertAnotherPhoneExists(tx, contact.customerId, contact.id)
+      const nextWechatId = dto.wechatId === undefined ? contact.wechatId : dto.wechatId
+      if (!nextPhone?.trim() && !nextWechatId?.trim()) {
+        throw new BadRequestException('联系人电话和微信号至少填写一项')
       }
       if (dto.isKeyContact) {
         await tx
@@ -905,7 +938,8 @@ export class CustomersService {
           title: dto.title === undefined ? contact.title : dto.title,
           functionRole:
             dto.functionRole === undefined ? contact.functionRole : dto.functionRole || null,
-          phone: nextPhone,
+          phone: normalizeOptionalIdentifier(nextPhone),
+          wechatId: normalizeOptionalIdentifier(nextWechatId),
           isKeyContact: dto.isKeyContact ?? contact.isKeyContact,
           updatedAt: new Date(),
           version: sql`${contacts.version} + 1`,
@@ -927,8 +961,8 @@ export class CustomersService {
     await this.assertCanContribute(customer, actor)
     await db.transaction(async (tx) => {
       await this.lockCustomerContacts(tx, contact.customerId)
-      if (contact.phone?.trim()) {
-        await this.assertAnotherPhoneExists(tx, contact.customerId, contact.id)
+      if (contact.phone?.trim() || contact.wechatId?.trim()) {
+        await this.assertAnotherContactMethodExists(tx, contact.customerId, contact.id)
       }
       const [removed] = await tx
         .delete(contacts)
@@ -1017,7 +1051,7 @@ export class CustomersService {
     )
   }
 
-  private async assertAnotherPhoneExists(
+  private async assertAnotherContactMethodExists(
     tx: DbClient,
     customerId: string,
     excludingContactId: string,
@@ -1029,19 +1063,23 @@ export class CustomersService {
         and(
           eq(contacts.customerId, customerId),
           sql`${contacts.id} <> ${excludingContactId}`,
-          sql`${contacts.phone} is not null and btrim(${contacts.phone}) <> ''`,
+          sql`(
+            (${contacts.phone} is not null and btrim(${contacts.phone}) <> '')
+            or (${contacts.wechatId} is not null and btrim(${contacts.wechatId}) <> '')
+          )`,
         ),
       )
     if ((row?.count ?? 0) === 0) {
-      throw new BadRequestException('每个客户至少需要保留一个联系人电话')
+      throw new BadRequestException('每个客户至少需要保留一种联系人联系方式')
     }
   }
 }
 
-// 应用层约束（§8.2）：联系人至少一个含电话（裸电话场景也算）
-function assertContactHasPhone(contactList: CreateContactDto[]): void {
-  const hasPhone = contactList.some((c) => c.phone?.trim())
-  if (!hasPhone) throw new ForbiddenException('至少需要一个联系人电话')
+// 应用层约束（§8.2）：每位联系人至少填写电话或微信号。
+function assertContactsHaveMethod(contactList: CreateContactDto[]): void {
+  if (contactList.some((contact) => !contact.phone?.trim() && !contact.wechatId?.trim())) {
+    throw new BadRequestException('联系人电话和微信号至少填写一项')
+  }
 }
 
 function normalizeOptionalIdentifier(value: string | null | undefined): string | null {

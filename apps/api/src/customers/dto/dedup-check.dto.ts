@@ -13,6 +13,11 @@ export class DedupCheckDto {
   @IsString()
   phone?: string
 
+  @ApiPropertyOptional({ description: '联系人微信号（忽略首尾空格和大小写后精确比对）' })
+  @IsOptional()
+  @IsString()
+  wechatId?: string
+
   @ApiPropertyOptional({ description: '地址（地址通道，去量词后精确比对）' })
   @IsOptional()
   @IsString()

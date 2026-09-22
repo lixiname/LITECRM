@@ -1,0 +1,1 @@
+ALTER TABLE "contacts" ADD COLUMN "wechat_id" text;

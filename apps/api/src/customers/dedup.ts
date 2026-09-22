@@ -13,6 +13,8 @@ export interface DedupInput {
   normalizedKey: string
   /** 归一化后的电话（可无） */
   phone?: string | null
+  /** 归一化后的微信号（可无） */
+  wechatId?: string | null
   /** 原始地址（可无，用于地址归一化精确比对） */
   address?: string | null
 }
@@ -25,6 +27,8 @@ export interface DedupCandidate {
   address?: string | null
   /** 候选是否因电话精确匹配进入（DB 侧 EXISTS 判定） */
   phoneMatched: boolean
+  /** 候选是否因微信号精确匹配进入 */
+  wechatMatched: boolean
   /** pg_trgm 相似度（DB 侧 similarity()，可无） */
   trigramSimilarity?: number | null
   status?: 'active' | 'public' | 'invalid'
@@ -49,6 +53,11 @@ export function scoreDuplicate(candidate: DedupCandidate, input: DedupInput): De
   if (candidate.phoneMatched) {
     high = true
     reasons.push('联系人电话相同')
+  }
+
+  if (candidate.wechatMatched) {
+    high = true
+    reasons.push('联系人微信号相同')
   }
 
   // 高：商号 key 精确（归一化后完全相等）

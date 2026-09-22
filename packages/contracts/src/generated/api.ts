@@ -1413,14 +1413,16 @@ export interface components {
             name: string;
         };
         CreateContactDto: {
-            /** @description 姓名（可空=裸电话） */
+            /** @description 姓名（可空=仅留联系方式） */
             name?: string;
             /** @description 职位 */
             title?: string;
             /** @description 岗位类别（字典：contact_function） */
             functionRole?: string;
-            /** @description 电话（每个客户至少一个联系人含电话） */
+            /** @description 电话（与微信号至少填写一项） */
             phone?: string;
+            /** @description 微信号（可搜索账号，不使用微信昵称） */
+            wechatId?: string;
             /** @description 是否首要联系人（每客户至多一个） */
             isKeyContact?: boolean;
         };
@@ -1467,7 +1469,7 @@ export interface components {
             ownerId?: string;
             /** @description 备注 */
             notes?: string;
-            /** @description 联系人（至少一个，且至少一个含电话） */
+            /** @description 联系人（至少一个，且每位联系人须填写电话或微信号） */
             contacts: components["schemas"]["CreateContactDto"][];
         };
         DedupCheckDto: {
@@ -1475,6 +1477,8 @@ export interface components {
             name: string;
             /** @description 联系人电话（电话通道，归一化精确比对） */
             phone?: string;
+            /** @description 联系人微信号（忽略首尾空格和大小写后精确比对） */
+            wechatId?: string;
             /** @description 地址（地址通道，去量词后精确比对） */
             address?: string;
         };
@@ -1570,14 +1574,16 @@ export interface components {
             reason: string;
         };
         UpdateContactDto: {
-            /** @description 姓名（可空=裸电话） */
+            /** @description 姓名（可空=仅留联系方式） */
             name?: string;
             /** @description 职位 */
             title?: string;
             /** @description 岗位类别（字典：contact_function） */
             functionRole?: string;
-            /** @description 电话（每个客户至少一个联系人含电话） */
+            /** @description 电话（与微信号至少填写一项） */
             phone?: string;
+            /** @description 微信号（可搜索账号，不使用微信昵称） */
+            wechatId?: string;
             /** @description 是否首要联系人（每客户至多一个） */
             isKeyContact?: boolean;
             /** @description 联系人当前版本号，用于防止并发覆盖 */

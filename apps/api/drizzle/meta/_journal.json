@@ -169,6 +169,13 @@
       "when": 1788154219056,
       "tag": "0023_messy_magdalene",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790046802357,
+      "tag": "0024_many_karnak",
+      "breakpoints": true
     }
   ]
 }

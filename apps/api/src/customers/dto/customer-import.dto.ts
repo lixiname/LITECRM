@@ -16,6 +16,7 @@ export const CUSTOMER_IMPORT_FIELDS = [
   'ownerUsername',
   'contactName',
   'contactPhone',
+  'contactWechatId',
   'preCrmDealConfirmed',
   'preCrmSalesAmount',
   'notes',

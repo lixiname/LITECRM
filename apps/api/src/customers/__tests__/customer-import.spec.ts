@@ -34,10 +34,24 @@ describe('客户 Excel 冷启动导入', () => {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('客户导入')
     sheet.addRow(['填写说明：第 2 行为字段名称，请从第 3 行开始填写客户数据。'])
-    sheet.addRow(['客户名称', 'ERP客户编码', '是否存量客户', 'CRM前累计成交金额'])
-    sheet.addRow(['IMPORT_华东泵业有限公司', 'IMPORT-001', '是', 125000])
-    sheet.addRow(['IMPORT_华东泵业有限公司', 'IMPORT-002', '否', null])
-    sheet.addRow(['IMPORT_新建过滤设备有限公司', 'IMPORT-003', '否', null])
+    sheet.addRow([
+      '客户名称',
+      'ERP客户编码',
+      '是否存量客户',
+      'CRM前累计成交金额',
+      '联系人',
+      '微信号',
+    ])
+    sheet.addRow([
+      'IMPORT_华东泵业有限公司',
+      'IMPORT-001',
+      '是',
+      125000,
+      '张工',
+      'import_pump_zhang',
+    ])
+    sheet.addRow(['IMPORT_华东泵业有限公司', 'IMPORT-002', '否', null, null, null])
+    sheet.addRow(['IMPORT_新建过滤设备有限公司', 'IMPORT-003', '否', null, null, null])
     const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
 
     const uploaded = await request(app.getHttpServer())
@@ -57,6 +71,8 @@ describe('客户 Excel 冷启动导入', () => {
           customerCode: 'ERP客户编码',
           preCrmDealConfirmed: '是否存量客户',
           preCrmSalesAmount: 'CRM前累计成交金额',
+          contactName: '联系人',
+          contactWechatId: '微信号',
         },
         defaultRelationship: 'per_row',
         targetStatus: 'public',
@@ -92,7 +108,14 @@ describe('客户 Excel 冷启动导入', () => {
     const detail = await request(app.getHttpServer())
       .get(`/api/customers/${importedLegacyCustomers[0].id}`)
       .set('Authorization', `Bearer ${adminToken}`)
-    expect(detail.body.contacts).toEqual([])
+    expect(detail.body.contacts).toEqual([
+      expect.objectContaining({
+        name: '张工',
+        phone: null,
+        wechatId: 'import_pump_zhang',
+        isKeyContact: true,
+      }),
+    ])
     expect(detail.body.dealSummary).toMatchObject({
       count: 0,
       crmAmount: '0',

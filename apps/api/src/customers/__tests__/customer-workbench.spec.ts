@@ -90,7 +90,7 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     })
   })
 
-  it('切换首要联系人保持唯一，并阻止删除最后一个电话', async () => {
+  it('切换首要联系人保持唯一，并阻止删除最后一种联系方式', async () => {
     const customer = await createCustomer('WB_联系人')
     const before = await request(app.getHttpServer())
       .get(`/api/customers/${customer.id}`)
@@ -148,6 +148,60 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     expect(
       finalDetail.body.contacts.filter((contact: { phone?: string }) => contact.phone?.trim()),
     ).toHaveLength(1)
+  })
+
+  it('支持仅填写微信号的联系人，并以微信号精确查重', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'WB_微信联系人',
+        contacts: [{ name: '微信联系人', wechatId: 'Pump_Contact_01', isKeyContact: true }],
+      })
+    expect(created.status).toBe(201)
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/customers/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+    expect(detail.body.contacts[0]).toMatchObject({
+      phone: null,
+      wechatId: 'Pump_Contact_01',
+    })
+
+    const dedup = await request(app.getHttpServer())
+      .post('/api/customers/dedup-check')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: '完全不同的客户名称', wechatId: 'pump_contact_01' })
+    expect(dedup.status).toBe(201)
+    expect(dedup.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          candidateId: created.body.id,
+          confidence: 'high',
+          reasons: expect.arrayContaining(['联系人微信号相同']),
+        }),
+      ]),
+    )
+
+    const emptyMethods = await request(app.getHttpServer())
+      .patch(`/api/customers/contacts/${detail.body.contacts[0].id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ version: detail.body.contacts[0].version, phone: '', wechatId: '' })
+    expect(emptyMethods.status).toBe(400)
+
+    const convertedToPhone = await request(app.getHttpServer())
+      .patch(`/api/customers/contacts/${detail.body.contacts[0].id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ version: detail.body.contacts[0].version, phone: '13900004001', wechatId: '' })
+    expect(convertedToPhone.status).toBe(200)
+    expect(convertedToPhone.body).toMatchObject({ phone: '13900004001', wechatId: null })
+
+    const onlyMethodDelete = await request(app.getHttpServer())
+      .delete(
+        `/api/customers/contacts/${detail.body.contacts[0].id}?version=${convertedToPhone.body.version}`,
+      )
+      .set('Authorization', `Bearer ${token}`)
+    expect(onlyMethodDelete.status).toBe(400)
   })
 
   it('联系人同时保留原始职务与字典化岗位类别', async () => {

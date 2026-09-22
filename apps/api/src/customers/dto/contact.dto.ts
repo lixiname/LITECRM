@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator'
 
-// 联系人（§7.2：name 可空=裸电话场景；每客户至多一个首要联系人）
+// 联系人（§7.2：name 可空；电话或微信号至少填写一项，由应用层校验）
 export class CreateContactDto {
-  @ApiPropertyOptional({ description: '姓名（可空=裸电话）' })
+  @ApiPropertyOptional({ description: '姓名（可空=仅留联系方式）' })
   @IsOptional()
   @IsString()
   name?: string
@@ -18,10 +18,15 @@ export class CreateContactDto {
   @IsString()
   functionRole?: string
 
-  @ApiPropertyOptional({ description: '电话（每个客户至少一个联系人含电话）' })
+  @ApiPropertyOptional({ description: '电话（与微信号至少填写一项）' })
   @IsOptional()
   @IsString()
   phone?: string
+
+  @ApiPropertyOptional({ description: '微信号（可搜索账号，不使用微信昵称）' })
+  @IsOptional()
+  @IsString()
+  wechatId?: string
 
   @ApiPropertyOptional({ description: '是否首要联系人（每客户至多一个）' })
   @IsOptional()

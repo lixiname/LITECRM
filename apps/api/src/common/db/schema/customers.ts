@@ -177,7 +177,7 @@ export const customerGradeChanges = pgTable(
   ],
 )
 
-// 联系人（§7.2：name 可空 = 裸电话场景；每客户至多一个首要联系人）
+// 联系人（§7.2：name 可空 = 仅留联系方式场景；每客户至多一个首要联系人）
 export const contacts = pgTable(
   'contacts',
   {
@@ -185,11 +185,12 @@ export const contacts = pgTable(
     customerId: uuid('customer_id')
       .notNull()
       .references(() => customers.id, { onDelete: 'cascade' }),
-    name: text('name'), // 可空（裸电话）
+    name: text('name'), // 可空（仅留电话或微信号）
     title: text('title'),
     functionRole: text('function_role'), // 可配置岗位类别；原始职务仍保存在 title
     phone: text('phone'), // 脱敏展示由前端处理
-    isKeyContact: boolean('is_key_contact').default(false).notNull(), // 首要联系人（承担客户主电话角色）
+    wechatId: text('wechat_id'), // 可搜索的微信号；不保存微信昵称替代标识
+    isKeyContact: boolean('is_key_contact').default(false).notNull(),
   },
   (table) => [
     // 部分唯一索引：每客户至多一个 is_key_contact=true（§7.2）

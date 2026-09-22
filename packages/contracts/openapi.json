@@ -3140,7 +3140,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "姓名（可空=裸电话）"
+            "description": "姓名（可空=仅留联系方式）"
           },
           "title": {
             "type": "string",
@@ -3152,7 +3152,11 @@
           },
           "phone": {
             "type": "string",
-            "description": "电话（每个客户至少一个联系人含电话）"
+            "description": "电话（与微信号至少填写一项）"
+          },
+          "wechatId": {
+            "type": "string",
+            "description": "微信号（可搜索账号，不使用微信昵称）"
           },
           "isKeyContact": {
             "type": "boolean",
@@ -3248,7 +3252,7 @@
             "description": "备注"
           },
           "contacts": {
-            "description": "联系人（至少一个，且至少一个含电话）",
+            "description": "联系人（至少一个，且每位联系人须填写电话或微信号）",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/CreateContactDto"
@@ -3267,6 +3271,10 @@
           "phone": {
             "type": "string",
             "description": "联系人电话（电话通道，归一化精确比对）"
+          },
+          "wechatId": {
+            "type": "string",
+            "description": "联系人微信号（忽略首尾空格和大小写后精确比对）"
           },
           "address": {
             "type": "string",
@@ -3484,7 +3492,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "姓名（可空=裸电话）"
+            "description": "姓名（可空=仅留联系方式）"
           },
           "title": {
             "type": "string",
@@ -3496,7 +3504,11 @@
           },
           "phone": {
             "type": "string",
-            "description": "电话（每个客户至少一个联系人含电话）"
+            "description": "电话（与微信号至少填写一项）"
+          },
+          "wechatId": {
+            "type": "string",
+            "description": "微信号（可搜索账号，不使用微信昵称）"
           },
           "isKeyContact": {
             "type": "boolean",

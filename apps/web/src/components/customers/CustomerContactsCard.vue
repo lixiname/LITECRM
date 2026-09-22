@@ -19,7 +19,8 @@
             <el-tag v-if="contact.functionRole" size="small" effect="plain">
               {{ functionRoleLabel(contact.functionRole) }}
             </el-tag>
-            <span>{{ maskPhone(contact.phone) }}</span>
+            <span v-if="contact.phone">电话 {{ maskPhone(contact.phone) }}</span>
+            <span v-if="contact.wechatId">微信 {{ contact.wechatId }}</span>
           </div>
         </div>
         <div v-if="editable" class="contacts-card__actions">
@@ -45,8 +46,11 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="电话" required>
+        <el-form-item label="电话">
           <el-input v-model="form.phone" placeholder="手机号或座机" />
+        </el-form-item>
+        <el-form-item label="微信号">
+          <el-input v-model="form.wechatId" placeholder="可搜索的微信号，不填微信昵称" />
         </el-form-item>
         <el-form-item label="首要联系人"><el-switch v-model="form.isKeyContact" /></el-form-item>
       </el-form>
@@ -82,7 +86,14 @@ const visible = ref(false)
 const saving = ref(false)
 const editingId = ref<string>()
 const editingVersion = ref<number>()
-const form = reactive({ name: '', title: '', functionRole: '', phone: '', isKeyContact: false })
+const form = reactive({
+  name: '',
+  title: '',
+  functionRole: '',
+  phone: '',
+  wechatId: '',
+  isKeyContact: false,
+})
 const { data: allFunctionRoles } = useQuery('catalog:contact-function', () =>
   listDimensionOptions('contact_function'),
 )
@@ -98,6 +109,7 @@ function resetForm(contact?: Contact) {
     title: contact?.title ?? '',
     functionRole: contact?.functionRole ?? '',
     phone: contact?.phone ?? '',
+    wechatId: contact?.wechatId ?? '',
     isKeyContact: contact?.isKeyContact ?? false,
   })
 }
@@ -111,19 +123,29 @@ function openEdit(contact: Contact) {
 }
 
 async function handleSave() {
-  if (!form.phone.trim()) return ElMessage.warning('联系人电话必填')
+  if (!form.phone.trim() && !form.wechatId.trim()) {
+    return ElMessage.warning('电话和微信号至少填写一项')
+  }
   saving.value = true
   try {
     const input = {
       name: form.name.trim() || undefined,
       title: form.title.trim() || undefined,
       functionRole: form.functionRole || undefined,
-      phone: form.phone.trim(),
+      phone: form.phone.trim() || undefined,
+      wechatId: form.wechatId.trim() || undefined,
       isKeyContact: form.isKeyContact,
     }
-    if (editingId.value)
-      await updateContact(editingId.value, { ...input, version: editingVersion.value! })
-    else await addContact(props.customerId, input)
+    if (editingId.value) {
+      await updateContact(editingId.value, {
+        ...input,
+        phone: form.phone.trim(),
+        wechatId: form.wechatId.trim(),
+        version: editingVersion.value!,
+      })
+    } else {
+      await addContact(props.customerId, input)
+    }
     ElMessage.success(editingId.value ? '联系人已更新' : '联系人已添加')
     visible.value = false
     emit('changed')
@@ -141,7 +163,7 @@ function functionRoleLabel(value: string): string {
 async function handleRemove(contact: Contact) {
   try {
     await ElMessageBox.confirm(
-      `确认删除联系人“${contact.name || maskPhone(contact.phone)}”吗？`,
+      `确认删除联系人“${contact.name || (contact.phone ? maskPhone(contact.phone) : contact.wechatId) || '未命名联系人'}”吗？`,
       '删除联系人',
       { type: 'warning', confirmButtonText: '删除' },
     )

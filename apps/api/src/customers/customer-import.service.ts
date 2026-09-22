@@ -34,6 +34,7 @@ const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   ownerUsername: ['负责人账号', '负责人', 'ownerUsername'],
   contactName: ['联系人', '联系人姓名', 'contactName'],
   contactPhone: ['联系电话', '联系人电话', '电话', 'contactPhone'],
+  contactWechatId: ['联系人微信号', '微信号', '微信', 'contactWechatId'],
   preCrmDealConfirmed: ['CRM启用前是否成交', '是否存量客户', 'CRM前已成交', 'preCrmDealConfirmed'],
   preCrmSalesAmount: ['CRM前累计成交金额', '历史成交金额', 'preCrmSalesAmount'],
   notes: ['备注', 'notes'],
@@ -55,6 +56,7 @@ const TEMPLATE_FIELD_ORDER: CustomerImportField[] = [
   'grade',
   'contactName',
   'contactPhone',
+  'contactWechatId',
   'preCrmSalesAmount',
   'notes',
 ]
@@ -80,6 +82,7 @@ const TEMPLATE_COLUMN_WIDTHS: Partial<Record<CustomerImportField, number>> = {
   unifiedSocialCreditCode: 24,
   address: 30,
   contactPhone: 18,
+  contactWechatId: 20,
   preCrmSalesAmount: 22,
   notes: 34,
 }
@@ -96,6 +99,7 @@ const TEMPLATE_EXAMPLE_VALUES: Partial<Record<CustomerImportField, string | numb
   grade: 'A',
   contactName: '张工',
   contactPhone: '13800000000',
+  contactWechatId: 'qingyuan_zhanggong',
   preCrmSalesAmount: 120000,
   notes: '示例行会被系统自动忽略，请覆盖或删除',
 }
@@ -481,6 +485,7 @@ function normalizeImportRow(
       status: dto.targetStatus,
       contactName: optional(value('contactName')),
       contactPhone: optional(value('contactPhone')),
+      contactWechatId: optional(value('contactWechatId')),
       preCrmDealConfirmed,
       preCrmSalesAmount: amountText || null,
       notes: optional(value('notes')),

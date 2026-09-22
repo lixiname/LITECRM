@@ -167,7 +167,7 @@
         v-for="contact in detail.contacts"
         :key="contact.id"
         :title="contact.name || '未命名联系人'"
-        :value="maskPhone(contact.phone)"
+        :value="contactMethods(contact)"
         :label="contactDescription(contact.title, contact.functionRole)"
       >
         <template #icon>
@@ -309,6 +309,15 @@ function maskPhone(phone?: string | null): string {
   const digits = phone.replace(/\D/g, '')
   if (digits.length === 11) return `${digits.slice(0, 3)}****${digits.slice(-4)}`
   return phone
+}
+
+function contactMethods(contact: Contact): string {
+  return [
+    contact.phone ? `电话：${maskPhone(contact.phone)}` : null,
+    contact.wechatId ? `微信：${contact.wechatId}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 }
 
 function openVisit() {

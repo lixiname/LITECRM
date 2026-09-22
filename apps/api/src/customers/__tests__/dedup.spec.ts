@@ -10,6 +10,7 @@ function candidate(overrides: Partial<DedupCandidate>): DedupCandidate {
     city: '上海',
     address: null,
     phoneMatched: false,
+    wechatMatched: false,
     trigramSimilarity: 0,
     ...overrides,
   }
@@ -38,6 +39,7 @@ describe('scoreDuplicate 置信度分级（§8.2 表格）', () => {
     name: '上海华明机械',
     normalizedKey: '上海华明机械',
     phone: null,
+    wechatId: null,
     address: null,
   }
 
@@ -45,6 +47,12 @@ describe('scoreDuplicate 置信度分级（§8.2 表格）', () => {
     const r = scoreDuplicate(candidate({ phoneMatched: true }), base)
     expect(r?.confidence).toBe('high')
     expect(r?.reasons).toContain('联系人电话相同')
+  })
+
+  it('高：微信号精确命中（wechatMatched）', () => {
+    const r = scoreDuplicate(candidate({ wechatMatched: true }), base)
+    expect(r?.confidence).toBe('high')
+    expect(r?.reasons).toContain('联系人微信号相同')
   })
 
   it('高：名称归一化后完全相同', () => {

@@ -58,6 +58,7 @@ describe('CustomerContactsCard', () => {
             title: '设备主管',
             functionRole: 'equipment_engineering',
             phone: '13800001001',
+            wechatId: 'zhanggong_pump',
             isKeyContact: true,
             version: 1,
           },
@@ -70,6 +71,7 @@ describe('CustomerContactsCard', () => {
     expect(wrapper.text()).toContain('张工')
     expect(wrapper.text()).toContain('设备／工程')
     expect(wrapper.text()).toContain('138****1001')
+    expect(wrapper.text()).toContain('微信 zhanggong_pump')
     expect(maskPhone('13800001001')).toBe('138****1001')
 
     await wrapper.get('.contacts-card__header .el-button').trigger('click')

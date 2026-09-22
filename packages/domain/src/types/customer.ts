@@ -66,6 +66,7 @@ export interface Contact {
   title: string | null
   functionRole: string | null
   phone: string | null
+  wechatId: string | null
   isKeyContact: boolean
   version: number
 }

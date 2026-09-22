@@ -13,7 +13,7 @@ import { Type } from 'class-transformer'
 import { CUSTOMER_GRADES, type CustomerGrade } from '../../common/constants'
 import { CreateContactDto } from './contact.dto'
 
-// 创建客户（§8.2/8.3）：name 必填 + 至少一个联系人电话（应用层校验）；ownerId 缺省=建档人
+// 创建客户（§8.2/8.3）：name 必填 + 至少一种联系人联系方式（应用层校验）；ownerId 缺省=建档人
 export class CreateCustomerDto {
   @ApiProperty({ description: '客户名称（可地址式）' })
   @IsString()
@@ -111,7 +111,10 @@ export class CreateCustomerDto {
   @IsString()
   notes?: string
 
-  @ApiProperty({ type: [CreateContactDto], description: '联系人（至少一个，且至少一个含电话）' })
+  @ApiProperty({
+    type: [CreateContactDto],
+    description: '联系人（至少一个，且每位联系人须填写电话或微信号）',
+  })
   @IsArray()
   @ArrayNotEmpty({ message: '至少需要一个联系人' })
   @ValidateNested({ each: true })

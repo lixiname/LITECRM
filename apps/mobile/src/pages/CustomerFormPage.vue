@@ -58,8 +58,12 @@
           v-model="form.contactPhone"
           label="联系电话"
           type="tel"
-          placeholder="至少填写一个联系电话"
-          :rules="[{ required: true, message: '请输入联系电话' }]"
+          placeholder="与微信号至少填写一项"
+        />
+        <van-field
+          v-model="form.contactWechatId"
+          label="微信号"
+          placeholder="可搜索的微信号，不填微信昵称"
         />
       </van-cell-group>
 
@@ -139,6 +143,7 @@ const form = reactive({
   grade: 'C' as CustomerGrade,
   contactName: '',
   contactPhone: '',
+  contactWechatId: '',
   notes: '',
 })
 const provinces = ref<AdministrativeDivision[]>([])
@@ -214,11 +219,16 @@ function pickGrade({ selectedOptions }: { selectedOptions: PickerOption[] }) {
 }
 
 async function submit() {
+  if (!form.contactPhone.trim() && !form.contactWechatId.trim()) {
+    showToast('联系电话和微信号至少填写一项')
+    return
+  }
   saving.value = true
   try {
     const hits = await checkDuplicate({
       name: form.name.trim(),
-      phone: form.contactPhone.trim(),
+      phone: form.contactPhone.trim() || undefined,
+      wechatId: form.contactWechatId.trim() || undefined,
     })
     if (hits.some((item) => item.confidence === 'high')) {
       await showConfirmDialog({
@@ -238,7 +248,8 @@ async function submit() {
       contacts: [
         {
           name: form.contactName.trim() || undefined,
-          phone: form.contactPhone.trim(),
+          phone: form.contactPhone.trim() || undefined,
+          wechatId: form.contactWechatId.trim() || undefined,
           isKeyContact: true,
         },
       ],

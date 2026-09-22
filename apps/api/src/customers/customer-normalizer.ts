@@ -13,3 +13,8 @@ export function normalizeBusinessName(name: string): string {
 export function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '')
 }
+
+// 微信号归一化：保留原值存储，查重时仅忽略首尾空格和大小写。
+export function normalizeWechatId(wechatId: string): string {
+  return wechatId.trim().toLowerCase()
+}

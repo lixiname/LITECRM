@@ -88,12 +88,15 @@
               :value="option.name"
             />
           </el-select>
-          <el-input v-model="contact.phone" placeholder="电话（必填）" />
+          <el-input v-model="contact.phone" placeholder="电话（与微信号至少填一项）" />
+          <el-input v-model="contact.wechatId" placeholder="微信号（与电话至少填一项）" />
           <el-button link type="danger" @click="form.contacts.splice(index, 1)">删除</el-button>
         </div>
         <el-button
           size="small"
-          @click="form.contacts.push({ name: '', title: '', functionRole: '', phone: '' })"
+          @click="
+            form.contacts.push({ name: '', title: '', functionRole: '', phone: '', wechatId: '' })
+          "
         >
           + 添加联系人
         </el-button>
@@ -190,11 +193,12 @@ const form = reactive({
   ownerId: '',
   notes: '',
   contacts: [
-    { name: '', title: '', functionRole: '', phone: '' } as {
+    { name: '', title: '', functionRole: '', phone: '', wechatId: '' } as {
       name?: string
       title?: string
       functionRole?: string
       phone?: string
+      wechatId?: string
     },
   ],
 })
@@ -237,17 +241,26 @@ watch(
 async function handleDedupCheck() {
   if (!form.name.trim()) return ElMessage.warning('请先填写客户名称')
   const phone = form.contacts.find((contact) => contact.phone?.trim())?.phone
-  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone }).catch(() => [])
+  const wechatId = form.contacts.find((contact) => contact.wechatId?.trim())?.wechatId
+  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone, wechatId }).catch(
+    () => [],
+  )
   if (dedupHits.value.length === 0) ElMessage.success('未发现疑似重复')
 }
 
 async function handleSubmit() {
   if (!form.name.trim()) return ElMessage.warning('客户名称必填')
   if (!form.ownerId && !canOwnCustomer.value) return ElMessage.warning('请选择客户负责人')
+  if (form.contacts.length === 0) return ElMessage.warning('至少需要一位联系人')
   const phone = form.contacts.find((contact) => contact.phone?.trim())?.phone
-  if (!phone) return ElMessage.warning('至少需要一个联系人电话')
+  const wechatId = form.contacts.find((contact) => contact.wechatId?.trim())?.wechatId
+  if (form.contacts.some((contact) => !contact.phone?.trim() && !contact.wechatId?.trim())) {
+    return ElMessage.warning('每位联系人至少填写电话或微信号')
+  }
 
-  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone }).catch(() => [])
+  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone, wechatId }).catch(
+    () => [],
+  )
   if (dedupHits.value.some((hit) => hit.confidence === 'high')) {
     try {
       await ElMessageBox.confirm('检测到高度疑似重复客户，仍要新建吗？', '查重提示', {
@@ -271,12 +284,13 @@ async function handleSubmit() {
       ownerId: form.ownerId || undefined,
       notes: form.notes || undefined,
       contacts: form.contacts
-        .filter((contact) => contact.phone?.trim())
+        .filter((contact) => contact.phone?.trim() || contact.wechatId?.trim())
         .map((contact) => ({
           name: contact.name?.trim() || undefined,
           title: contact.title?.trim() || undefined,
           functionRole: contact.functionRole || undefined,
           phone: contact.phone?.trim(),
+          wechatId: contact.wechatId?.trim(),
         })),
     })
     ElMessage.success('建档成功')
@@ -329,7 +343,7 @@ function customerStatusLabel(status?: DedupHit['customerStatus']) {
 }
 .customer-create-form__contact-row {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(130px, 1fr) 160px auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: var(--crm-spacing-sm);
 }
