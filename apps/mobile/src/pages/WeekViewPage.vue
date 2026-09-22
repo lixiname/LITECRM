@@ -87,26 +87,46 @@
         </button>
       </div>
 
-      <button
-        v-if="canWrite && selectedDay"
-        type="button"
-        class="work-quick"
-        @click="showAddActions = true"
-      >
-        <span>
-          {{
-            selectedDay.date > todayText
-              ? '安排该日计划'
-              : selectedDay.date === todayText
-                ? '计划与填报都从这里开始'
-                : '补录该日实际或新增后续计划'
-          }}
-        </span>
-        <strong>
-          新增
-          <b aria-hidden="true">＋</b>
-        </strong>
-      </button>
+      <section v-if="canWrite && selectedDay" class="work-actions" aria-label="快捷填报">
+        <button type="button" class="work-action" @click="openWorkAction('customer')">
+          <span class="work-action__icon"><van-icon name="manager-o" /></span>
+          <span>
+            <strong>建客户</strong>
+            <small>建立客户档案</small>
+          </span>
+        </button>
+        <button type="button" class="work-action" @click="openWorkAction('plan')">
+          <span class="work-action__icon"><van-icon name="todo-list-o" /></span>
+          <span>
+            <strong>排计划</strong>
+            <small>安排拜访或推进</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="work-action work-action--primary"
+          :disabled="isFutureSelectedDate"
+          @click="openWorkAction('record')"
+        >
+          <span class="work-action__icon"><van-icon name="add-square" /></span>
+          <span>
+            <strong>记业务</strong>
+            <small>{{ isFutureSelectedDate ? '未来日期不可填' : '记录已发生业务' }}</small>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="work-action"
+          :disabled="isFutureSelectedDate"
+          @click="openWorkAction('expense')"
+        >
+          <span class="work-action__icon"><van-icon name="balance-list-o" /></span>
+          <span>
+            <strong>填费用</strong>
+            <small>{{ isFutureSelectedDate ? '未来日期不可填' : '记录当日费用' }}</small>
+          </span>
+        </button>
+      </section>
 
       <article v-if="viewMode === 'day' && selectedDay" class="day-card day-card--selected">
         <header class="day-card__head">
@@ -322,13 +342,6 @@
     />
     <PlanGuidanceSheet v-model="guidanceVisible" :plan="guidancePlan" @changed="reload" />
     <PlanCreateSheet v-model="planCreateVisible" :initial-date="selectedDate" @saved="reload" />
-    <van-action-sheet
-      v-model:show="showAddActions"
-      title="新增"
-      cancel-text="取消"
-      :actions="addActions"
-      @select="handleAddAction"
-    />
   </div>
 </template>
 
@@ -405,7 +418,6 @@ const showRescheduleCalendar = ref(false)
 const rescheduleMaxDate = new Date(today.getFullYear() + 2, 11, 31)
 const guidanceVisible = ref(false)
 const guidancePlan = ref<SalesPlan>()
-const showAddActions = ref(false)
 const planCreateVisible = ref(false)
 const {
   data: view,
@@ -415,25 +427,7 @@ const {
 } = useQuery('mobile:week-view', () => getWeekView(range.value.monday, range.value.sunday))
 const days = computed(() => buildMobileWeekDays(range.value.monday, todayText, view.value))
 const selectedDay = computed(() => days.value.find((day) => day.date === selectedDate.value))
-const addActions = computed(() => {
-  const future = selectedDate.value > todayText
-  return [
-    { name: '新建客户', subname: '建立客户档案和首要联系人', value: 'customer' },
-    { name: '新增计划', subname: '安排客户拜访或商机推进', value: 'plan' },
-    {
-      name: '填写业务记录',
-      subname: future ? '未来日期不能填写实际记录' : '新商机、客户拜访、商机推进或客诉',
-      value: 'record',
-      disabled: future,
-    },
-    {
-      name: '费用填报',
-      subname: future ? '未来日期不能填写费用' : '记录当日销售费用',
-      value: 'expense',
-      disabled: future,
-    },
-  ]
-})
+const isFutureSelectedDate = computed(() => selectedDate.value > todayText)
 
 watch(weekStart, (value) => {
   void reload()
@@ -574,16 +568,15 @@ async function submitReschedule() {
 function formatDateTime(value: string) {
   return value.length === 10 ? value : new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
-function handleAddAction(action: { value: string; disabled?: boolean }) {
-  if (action.disabled) return
-  showAddActions.value = false
-  if (action.value === 'customer') {
+function openWorkAction(action: 'customer' | 'plan' | 'record' | 'expense') {
+  if (isFutureSelectedDate.value && (action === 'record' || action === 'expense')) return
+  if (action === 'customer') {
     void router.push({ path: '/customers/new', query: { source: 'work' } })
-  } else if (action.value === 'plan') {
+  } else if (action === 'plan') {
     planCreateVisible.value = true
-  } else if (action.value === 'record') {
+  } else if (action === 'record') {
     void router.push({ path: '/quick-add', query: { source: 'work', date: selectedDate.value } })
-  } else if (action.value === 'expense') {
+  } else {
     void router.push({
       path: '/expenses/new',
       query: { source: 'work', date: selectedDate.value },
@@ -780,32 +773,60 @@ function temporaryRecordCount(day: MobileWeekDay): number {
 .day-strip__item.is-selected small {
   color: inherit;
 }
-.work-quick {
+.work-actions {
   display: grid;
-  width: calc(100% - 24px);
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--crm-spacing-sm);
   margin: 0 var(--crm-spacing-md) var(--crm-spacing-sm);
-  padding: 13px 14px;
-  border: 0;
-  border-radius: var(--crm-radius-lg);
-  background: linear-gradient(135deg, var(--crm-color-primary), #4e8875);
-  color: #fff;
+}
+.work-action {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: var(--crm-spacing-sm);
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-card);
+  color: var(--crm-color-text-primary);
   text-align: left;
-  box-shadow: 0 8px 18px rgb(57 115 97 / 16%);
+  box-shadow: var(--crm-shadow-card);
 }
-.work-quick span {
-  opacity: 0.76;
-  font-size: 10px;
+.work-action--primary {
+  border-color: var(--crm-color-primary-light);
+  background: var(--crm-color-primary-lighter);
 }
-.work-quick strong {
+.work-action__icon {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-}
-.work-quick b {
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary-active);
   font-size: 18px;
-  font-weight: 400;
+}
+.work-action strong,
+.work-action small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.work-action strong {
+  font-size: 13px;
+}
+.work-action small {
+  margin-top: 2px;
+  color: var(--crm-color-text-secondary);
+  font-size: 9px;
+}
+.work-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
 }
 .day-card--selected,
 .week-overview {
