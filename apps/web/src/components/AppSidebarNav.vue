@@ -13,14 +13,20 @@
         <template #title>
           <span class="app-sidebar__group-title">{{ group.label }}</span>
         </template>
-        <el-menu-item v-for="item in group.items" :key="item.index" :index="item.index">
+        <el-menu-item
+          v-for="item in group.items"
+          :key="item.index"
+          :index="item.index"
+          :class="{ 'app-sidebar__menu-item--entry': item.primaryEntry }"
+        >
           <span class="app-sidebar__nav-icon" aria-hidden="true">
             <AppNavIcon :name="item.icon" />
           </span>
           <span class="app-sidebar__nav-copy">
             <span class="app-sidebar__nav-heading">
               <strong>{{ item.title }}</strong>
-              <span v-if="item.frequent" class="app-sidebar__frequent">常用</span>
+              <span v-if="item.primaryEntry" class="app-sidebar__entry-badge">填报入口</span>
+              <span v-else-if="item.frequent" class="app-sidebar__frequent">常用</span>
             </span>
             <small>{{ item.description }}</small>
           </span>
@@ -44,6 +50,7 @@ interface NavItem {
   icon: string
   title: string
   description: string
+  primaryEntry?: boolean
   frequent?: boolean
   ability?: Ability
   anyAbility?: Ability[]
@@ -62,15 +69,16 @@ const navGroups: NavGroup[] = [
         index: '/week-view',
         icon: 'work',
         title: '我的工作',
-        description: '计划、待办与每日记录',
-        frequent: true,
+        description: '安排计划、完成待办与填报记录',
+        primaryEntry: true,
         ability: 'customer.write',
       },
       {
         index: '/expenses',
         icon: 'expenses',
-        title: '费用记录',
-        description: '查看与提交个人费用',
+        title: '费用填报',
+        description: '提交与查看个人费用',
+        primaryEntry: true,
         ability: 'customer.write',
       },
     ],
@@ -229,10 +237,23 @@ const visibleNavGroups = computed(() =>
   line-height: normal;
   width: auto;
 }
+.app-sidebar__menu :deep(.el-menu-item.app-sidebar__menu-item--entry) {
+  border: 1px solid var(--crm-color-primary-light);
+  background: var(--crm-color-primary-lighter);
+}
+.app-sidebar__menu :deep(.el-menu-item.app-sidebar__menu-item--entry:hover) {
+  border-color: var(--crm-color-primary-light);
+  background: var(--crm-color-primary-light);
+}
 .app-sidebar__menu :deep(.el-menu-item.is-active) {
   background: var(--crm-color-primary-light);
   color: var(--crm-color-primary-active);
   box-shadow: none;
+}
+.app-sidebar__menu :deep(.el-menu-item.app-sidebar__menu-item--entry.is-active) {
+  border-color: var(--crm-color-primary);
+  background: var(--crm-color-primary-light);
+  box-shadow: var(--crm-shadow-focus);
 }
 .app-sidebar__menu :deep(.el-menu-item.is-active)::before {
   position: absolute;
@@ -259,6 +280,9 @@ const visibleNavGroups = computed(() =>
 .app-sidebar__menu :deep(.el-menu-item.is-active) .app-sidebar__nav-icon {
   color: var(--crm-color-primary-active);
 }
+.app-sidebar__menu :deep(.el-menu-item.app-sidebar__menu-item--entry) .app-sidebar__nav-icon {
+  color: var(--crm-color-primary-active);
+}
 .app-sidebar__nav-copy {
   flex: 1;
   min-width: 0;
@@ -280,6 +304,17 @@ const visibleNavGroups = computed(() =>
   font-weight: 500;
   line-height: 15px;
 }
+.app-sidebar__entry-badge {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--crm-color-primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
 .app-sidebar__nav-copy strong,
 .app-sidebar__nav-copy small {
   display: block;
@@ -292,6 +327,13 @@ const visibleNavGroups = computed(() =>
   font-size: 13px;
   font-weight: 620;
   line-height: 16px;
+}
+.app-sidebar__menu
+  :deep(.el-menu-item.app-sidebar__menu-item--entry)
+  .app-sidebar__nav-copy
+  strong {
+  color: var(--crm-color-primary-active);
+  font-weight: 700;
 }
 .app-sidebar__nav-copy small {
   margin-top: 2px;
