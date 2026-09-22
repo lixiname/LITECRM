@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LITECRM 销售经营全局看板原型</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: 'Segoe UI', 'Microsoft YaHei UI', 'PingFang SC', Arial, sans-serif;
+        font-synthesis: none;
+        --page: #edf2ef;
+        --surface: #ffffff;
+        --surface-soft: #f5f8f6;
+        --surface-strong: #e7efeb;
+        --text: #1d2d27;
+        --muted: #687972;
+        --faint: #8a9892;
+        --line: #dce5e0;
+        --line-strong: #cbd9d2;
+        --primary: #326d5b;
+        --primary-strong: #225343;
+        --primary-soft: #e5f0eb;
+        --blue: #507b95;
+        --blue-soft: #e9f0f4;
+        --warning: #b37731;
+        --warning-soft: #fbf0df;
+        --danger: #b45450;
+        --danger-soft: #f8e9e7;
+        --neutral-bar: #aeb9b4;
+        --shadow: 0 8px 28px rgba(34, 65, 54, 0.065);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 1180px;
+        min-height: 100%;
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+      }
+
+      body {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      button,
+      select {
+        font: inherit;
+      }
+
+      .cockpit {
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 50% -20%, rgba(86, 145, 123, 0.15), transparent 35%),
+          var(--page);
+      }
+
+      .topbar {
+        height: 74px;
+        padding: 0 26px;
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto minmax(260px, 1fr);
+        align-items: center;
+        gap: 24px;
+        color: #eef7f3;
+        background: linear-gradient(115deg, #183c32, #245849 55%, #183c32);
+        box-shadow: 0 6px 22px rgba(20, 51, 42, 0.18);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 9px;
+        color: #17392f;
+        background: #d9ebe4;
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .brand strong,
+      .brand small {
+        display: block;
+      }
+
+      .brand strong {
+        font-size: 14px;
+        letter-spacing: 0.03em;
+      }
+
+      .brand small {
+        margin-top: 1px;
+        color: rgba(238, 247, 243, 0.65);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+      }
+
+      .title {
+        text-align: center;
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: 23px;
+        font-weight: 650;
+        letter-spacing: 0.12em;
+      }
+
+      .title p {
+        margin: 3px 0 0;
+        color: rgba(238, 247, 243, 0.7);
+        font-size: 11px;
+        letter-spacing: 0.05em;
+      }
+
+      .top-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .select {
+        height: 32px;
+        padding: 0 30px 0 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 6px;
+        color: #eef7f3;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .select option {
+        color: var(--text);
+      }
+
+      .updated {
+        color: rgba(238, 247, 243, 0.65);
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      .content {
+        max-width: 1680px;
+        margin: 0 auto;
+        padding: 18px 22px 24px;
+      }
+
+      .scope-bar {
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .scope-title {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+
+      .scope-title strong {
+        font-size: 15px;
+      }
+
+      .scope-title span,
+      .prototype-note {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .prototype-note {
+        padding: 4px 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.55);
+      }
+
+      .kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .kpi {
+        position: relative;
+        min-width: 0;
+        padding: 14px 16px 13px;
+      }
+
+      .kpi + .kpi {
+        border-left: 1px solid var(--line);
+      }
+
+      .kpi:nth-child(5) {
+        border-left: 5px solid var(--page);
+      }
+
+      .kpi-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .metric-scope {
+        padding: 2px 5px;
+        border-radius: 3px;
+        color: var(--primary-strong);
+        background: var(--primary-soft);
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .metric-scope.flow {
+        color: #365e76;
+        background: var(--blue-soft);
+      }
+
+      .kpi-value {
+        margin-top: 5px;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .kpi-meta {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .kpi-meta.danger {
+        color: var(--danger);
+      }
+
+      .dashboard-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.55fr) minmax(0, 1fr);
+        grid-template-areas:
+          'flow pool region'
+          'team attention grades';
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .panel.flow {
+        grid-area: flow;
+      }
+
+      .panel.pool {
+        grid-area: pool;
+        border-top: 3px solid var(--primary);
+      }
+
+      .panel.region {
+        grid-area: region;
+      }
+
+      .panel.team {
+        grid-area: team;
+      }
+
+      .panel.attention {
+        grid-area: attention;
+      }
+
+      .panel.grades {
+        grid-area: grades;
+      }
+
+      .panel-head {
+        min-height: 58px;
+        padding: 13px 16px 11px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        border-bottom: 1px solid var(--line);
+        background: #fcfdfc;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 680;
+      }
+
+      .panel-head p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .head-value {
+        color: var(--primary-strong);
+        font-size: 12px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+
+      .panel-body {
+        padding: 15px 16px 16px;
+      }
+
+      .flow-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .flow-metric {
+        padding: 9px 10px;
+        border-radius: 6px;
+        background: var(--surface-soft);
+      }
+
+      .flow-metric span,
+      .flow-metric strong {
+        display: block;
+      }
+
+      .flow-metric span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .flow-metric strong {
+        margin-top: 2px;
+        font-size: 17px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .trend-chart {
+        width: 100%;
+        height: 134px;
+        margin-top: 9px;
+        display: block;
+      }
+
+      .trend-chart text {
+        fill: var(--muted);
+        font-size: 9px;
+      }
+
+      .trend-chart .grid {
+        stroke: var(--line);
+        stroke-width: 1;
+      }
+
+      .trend-chart .area {
+        fill: url(#flow-area);
+      }
+
+      .trend-chart .line {
+        fill: none;
+        stroke: var(--primary);
+        stroke-width: 2.5;
+      }
+
+      .trend-chart .point {
+        fill: var(--surface);
+        stroke: var(--primary);
+        stroke-width: 2;
+      }
+
+      .pool-total {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .pool-total span,
+      .pool-total strong,
+      .pool-total small {
+        display: block;
+      }
+
+      .pool-total span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .pool-total strong {
+        margin-top: 2px;
+        font-size: 34px;
+        font-weight: 720;
+        letter-spacing: -0.035em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .pool-total small {
+        margin-bottom: 4px;
+        color: var(--muted);
+        text-align: right;
+      }
+
+      .composition {
+        height: 16px;
+        margin-top: 13px;
+        display: flex;
+        overflow: hidden;
+        border-radius: 4px;
+        background: var(--surface-soft);
+      }
+
+      .composition span + span {
+        border-left: 2px solid var(--surface);
+      }
+
+      .estimate {
+        width: 31.9%;
+        background: var(--neutral-bar);
+      }
+
+      .oral {
+        width: 23.3%;
+        background: #7d9b90;
+      }
+
+      .formal {
+        width: 44.8%;
+        background: var(--primary);
+      }
+
+      .composition-list {
+        margin-top: 11px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .composition-item {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface-soft);
+      }
+
+      .composition-item header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--dot);
+      }
+
+      .composition-item strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .composition-item small {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .risk-strip {
+        margin-top: 12px;
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        border-radius: 6px;
+        background: var(--warning-soft);
+      }
+
+      .risk-strip div {
+        text-align: center;
+      }
+
+      .risk-strip div + div {
+        border-left: 1px solid rgba(179, 119, 49, 0.22);
+      }
+
+      .risk-strip strong,
+      .risk-strip span {
+        display: block;
+      }
+
+      .risk-strip strong {
+        color: #85571f;
+        font-size: 17px;
+      }
+
+      .risk-strip span {
+        color: #8b6a42;
+        font-size: 10px;
+      }
+
+      .node-section {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+
+      .node-title {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .nodes {
+        margin-top: 9px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7px;
+      }
+
+      .node {
+        position: relative;
+        padding: 8px 7px;
+        border-radius: 5px;
+        background: var(--blue-soft);
+        text-align: center;
+      }
+
+      .node:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -7px;
+        width: 7px;
+        height: 1px;
+        background: var(--line-strong);
+      }
+
+      .node strong,
+      .node span {
+        display: block;
+      }
+
+      .node strong {
+        font-size: 17px;
+      }
+
+      .node span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .region-list,
+      .team-list,
+      .grade-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .region-row {
+        display: grid;
+        grid-template-columns: 72px minmax(0, 1fr) 76px;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .region-name {
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .bar-track {
+        height: 7px;
+        overflow: hidden;
+        border-radius: 4px;
+        background: var(--surface-strong);
+      }
+
+      .bar-fill {
+        width: var(--w);
+        height: 100%;
+        border-radius: 4px;
+        background: var(--primary);
+      }
+
+      .region-value {
+        font-size: 12px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .region-foot {
+        margin-top: 14px;
+        padding-top: 11px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border-top: 1px solid var(--line);
+      }
+
+      .region-foot div {
+        text-align: center;
+      }
+
+      .region-foot strong,
+      .region-foot span {
+        display: block;
+      }
+
+      .region-foot strong {
+        font-size: 16px;
+      }
+
+      .region-foot span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .team-row {
+        display: grid;
+        grid-template-columns: 54px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .team-row > strong {
+        font-size: 12px;
+      }
+
+      .team-marks {
+        display: flex;
+        gap: 3px;
+      }
+
+      .team-marks i {
+        width: var(--w);
+        min-width: 3px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--mark);
+      }
+
+      .team-row small {
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      .team-legend {
+        margin-top: 12px;
+        padding-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px 12px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .team-legend i {
+        width: 7px;
+        height: 7px;
+        margin-right: 4px;
+        display: inline-block;
+        border-radius: 2px;
+        background: var(--mark);
+      }
+
+      .attention-list {
+        display: grid;
+        gap: 0;
+      }
+
+      .attention-row {
+        padding: 9px 0;
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .attention-row + .attention-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .grade {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+        color: #79511f;
+        background: #f4e3c7;
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .attention-content strong,
+      .attention-content small {
+        display: block;
+      }
+
+      .attention-content strong {
+        overflow: hidden;
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .attention-content small {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .risk-tag {
+        padding: 3px 6px;
+        border-radius: 4px;
+        color: var(--danger);
+        background: var(--danger-soft);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      .risk-tag.warn {
+        color: #8b5b23;
+        background: var(--warning-soft);
+      }
+
+      .grade-row {
+        display: grid;
+        grid-template-columns: 22px minmax(0, 1fr) 72px;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .grade-key {
+        font-weight: 750;
+      }
+
+      .grade-bar {
+        height: 9px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: var(--surface-strong);
+      }
+
+      .grade-bar span {
+        display: block;
+        width: var(--w);
+        height: 100%;
+        border-radius: 5px;
+        background: var(--grade-color);
+      }
+
+      .grade-value {
+        color: var(--muted);
+        font-size: 11px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .grade-summary {
+        margin-top: 13px;
+        padding: 10px 11px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        border-radius: 6px;
+        background: var(--surface-soft);
+      }
+
+      .grade-summary span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .grade-summary strong {
+        font-size: 12px;
+      }
+
+      .footer {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        color: var(--faint);
+        font-size: 10px;
+      }
+
+      @media (max-width: 1320px) {
+        .kpi-value {
+          font-size: 21px;
+        }
+
+        .dashboard-grid {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr);
+        }
+
+        .panel-body {
+          padding-left: 13px;
+          padding-right: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="cockpit">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">L</div>
+          <div>
+            <strong>LITECRM</strong>
+            <small>INDUSTRIAL SALES</small>
+          </div>
+        </div>
+        <div class="title">
+          <h1>销售经营全局看板</h1>
+          <p>客户资产 · 有效商机 · 销售行动 · 过程风险</p>
+        </div>
+        <div class="top-actions">
+          <select class="select" aria-label="统计期间">
+            <option>2026年9月</option>
+            <option>本周</option>
+            <option>全年累计</option>
+          </select>
+          <select class="select" aria-label="组织范围">
+            <option>全公司</option>
+            <option>江苏大区</option>
+            <option>浙江大区</option>
+            <option>泵浦组</option>
+          </select>
+          <span class="updated">更新于 13:18</span>
+        </div>
+      </header>
+
+      <div class="content">
+        <div class="scope-bar">
+          <div class="scope-title">
+            <strong>全公司销售经营</strong>
+            <span>当前存量截至 2026-09-22 · 期间数据为 2026-09-01—09-22</span>
+          </div>
+          <span class="prototype-note">静态原型 · 示例数据</span>
+        </div>
+
+        <section class="kpi-strip" aria-label="核心经营指标">
+          <article class="kpi">
+            <div class="kpi-label">有效商机总额 <span class="metric-scope">当前</span></div>
+            <div class="kpi-value">¥18.64m</div>
+            <div class="kpi-meta">72 个开放商机</div>
+          </article>
+          <article class="kpi">
+            <div class="kpi-label">正式报价金额 <span class="metric-scope">当前</span></div>
+            <div class="kpi-value">¥8.36m</div>
+            <div class="kpi-meta">占有效池 44.8%</div>
+          </article>
+          <article class="kpi">
+            <div class="kpi-label">停滞商机 <span class="metric-scope">当前</span></div>
+            <div class="kpi-value">¥2.18m</div>
+            <div class="kpi-meta danger">9 个 · 需要管理介入</div>
+          </article>
+          <article class="kpi">
+            <div class="kpi-label">行动逾期 <span class="metric-scope">当前</span></div>
+            <div class="kpi-value">14</div>
+            <div class="kpi-meta danger">另有 8 个商机无下一步</div>
+          </article>
+          <article class="kpi">
+            <div class="kpi-label">新增商机 <span class="metric-scope flow">本期</span></div>
+            <div class="kpi-value">¥4.26m</div>
+            <div class="kpi-meta">19 个 · 2 个金额待确认</div>
+          </article>
+          <article class="kpi">
+            <div class="kpi-label">确认成交 <span class="metric-scope flow">本期</span></div>
+            <div class="kpi-value">¥1.86m</div>
+            <div class="kpi-meta">4 个 · 结案赢率 44.4%</div>
+          </article>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="panel flow">
+            <header class="panel-head">
+              <div>
+                <h2>本期销售过程</h2>
+                <p>期间新增和实际发生，不与当前池混算</p>
+              </div>
+              <span class="head-value">9月</span>
+            </header>
+            <div class="panel-body">
+              <div class="flow-metrics">
+                <div class="flow-metric"><span>客户拜访</span><strong>86</strong></div>
+                <div class="flow-metric"><span>商机推进</span><strong>64</strong></div>
+                <div class="flow-metric"><span>报价记录</span><strong>23</strong></div>
+                <div class="flow-metric"><span>计划执行率</span><strong>82%</strong></div>
+              </div>
+              <svg
+                class="trend-chart"
+                viewBox="0 0 300 134"
+                role="img"
+                aria-label="9月各周新增商机金额趋势"
+              >
+                <title>新增商机金额趋势</title>
+                <desc>第一周86万元，第二周132万元，第三周96万元，第四周112万元。</desc>
+                <defs>
+                  <linearGradient id="flow-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#4f8a76" stop-opacity="0.28" />
+                    <stop offset="1" stop-color="#4f8a76" stop-opacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <line class="grid" x1="28" y1="22" x2="290" y2="22" />
+                <line class="grid" x1="28" y1="62" x2="290" y2="62" />
+                <line class="grid" x1="28" y1="102" x2="290" y2="102" />
+                <path class="area" d="M28 83 L108 41 L196 75 L286 55 L286 103 L28 103 Z" />
+                <path class="line" d="M28 83 L108 41 L196 75 L286 55" />
+                <circle class="point" cx="28" cy="83" r="3" />
+                <circle class="point" cx="108" cy="41" r="3" />
+                <circle class="point" cx="196" cy="75" r="3" />
+                <circle class="point" cx="286" cy="55" r="3" />
+                <text x="27" y="122">第1周</text>
+                <text x="96" y="122">第2周</text>
+                <text x="184" y="122">第3周</text>
+                <text x="266" y="122">本周</text>
+              </svg>
+            </div>
+          </section>
+
+          <section class="panel pool">
+            <header class="panel-head">
+              <div>
+                <h2>当前有效商机池</h2>
+                <p>每个开放商机只计一次，取当前有效金额口径</p>
+              </div>
+              <span class="head-value">CURRENT STOCK</span>
+            </header>
+            <div class="panel-body">
+              <div class="pool-total">
+                <div><span>有效商机总额</span><strong>¥18,640,000</strong></div>
+                <small>72 个开放商机<br />截至 2026-09-22</small>
+              </div>
+              <div class="composition" aria-label="商机金额构成">
+                <span class="estimate"></span><span class="oral"></span><span class="formal"></span>
+              </div>
+              <div class="composition-list">
+                <div class="composition-item">
+                  <header><i class="dot" style="--dot: var(--neutral-bar)"></i>仅预估</header>
+                  <strong>¥5.94m</strong><small>26 个 · 31.9%</small>
+                </div>
+                <div class="composition-item">
+                  <header><i class="dot" style="--dot: #7d9b90"></i>口头报价</header>
+                  <strong>¥4.34m</strong><small>18 个 · 23.3%</small>
+                </div>
+                <div class="composition-item">
+                  <header><i class="dot" style="--dot: var(--primary)"></i>正式报价</header>
+                  <strong>¥8.36m</strong><small>28 个 · 44.8%</small>
+                </div>
+              </div>
+              <div class="risk-strip">
+                <div><strong>9</strong><span>停滞超过30天</span></div>
+                <div><strong>14</strong><span>下一行动逾期</span></div>
+                <div><strong>8</strong><span>没有下一计划</span></div>
+              </div>
+              <div class="node-section">
+                <div class="node-title">
+                  <span>本期关键节点</span><span>各节点独立统计，不冒充同批转化率</span>
+                </div>
+                <div class="nodes">
+                  <div class="node"><strong>19</strong><span>新建商机</span></div>
+                  <div class="node"><strong>12</strong><span>首次报价</span></div>
+                  <div class="node"><strong>7</strong><span>首次正式报价</span></div>
+                  <div class="node"><strong>4</strong><span>确认成交</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel region">
+            <header class="panel-head">
+              <div>
+                <h2>大区商机结构</h2>
+                <p>按人员所属大区统计当前有效商机</p>
+              </div>
+              <span class="head-value">全部大区</span>
+            </header>
+            <div class="panel-body">
+              <div class="region-list">
+                <div class="region-row">
+                  <span class="region-name">江苏大区</span>
+                  <div class="bar-track"><div class="bar-fill" style="--w: 100%"></div></div>
+                  <span class="region-value">¥6.82m</span>
+                </div>
+                <div class="region-row">
+                  <span class="region-name">浙江大区</span>
+                  <div class="bar-track"><div class="bar-fill" style="--w: 74%"></div></div>
+                  <span class="region-value">¥5.06m</span>
+                </div>
+                <div class="region-row">
+                  <span class="region-name">广东大区</span>
+                  <div class="bar-track"><div class="bar-fill" style="--w: 59%"></div></div>
+                  <span class="region-value">¥4.04m</span>
+                </div>
+                <div class="region-row">
+                  <span class="region-name">泵浦组</span>
+                  <div class="bar-track"><div class="bar-fill" style="--w: 40%"></div></div>
+                  <span class="region-value">¥2.72m</span>
+                </div>
+              </div>
+              <div class="region-foot">
+                <div><strong>20</strong><span>销售人员</span></div>
+                <div><strong>5</strong><span>区域负责人</span></div>
+                <div><strong>6</strong><span>需管理介入</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel team">
+            <header class="panel-head">
+              <div>
+                <h2>团队执行概览</h2>
+                <p>拜访、推进、报价与当前逾期</p>
+              </div>
+              <span class="head-value">本周</span>
+            </header>
+            <div class="panel-body">
+              <div class="team-list">
+                <div class="team-row">
+                  <strong>崔介龙</strong>
+                  <div class="team-marks">
+                    <i style="--w: 42%; --mark: var(--primary)"></i>
+                    <i style="--w: 32%; --mark: var(--blue)"></i>
+                    <i style="--w: 19%; --mark: var(--warning)"></i>
+                  </div>
+                  <small>18 条 · 1 逾期</small>
+                </div>
+                <div class="team-row">
+                  <strong>崔星</strong>
+                  <div class="team-marks">
+                    <i style="--w: 36%; --mark: var(--primary)"></i>
+                    <i style="--w: 26%; --mark: var(--blue)"></i>
+                    <i style="--w: 16%; --mark: var(--warning)"></i>
+                  </div>
+                  <small>15 条 · 2 逾期</small>
+                </div>
+                <div class="team-row">
+                  <strong>王飞</strong>
+                  <div class="team-marks">
+                    <i style="--w: 31%; --mark: var(--primary)"></i>
+                    <i style="--w: 22%; --mark: var(--blue)"></i>
+                    <i style="--w: 10%; --mark: var(--warning)"></i>
+                  </div>
+                  <small>12 条 · 0 逾期</small>
+                </div>
+                <div class="team-row">
+                  <strong>欧阳</strong>
+                  <div class="team-marks">
+                    <i style="--w: 27%; --mark: var(--primary)"></i>
+                    <i style="--w: 18%; --mark: var(--blue)"></i>
+                    <i style="--w: 9%; --mark: var(--warning)"></i>
+                  </div>
+                  <small>10 条 · 3 逾期</small>
+                </div>
+              </div>
+              <div class="team-legend">
+                <span><i style="--mark: var(--primary)"></i>拜访</span>
+                <span><i style="--mark: var(--blue)"></i>商机推进</span>
+                <span><i style="--mark: var(--warning)"></i>报价</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel attention">
+            <header class="panel-head">
+              <div>
+                <h2>需要管理介入</h2>
+                <p>重点客户风险与长期未推进商机</p>
+              </div>
+              <span class="head-value">6 项</span>
+            </header>
+            <div class="panel-body attention-list">
+              <div class="attention-row">
+                <span class="grade">S</span>
+                <div class="attention-content">
+                  <strong>杭州绿源新材料有限公司</strong>
+                  <small>正式报价后 18 天未推进 · ¥1.26m</small>
+                </div>
+                <span class="risk-tag">需介入</span>
+              </div>
+              <div class="attention-row">
+                <span class="grade">A</span>
+                <div class="attention-content">
+                  <strong>无锡恒流精密制造有限公司</strong>
+                  <small>预计成交日已过 · 没有下一计划</small>
+                </div>
+                <span class="risk-tag">需介入</span>
+              </div>
+              <div class="attention-row">
+                <span class="grade">A</span>
+                <div class="attention-content">
+                  <strong>苏州清源电子材料有限公司</strong>
+                  <small>未解决客诉 2 项 · 最近活动 12 天前</small>
+                </div>
+                <span class="risk-tag warn">待关注</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel grades">
+            <header class="panel-head">
+              <div>
+                <h2>客户分级名额</h2>
+                <p>在案客户结构与名额占用</p>
+              </div>
+              <span class="head-value">176 / 200</span>
+            </header>
+            <div class="panel-body">
+              <div class="grade-list">
+                <div class="grade-row">
+                  <span class="grade-key">S</span>
+                  <div class="grade-bar">
+                    <span style="--w: 60%; --grade-color: #a46d2a"></span>
+                  </div>
+                  <span class="grade-value">12 / 20</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-key">A</span>
+                  <div class="grade-bar">
+                    <span style="--w: 78%; --grade-color: #507b95"></span>
+                  </div>
+                  <span class="grade-value">31 / 40</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-key">B</span>
+                  <div class="grade-bar">
+                    <span style="--w: 80%; --grade-color: #5d8d7b"></span>
+                  </div>
+                  <span class="grade-value">48 / 60</span>
+                </div>
+                <div class="grade-row">
+                  <span class="grade-key">C</span>
+                  <div class="grade-bar">
+                    <span style="--w: 71%; --grade-color: #96aaa1"></span>
+                  </div>
+                  <span class="grade-value">57 / 80</span>
+                </div>
+              </div>
+              <div class="grade-summary"><span>另有未分级在案客户</span><strong>28 家</strong></div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="footer">
+          <span>数据口径：当前存量与期间发生严格分区；金额取商机当前有效金额。</span>
+          <span>销售经营驾驶舱 · 只读总览，明细分析进入“经营分析”</span>
+        </footer>
+      </div>
+    </main>
+  </body>
+</html>
