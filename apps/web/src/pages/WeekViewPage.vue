@@ -87,17 +87,38 @@
               <el-dropdown
                 trigger="click"
                 class="week-view__add-trigger"
+                popper-class="week-view-add-popper"
                 @command="(command: AddCommand) => handleAddCommand(command, day)"
               >
                 <el-button type="primary" plain size="small">＋ 新增</el-button>
                 <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="customer">新建客户</el-dropdown-item>
-                    <el-dropdown-item disabled>安排待办</el-dropdown-item>
-                    <el-dropdown-item command="plan">客户拜访 / 商机推进计划</el-dropdown-item>
-                    <el-dropdown-item disabled divided>记录已发生</el-dropdown-item>
-                    <el-dropdown-item command="record">新商机 / 拜访 / 商机推进</el-dropdown-item>
-                    <el-dropdown-item command="complaint" divided>登记新客诉</el-dropdown-item>
+                  <el-dropdown-menu class="week-view__add-menu">
+                    <el-dropdown-item command="customer" class="week-view__add-option">
+                      <div>
+                        <strong>新建客户</strong>
+                        <small>建立客户档案和联系人</small>
+                      </div>
+                    </el-dropdown-item>
+                    <li class="week-view__add-group" role="presentation">计划</li>
+                    <el-dropdown-item command="plan" class="week-view__add-option">
+                      <div>
+                        <strong>新增计划</strong>
+                        <small>安排客户拜访或商机推进</small>
+                      </div>
+                    </el-dropdown-item>
+                    <li class="week-view__add-group" role="presentation">业务记录</li>
+                    <el-dropdown-item command="record" class="week-view__add-option">
+                      <div>
+                        <strong>填写业务记录</strong>
+                        <small>新商机、客户拜访或商机推进</small>
+                      </div>
+                    </el-dropdown-item>
+                    <el-dropdown-item command="complaint" class="week-view__add-option">
+                      <div>
+                        <strong>登记客诉</strong>
+                        <small>记录客户问题及后续处理</small>
+                      </div>
+                    </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -203,7 +224,7 @@
 
               <div v-if="!day.hasContent" class="week-view__empty-state">
                 <span>当天还没有安排或记录</span>
-                <small>可安排待办，也可直接记录已经发生的业务</small>
+                <small>可新增计划，也可填写业务记录</small>
               </div>
             </div>
           </div>
@@ -1061,6 +1082,40 @@ function formatDateTime(value: string): string {
 }
 .week-view__add-trigger .el-button {
   white-space: nowrap;
+}
+:global(.week-view-add-popper .el-dropdown-menu) {
+  min-width: 292px;
+  padding: var(--crm-spacing-sm);
+}
+:global(.week-view-add-popper .el-dropdown-menu__item) {
+  height: auto;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--crm-radius-sm);
+  line-height: 1.35;
+}
+:global(.week-view-add-popper .week-view__add-group) {
+  margin: 6px 4px 2px;
+  padding: 8px 8px 4px;
+  border-top: 1px solid var(--crm-color-border);
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  list-style: none;
+}
+:global(.week-view-add-popper .week-view__add-option > div) {
+  display: grid;
+  gap: 2px;
+}
+:global(.week-view-add-popper .week-view__add-option strong) {
+  color: var(--crm-color-text-primary);
+  font-size: var(--crm-font-size-sm);
+  font-weight: 600;
+}
+:global(.week-view-add-popper .week-view__add-option small) {
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
 }
 .plan-history {
   margin-top: var(--crm-spacing-md);
