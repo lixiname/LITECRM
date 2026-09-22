@@ -31,6 +31,27 @@
       </div>
     </el-form-item>
 
+    <el-form-item label="详细地址">
+      <el-input v-model="form.address" placeholder="工业园、道路及门牌等" />
+    </el-form-item>
+
+    <el-form-item label="客户类型">
+      <el-select
+        v-model="form.customerType"
+        clearable
+        placeholder="选择客户类型"
+        style="width: 100%"
+      >
+        <el-option v-for="o in customerTypes" :key="o.id" :label="o.label" :value="o.name" />
+      </el-select>
+    </el-form-item>
+
+    <el-form-item label="客户来源">
+      <el-select v-model="form.source" clearable placeholder="选择客户来源" style="width: 100%">
+        <el-option v-for="o in sources" :key="o.id" :label="o.label" :value="o.name" />
+      </el-select>
+    </el-form-item>
+
     <el-form-item label="客户行业">
       <el-select v-model="form.industry" clearable placeholder="选择产业" style="width: 100%">
         <el-option v-for="o in industries" :key="o.id" :label="o.label" :value="o.name" />
@@ -45,6 +66,19 @@
         style="width: 100%"
       >
         <el-option v-for="o in businessSegments" :key="o.id" :label="o.label" :value="o.name" />
+      </el-select>
+    </el-form-item>
+
+    <el-form-item label="产品线">
+      <el-select
+        v-model="form.productLines"
+        multiple
+        clearable
+        collapse-tags
+        placeholder="选择相关产品线"
+        style="width: 100%"
+      >
+        <el-option v-for="o in productLines" :key="o.id" :label="o.label" :value="o.name" />
       </el-select>
     </el-form-item>
 
@@ -187,8 +221,12 @@ const form = reactive({
   name: '',
   provinceCode: '',
   cityCode: '',
+  address: '',
+  customerType: undefined as string | undefined,
+  source: undefined as string | undefined,
   industry: undefined as string | undefined,
   subIndustry: undefined as string | undefined,
+  productLines: [] as string[],
   grade: 'C',
   ownerId: '',
   notes: '',
@@ -204,6 +242,9 @@ const form = reactive({
 })
 const industries = ref<DimensionOption[]>([])
 const businessSegments = ref<DimensionOption[]>([])
+const customerTypes = ref<DimensionOption[]>([])
+const sources = ref<DimensionOption[]>([])
+const productLines = ref<DimensionOption[]>([])
 const contactFunctions = ref<DimensionOption[]>([])
 const provinces = ref<AdministrativeDivision[]>([])
 const cities = ref<AdministrativeDivision[]>([])
@@ -215,16 +256,30 @@ const firstHit = computed(() => dedupHits.value[0])
 const canOwnCustomer = computed(() => ['sales', 'executive'].includes(auth.user?.role ?? ''))
 
 onMounted(async () => {
-  const [industryOptions, segmentOptions, functionOptions, provinceOptions, assigneeOptions] =
-    await Promise.all([
-      listDimensionOptions('industry').catch(() => []),
-      listDimensionOptions('sub_industry').catch(() => []),
-      listDimensionOptions('contact_function').catch(() => []),
-      listProvinces().catch(() => []),
-      auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
-    ])
+  const [
+    industryOptions,
+    segmentOptions,
+    customerTypeOptions,
+    sourceOptions,
+    productLineOptions,
+    functionOptions,
+    provinceOptions,
+    assigneeOptions,
+  ] = await Promise.all([
+    listDimensionOptions('industry').catch(() => []),
+    listDimensionOptions('sub_industry').catch(() => []),
+    listDimensionOptions('customer_type').catch(() => []),
+    listDimensionOptions('source').catch(() => []),
+    listDimensionOptions('product_line').catch(() => []),
+    listDimensionOptions('contact_function').catch(() => []),
+    listProvinces().catch(() => []),
+    auth.hasAbility('customer.transfer') ? listCustomerAssignees().catch(() => []) : [],
+  ])
   industries.value = industryOptions.filter((option) => option.isActive)
   businessSegments.value = segmentOptions.filter((option) => option.isActive)
+  customerTypes.value = customerTypeOptions.filter((option) => option.isActive)
+  sources.value = sourceOptions.filter((option) => option.isActive)
+  productLines.value = productLineOptions.filter((option) => option.isActive)
   contactFunctions.value = functionOptions.filter((option) => option.isActive)
   provinces.value = provinceOptions
   assignees.value = assigneeOptions
@@ -242,9 +297,12 @@ async function handleDedupCheck() {
   if (!form.name.trim()) return ElMessage.warning('请先填写客户名称')
   const phone = form.contacts.find((contact) => contact.phone?.trim())?.phone
   const wechatId = form.contacts.find((contact) => contact.wechatId?.trim())?.wechatId
-  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone, wechatId }).catch(
-    () => [],
-  )
+  dedupHits.value = await checkDuplicate({
+    name: form.name.trim(),
+    phone,
+    wechatId,
+    address: form.address.trim() || undefined,
+  }).catch(() => [])
   if (dedupHits.value.length === 0) ElMessage.success('未发现疑似重复')
 }
 
@@ -258,9 +316,12 @@ async function handleSubmit() {
     return ElMessage.warning('每位联系人至少填写电话或微信号')
   }
 
-  dedupHits.value = await checkDuplicate({ name: form.name.trim(), phone, wechatId }).catch(
-    () => [],
-  )
+  dedupHits.value = await checkDuplicate({
+    name: form.name.trim(),
+    phone,
+    wechatId,
+    address: form.address.trim() || undefined,
+  }).catch(() => [])
   if (dedupHits.value.some((hit) => hit.confidence === 'high')) {
     try {
       await ElMessageBox.confirm('检测到高度疑似重复客户，仍要新建吗？', '查重提示', {
@@ -278,8 +339,12 @@ async function handleSubmit() {
       name: form.name.trim(),
       provinceCode: form.provinceCode || undefined,
       cityCode: form.cityCode || undefined,
+      address: form.address.trim() || undefined,
+      customerType: form.customerType,
+      source: form.source,
       industry: form.industry,
       subIndustry: form.subIndustry,
+      productLines: form.productLines,
       grade: form.grade as CustomerGrade,
       ownerId: form.ownerId || undefined,
       notes: form.notes || undefined,
