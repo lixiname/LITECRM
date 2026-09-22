@@ -11,12 +11,13 @@
             <el-button aria-label="上一周" @click="shiftWeek(-1)">‹</el-button>
             <el-date-picker
               v-model="weekPickerDate"
-              type="week"
-              format="YYYY年 第ww周"
+              type="date"
+              format="YYYY年MM月DD日"
               value-format="YYYY-MM-DD"
               :clearable="false"
               :editable="false"
-              aria-label="选择所在周"
+              placeholder="选择日期定位所在周"
+              aria-label="选择日期定位所在周"
               class="week-view__week-picker"
             />
             <el-button aria-label="下一周" @click="shiftWeek(1)">›</el-button>
