@@ -1,0 +1,55 @@
+.cockpit-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d8e2dd;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(31 62 51 / 5%);
+}
+
+.cockpit-panel__head {
+  min-height: 58px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px 11px;
+  border-bottom: 1px solid #e3e9e6;
+  background: #fbfcfb;
+}
+
+.cockpit-panel__head h2 {
+  margin: 0;
+  color: #172a23;
+  font-size: 15px;
+  font-weight: 720;
+}
+
+.cockpit-panel__head p {
+  margin: 3px 0 0;
+  color: #718078;
+  font-size: 11px;
+}
+
+.cockpit-panel__value {
+  color: #2c6653;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cockpit-panel__body {
+  padding: 15px 16px 16px;
+}
+
+.cockpit-empty {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  color: #87958e;
+  font-size: 12px;
+}
+
+.cockpit-tabular {
+  font-variant-numeric: tabular-nums;
+}

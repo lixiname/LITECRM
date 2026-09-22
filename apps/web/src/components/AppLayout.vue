@@ -44,7 +44,7 @@ const sectionLabel = computed(() => {
   if (['/customers', '/opportunities', '/complaints'].includes(activeMenu.value)) {
     return '客户与销售'
   }
-  if (['/management', '/claims'].includes(activeMenu.value)) return '管理协同'
+  if (['/cockpit', '/management', '/claims'].includes(activeMenu.value)) return '管理协同'
   return '系统设置'
 })
 const userInitial = computed(() => auth.user?.displayName?.slice(0, 1) ?? '用')

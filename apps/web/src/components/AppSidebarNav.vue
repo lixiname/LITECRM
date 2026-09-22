@@ -86,11 +86,18 @@ const navGroups: NavGroup[] = [
     label: '管理协同',
     items: [
       {
+        index: '/cockpit',
+        icon: 'cockpit',
+        title: '经营驾驶舱',
+        description: '一屏判断经营状态与介入重点',
+        frequent: true,
+        anyAbility: ['dashboard.view', 'stats.view'],
+      },
+      {
         index: '/management',
         icon: 'management',
         title: '经营分析',
-        description: '看板：团队进展与商机概况',
-        frequent: true,
+        description: '下钻团队、商机、客户与费用明细',
         anyAbility: ['dashboard.view', 'stats.view'],
       },
       {

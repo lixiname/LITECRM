@@ -44,7 +44,8 @@ describe('AppSidebarNav', () => {
     expect(wrapper.text()).toContain('系统设置')
     expect(wrapper.text()).toContain('我的工作填报入口安排计划、完成待办与填报记录')
     expect(wrapper.text()).toContain('我的费用查看、提交与作废记录')
-    expect(wrapper.text()).toContain('经营分析常用看板：团队进展与商机概况')
+    expect(wrapper.text()).toContain('经营驾驶舱常用一屏判断经营状态与介入重点')
+    expect(wrapper.text()).toContain('经营分析下钻团队、商机、客户与费用明细')
     expect(wrapper.text()).toContain('业务字典业务选项与展示名称')
     expect(wrapper.text()).toContain('分级名额客户等级上限与人员覆盖')
     expect(wrapper.findAll('.app-sidebar__group-title').map((group) => group.text())).toEqual([
@@ -69,6 +70,7 @@ describe('AppSidebarNav', () => {
     expect(wrapper.text()).toContain('客户与销售')
     expect(wrapper.text()).toContain('客户经营')
     expect(wrapper.text()).toContain('管理协同')
+    expect(wrapper.text()).toContain('经营驾驶舱')
     expect(wrapper.text()).toContain('经营分析')
     expect(wrapper.text()).not.toContain('工作台')
     expect(wrapper.text()).not.toContain('我的工作')
@@ -95,7 +97,8 @@ describe('AppSidebarNav', () => {
 
   it('纯管理可见常用看板，但不显示工作台及个人费用', () => {
     const wrapper = mountNavigation(['dashboard.view'])
-    expect(wrapper.text()).toContain('经营分析常用看板：团队进展与商机概况')
+    expect(wrapper.text()).toContain('经营驾驶舱常用一屏判断经营状态与介入重点')
+    expect(wrapper.text()).toContain('经营分析下钻团队、商机、客户与费用明细')
     expect(wrapper.text()).not.toContain('工作台')
     expect(wrapper.text()).not.toContain('我的费用')
     expect(wrapper.findAll('.app-sidebar__menu-item--entry')).toHaveLength(0)

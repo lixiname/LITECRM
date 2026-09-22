@@ -16,6 +16,7 @@ const paths: Record<string, string> = {
   complaints: 'M12 3 2.7 20h18.6L12 3ZM12 9v5M12 17.5v.5',
   expenses: 'M5 3h14v18l-2.4-1.5L14.3 21 12 19.5 9.7 21l-2.3-1.5L5 21V3ZM8 8h8M8 12h8M8 16h5',
   management: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  cockpit: 'M4 19V9M10 19V5M16 19v-7M22 19H2M4 5h4M16 5h4',
   claims: 'M7 7h11l-3-3M18 7l-3 3M17 17H6l3 3M6 17l3-3',
   users:
     'M8.5 11A3.5 3.5 0 1 0 8.5 4a3.5 3.5 0 0 0 0 7ZM2.5 20c.5-4 2.5-6 6-6s5.5 2 6 6M16 8h6M19 5v6M16 15h6M19 12v6',

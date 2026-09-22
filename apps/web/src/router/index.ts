@@ -40,6 +40,15 @@ const router = createRouter({
           },
         },
         {
+          path: 'cockpit',
+          name: 'sales-cockpit',
+          component: () => import('@/pages/SalesCockpitPage.vue'),
+          meta: {
+            title: '经营驾驶舱',
+            requiresAnyAbility: ['dashboard.view', 'stats.view'],
+          },
+        },
+        {
           path: 'management',
           name: 'management-dashboard',
           component: () => import('@/pages/ManagementDashboardPage.vue'),
