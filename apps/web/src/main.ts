@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import '@crm/design-tokens/tokens.css'
 import { useAuthStore } from '@crm/domain'
@@ -18,5 +19,5 @@ const auth = useAuthStore(pinia)
 auth.restoreSession()
 
 app.use(router)
-app.use(ElementPlus)
+app.use(ElementPlus, { locale: zhCn })
 app.mount('#app')

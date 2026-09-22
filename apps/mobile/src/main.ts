@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import Vant from 'vant'
+import Vant, { Locale } from 'vant'
+import zhCN from 'vant/es/locale/lang/zh-CN'
 import 'vant/lib/index.css'
 import '@crm/design-tokens/tokens.css'
 import { useAuthStore } from '@crm/domain'
@@ -10,6 +11,7 @@ import router from './router'
 
 const app = createApp(App)
 const pinia = createPinia()
+Locale.use('zh-CN', zhCN)
 app.use(pinia)
 
 // 恢复登录会话（§8.1）：先于路由守卫执行，避免刷新后误跳登录页
