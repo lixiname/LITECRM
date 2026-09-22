@@ -92,6 +92,7 @@
                 <el-button type="primary" plain size="small">＋ 新增</el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item command="customer">新建客户</el-dropdown-item>
                     <el-dropdown-item disabled>安排待办</el-dropdown-item>
                     <el-dropdown-item command="plan">客户拜访 / 商机推进计划</el-dropdown-item>
                     <el-dropdown-item disabled divided>记录已发生</el-dropdown-item>
@@ -310,6 +311,16 @@
       </template>
     </el-dialog>
 
+    <el-dialog
+      v-model="customerCreateVisible"
+      title="新建客户"
+      width="960px"
+      destroy-on-close
+      append-to-body
+    >
+      <CustomerCreateForm @created="handleCustomerCreated" @claimed="handleCustomerClaimed" />
+    </el-dialog>
+
     <el-dialog v-model="recordDialog.visible" title="记录当日实际" width="520px">
       <el-form label-width="90px">
         <el-form-item label="记录类型" required>
@@ -391,6 +402,7 @@ import FollowUpActionMenu from '../components/actions/FollowUpActionMenu.vue'
 import OpportunityCreateDialog from '../components/opportunities/OpportunityCreateDialog.vue'
 import OpportunityCommandDialogs from '../components/opportunities/OpportunityCommandDialogs.vue'
 import CustomerBusinessDialogs from '../components/customers/CustomerBusinessDialogs.vue'
+import CustomerCreateForm from '../components/customers/CustomerCreateForm.vue'
 import CustomerRemoteSelect from '../components/customers/CustomerRemoteSelect.vue'
 import ComplaintCommandDialog from '../components/complaints/ComplaintCommandDialog.vue'
 import ActualRecordDetailDrawer from '../components/planning/ActualRecordDetailDrawer.vue'
@@ -420,7 +432,7 @@ import {
 } from '@crm/domain'
 
 type ActionCommand = 'execute' | 'reschedule'
-type AddCommand = 'plan' | 'record' | 'complaint'
+type AddCommand = 'customer' | 'plan' | 'record' | 'complaint'
 type ActualRecordVM = WeekBusinessRecord | WeekComplaintRecord
 type ActualRecordType = ActualRecordVM['type']
 
@@ -439,6 +451,7 @@ const selectedActualRecord = ref<ActualRecordVM>()
 const selectedActualPlan = ref<SalesPlan>()
 const guidanceVisible = ref(false)
 const guidancePlan = ref<SalesPlan>()
+const customerCreateVisible = ref(false)
 
 const today = new Date()
 const todayStr = fmt(today)
@@ -744,11 +757,24 @@ async function openOpportunityProgress(
 }
 
 function handleAddCommand(command: AddCommand, day: DayVM) {
+  if (command === 'customer') {
+    customerCreateVisible.value = true
+    return
+  }
   if (command === 'plan') {
     void onBlankClick(day)
     return
   }
   void openRecordDialog(day, command === 'complaint' ? 'complaint_registered' : undefined)
+}
+
+function handleCustomerCreated(_customer: CustomerItem) {
+  customerCreateVisible.value = false
+}
+
+function handleCustomerClaimed(customerId: string) {
+  customerCreateVisible.value = false
+  void router.push(`/customers/${customerId}`)
 }
 
 async function openRecordDialog(
