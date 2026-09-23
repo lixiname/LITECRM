@@ -57,8 +57,9 @@
       .content { max-width: 1840px; padding: 17px 24px 26px; margin: 0 auto; }
       .period-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
       .period-modes { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: #102238; }
-      .period-modes span { padding: 5px 10px; border-radius: 4px; color: var(--muted); font-size: 11px; font-weight: 650; white-space: nowrap; }
-      .period-modes span.active { color: #e8f7ff; background: #286280; }
+      .period-modes button { padding: 5px 10px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font: inherit; font-size: 11px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+      .period-modes button.active { color: #e8f7ff; background: #286280; }
+      .period-modes button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
       .period-choice { padding: 7px 12px; border: 1px solid #42647f; border-radius: 5px; color: #d8edfa; background: #162b42; font-size: 11px; white-space: nowrap; }
       .period-help { color: var(--quiet); font-size: 10px; }
       .scope {
@@ -100,9 +101,9 @@
       .target-status strong { display: block; color: var(--amber); font-size: 22px; font-variant-numeric: tabular-nums; }
       .target-track { height: 25px; display: flex; overflow: hidden; margin-top: 16px; border-radius: 5px; background: #263a50; }
       .target-track span + span { border-left: 2px solid #14283d; }
-      .target-track .won { width: 31.6667%; background: var(--blue); }
-      .target-track .commit { width: 26.6667%; background: var(--cyan); }
-      .target-track .gap { width: 41.6666%; background: #30455a; }
+      .target-track .won { width: var(--won-share, 63.33%); background: var(--blue); }
+      .target-track .commit { width: var(--commit-share, 20%); background: var(--cyan); }
+      .target-track .gap { width: var(--gap-share, 16.67%); background: #30455a; }
       .target-axis { display: flex; justify-content: space-between; margin-top: 5px; color: var(--quiet); font-size: 9px; }
       .target-parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
       .target-part { padding: 8px 9px; border: 1px solid #35516a; border-radius: 5px; background: #112b42aa; }
@@ -135,11 +136,24 @@
       .health small { color: var(--quiet); font-size: 9px; }
       .flow-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
       .flow-node { position: relative; padding: 9px 6px; border: 1px solid #31516b; border-radius: 5px; text-align: center; background: #173047; }
-      .flow-node:not(:last-child)::after { content: "›"; position: absolute; right: -7px; top: 30%; z-index: 1; color: #82cde3; font-size: 19px; }
       .flow-node span { display: block; color: var(--muted); font-size: 9px; }
       .flow-node strong { display: block; margin-top: 2px; font-size: 17px; }
       .flow-node small { color: var(--quiet); font-size: 9px; }
       .flow-note { margin-top: 9px; color: var(--quiet); font-size: 9px; }
+      .rhythm { display: grid; gap: 9px; }
+      .rhythm-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) 120px; align-items: center; gap: 9px; }
+      .rhythm-row > strong { font-size: 10px; }
+      .rhythm-row small { color: var(--muted); font-size: 9px; text-align: right; white-space: nowrap; }
+      .rhythm-track { height: 9px; overflow: hidden; border-radius: 5px; background: #2b4056; }
+      .rhythm-track span { display: block; height: 100%; border-radius: 5px; background: var(--blue); }
+      .rhythm-row.current .rhythm-track span { background: var(--cyan); }
+      .rhythm-caption { margin-top: 11px; color: var(--quiet); font-size: 9px; }
+      .year-bars { height: 114px; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); align-items: end; gap: 7px; padding-top: 4px; }
+      .year-bar { min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+      .year-bar strong { color: #d9edff; font-size: 9px; font-weight: 600; }
+      .year-bar i { display: block; width: min(100%, 27px); height: var(--h); min-height: 3px; border-radius: 3px 3px 0 0; background: var(--blue); }
+      .year-bar.current i { background: var(--cyan); }
+      .year-bar small { color: var(--quiet); font-size: 9px; }
       .region-list, .attention-list { display: grid; gap: 0; }
       .region-item { padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
       .region-item:first-child { padding-top: 2px; }
@@ -207,55 +221,55 @@
       </header>
       <div class="content">
         <div class="period-row" aria-label="经营周期">
-          <div class="period-modes"><span class="active">月度经营</span><span>季度复盘</span><span>年度累计</span></div>
-          <span class="period-choice">2026年9月 ▾</span>
-          <span class="period-help">季度按自然季度；当季、当年尚未结束时标明累计截止日</span>
+          <div class="period-modes" role="group" aria-label="切换经营周期"><button type="button" class="active" data-view="month" aria-pressed="true">月度经营</button><button type="button" data-view="quarter" aria-pressed="false">季度复盘</button><button type="button" data-view="year" aria-pressed="false">年度累计</button></div>
+          <span class="period-choice" id="period-choice">示例：2026年9月</span>
+          <span class="period-help" id="period-help">点击左侧切换示例；存量指标始终标明统计时点</span>
         </div>
         <div class="scope">
-          <div><strong>全公司销售经营</strong><i class="dot"></i>本月累计 09-01—09-23 · 当前存量截至 09-23 09:30</div>
+          <div><strong>全公司销售经营</strong><i class="dot"></i><span id="period-scope">本月累计 09-01—09-23 · 当前存量截至 09-23 09:30</span></div>
           <div class="sources"><span><i class="source-dot"></i>现有CRM可计算</span><span><i class="source-dot planned"></i>需新增CRM模型</span></div>
         </div>
         <section class="signal" aria-label="经营结论">
           <div class="signal-label">MANAGEMENT SIGNAL<strong>需要关注</strong></div>
-          <div class="signal-copy">本月按确认成交与 Commit 判断仍有 <em>¥500万缺口</em>；商机储备 <b>¥1,864万</b>，但 <em>¥420万已超过30天未推进</em>，风险主要集中在江苏大区。</div>
-          <div class="signal-note"><strong>本期经营判断</strong>示例数据 · 静态原型</div>
+          <div class="signal-copy" id="signal-copy">本月按确认成交与 Commit 判断仍有 <em>¥100万缺口</em>；商机储备 <b>¥1,864万</b>，但 <em>¥420万已超过30天未推进</em>，风险主要集中在江苏大区。</div>
+          <div class="signal-note"><strong id="signal-period">本月经营判断</strong>示例数据 · 可切换原型</div>
         </section>
 
         <div class="board">
           <div class="stack">
             <section class="panel">
-              <div class="panel-head"><div><h2>大区经营脉搏</h2><p>人员所属大区 · 当前商机池规模</p></div><span class="tag">截至今日</span></div>
-              <div class="panel-body region-list">
+              <div class="panel-head"><div><h2 id="region-title">大区经营脉搏</h2><p id="region-description">人员所属大区 · 当前商机池规模</p></div><span class="tag" id="region-period">截至今日</span></div>
+              <div class="panel-body region-list" id="region-list">
                 <div class="region-item"><div class="region-head"><strong>江苏大区</strong><b>¥612万</b></div><div class="region-bar"><span style="width:60.1%"></span><i style="width:39.9%"></i></div><div class="region-meta"><span>正式报价 36.8%</span><span class="risk">停滞 ¥244万</span></div></div>
                 <div class="region-item"><div class="region-head"><strong>浙江大区</strong><b>¥486万</b></div><div class="region-bar"><span style="width:70.6%"></span><i style="width:8.8%"></i></div><div class="region-meta"><span>正式报价 56.2%</span><span>停滞 ¥54万</span></div></div>
                 <div class="region-item"><div class="region-head"><strong>泵浦组</strong><b>¥372万</b></div><div class="region-bar"><span style="width:50.5%"></span><i style="width:10.3%"></i></div><div class="region-meta"><span>正式报价 49.5%</span><span>停滞 ¥63万</span></div></div>
                 <div class="region-item"><div class="region-head"><strong>华南大区</strong><b>¥248万</b></div><div class="region-bar"><span style="width:34.3%"></span><i style="width:6.2%"></i></div><div class="region-meta"><span>正式报价 42.7%</span><span>停滞 ¥38万</span></div></div>
                 <div class="region-item"><div class="region-head"><strong>其他区域</strong><b>¥146万</b></div><div class="region-bar"><span style="width:20.4%"></span><i style="width:3.4%"></i></div><div class="region-meta"><span>正式报价 32.2%</span><span>停滞 ¥21万</span></div></div>
-                <div class="small-legend"><span style="--swatch:var(--blue)">非停滞金额</span><span style="--swatch:var(--red)">停滞金额 · 条长以最大大区为基准</span></div>
               </div>
+              <div class="small-legend" id="region-legend" style="margin: 0 15px 13px"><span style="--swatch:var(--blue)">非停滞金额</span><span style="--swatch:var(--red)">停滞金额 · 条长以最大大区为基准</span></div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>客户资产</h2><p>当前在案客户 · 本月重点客户覆盖</p></div><span class="tag">存量 / 本月</span></div>
+              <div class="panel-head"><div><h2>客户资产</h2><p id="customer-description">当前在案客户 · 本月重点客户覆盖</p></div><span class="tag" id="customer-period">存量 / 本月</span></div>
               <div class="panel-body">
                 <div class="grade-cards"><div class="grade-card"><span>在案客户</span><strong>326</strong></div><div class="grade-card"><span>S/A重点客户</span><strong>58</strong></div></div>
-                <div class="coverage"><div class="coverage-head"><span>本月重点客户覆盖</span><b>51 / 58 · 87.9%</b></div><div class="coverage-track"><span></span></div><div class="coverage-note">7家未覆盖，其中3家超过60天无拜访记录</div></div>
+                <div class="coverage"><div class="coverage-head"><span id="coverage-label">本月重点客户覆盖</span><b id="coverage-value">51 / 58 · 87.9%</b></div><div class="coverage-track"><span id="coverage-bar"></span></div><div class="coverage-note" id="coverage-note">7家未覆盖，其中3家超过60天无拜访记录</div></div>
               </div>
             </section>
           </div>
 
           <div class="stack">
             <section class="panel primary">
-              <div class="panel-head"><div><h2>目标、预测与缺口</h2><p>完整月度目标 · 本月累计成交 · 本月预计成交</p></div><span class="tag planned">目标 / 预测需新增模型</span></div>
+              <div class="panel-head"><div><h2>目标、预测与缺口</h2><p id="target-description">完整月度目标 · 本月累计成交 · 本月预计成交</p></div><span class="tag planned">目标 / 预测需新增模型</span></div>
               <div class="panel-body">
-                <div class="target-top"><div><div class="eyebrow">本月确认成交目标</div><div class="target-value">¥1,200<small>万</small></div></div><div class="target-status">确认成交 + Commit 后的目标缺口<strong>¥500万</strong></div></div>
-                <div class="target-track" aria-label="目标覆盖关系：已成交380万，Commit预测320万，缺口500万"><span class="won"></span><span class="commit"></span><span class="gap"></span></div>
-                <div class="target-axis"><span>0</span><span>目标 ¥1,200万</span></div>
+                <div class="target-top"><div><div class="eyebrow" id="target-label">本月确认成交目标</div><div class="target-value" id="target-value">¥600<small>万</small></div></div><div class="target-status">确认成交 + Commit 后的目标缺口<strong id="target-gap">¥100万</strong></div></div>
+                <div class="target-track" id="target-track" aria-label="目标覆盖关系：已成交380万，Commit预测120万，缺口100万"><span class="won"></span><span class="commit"></span><span class="gap"></span></div>
+                <div class="target-axis"><span>0</span><span id="target-axis-label">目标 ¥600万</span></div>
                 <div class="target-parts">
-                  <div class="target-part" style="--swatch:var(--blue)"><span>CRM确认成交</span><strong>¥380万</strong><small>完成目标 31.7%</small></div>
-                  <div class="target-part" style="--swatch:var(--cyan)"><span>Commit预测</span><strong>¥320万</strong><small>尚未成交，销售承诺</small></div>
-                  <div class="target-part" style="--swatch:#637a90"><span>目标缺口</span><strong>¥500万</strong><small>目标减已成交与Commit</small></div>
+                  <div class="target-part" style="--swatch:var(--blue)"><span>CRM确认成交</span><strong id="won-value">¥380万</strong><small id="won-percent">完成目标 63.3%</small></div>
+                  <div class="target-part" style="--swatch:var(--cyan)"><span>Commit预测</span><strong id="commit-value">¥120万</strong><small>尚未成交，销售承诺</small></div>
+                  <div class="target-part" style="--swatch:#637a90"><span>目标缺口</span><strong id="gap-value">¥100万</strong><small>目标减已成交与Commit</small></div>
                 </div>
-                <div class="upside"><span>另有 <strong>¥210万 Upside</strong> 具备本期成交可能，未计入上方承诺覆盖</span><span class="planned-chip">预测模型</span></div>
+                <div class="upside"><span>另有 <strong id="upside-value">¥80万 Upside</strong> 具备本期成交可能，未计入上方承诺覆盖</span><span class="planned-chip">预测模型</span></div>
               </div>
             </section>
             <section class="panel">
@@ -268,8 +282,12 @@
               </div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>本月销售过程</h2><p>本月累计新增与推进；各节点并非同一批商机</p></div><span class="tag">09-01—09-23</span></div>
-              <div class="panel-body"><div class="flow-row"><div class="flow-node"><span>新增商机</span><strong>18</strong><small>¥485万</small></div><div class="flow-node"><span>首次口头报价</span><strong>11</strong><small>¥276万</small></div><div class="flow-node"><span>首次正式报价</span><strong>8</strong><small>¥320万</small></div><div class="flow-node"><span>确认成交</span><strong>4</strong><small>¥380万</small></div></div><div class="flow-note">期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万</div></div>
+              <div class="panel-head"><div><h2 id="process-title">本月销售过程</h2><p id="process-description">本月累计新增与推进；各节点并非同一批商机</p></div><span class="tag" id="process-period">09-01—09-23</span></div>
+              <div class="panel-body"><div class="flow-row" id="flow-row"><div class="flow-node"><span>新增商机</span><strong>18</strong><small>¥485万</small></div><div class="flow-node"><span>首次口头报价</span><strong>11</strong><small>¥276万</small></div><div class="flow-node"><span>首次正式报价</span><strong>8</strong><small>¥320万</small></div><div class="flow-node"><span>确认成交</span><strong>4</strong><small>¥380万</small></div></div><div class="flow-note" id="flow-note">期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万</div></div>
+            </section>
+            <section class="panel" id="rhythm-panel" hidden>
+              <div class="panel-head"><div><h2 id="rhythm-title">季度成交节奏</h2><p id="rhythm-description">每个月的成交与月度目标对照</p></div><span class="tag" id="rhythm-period">季度累计</span></div>
+              <div class="panel-body" id="rhythm-body"></div>
             </section>
           </div>
 
@@ -293,5 +311,179 @@
         <div class="bottom-note"><span>静态原型 · 金额与事件为示例数据 · 经营结论依据页面展示的口径生成</span><span>CRM仅统计客户、商机、行动、预测与确认成交；订单、交付、回款、营收和毛利由ERP承接</span></div>
       </div>
     </main>
+    <script>
+      // 原型使用同一组自洽的示例经营数据；下方各视角不连接业务接口。
+      const currentRegions = [
+        { name: '江苏大区', pool: 612, stagnant: 244, formal: '36.8%' },
+        { name: '浙江大区', pool: 486, stagnant: 54, formal: '56.2%' },
+        { name: '泵浦组', pool: 372, stagnant: 63, formal: '49.5%' },
+        { name: '华南大区', pool: 248, stagnant: 38, formal: '42.7%' },
+        { name: '其他区域', pool: 146, stagnant: 21, formal: '32.2%' },
+      ]
+      const views = {
+        month: {
+          choice: '示例：2026年9月',
+          help: '点击左侧切换示例；存量指标始终标明统计时点',
+          scope: '本月累计 09-01—09-23 · 当前存量截至 09-23 09:30',
+          signalPeriod: '本月经营判断',
+          signal: '本月按确认成交与 Commit 判断仍有 <em>¥100万缺口</em>；商机储备 <b>¥1,864万</b>，但 <em>¥420万已超过30天未推进</em>，风险主要集中在江苏大区。',
+          targetDescription: '完整月度目标 · 本月累计成交 · 本月预计成交',
+          targetLabel: '本月确认成交目标',
+          target: 600, won: 380, commit: 120, upside: 80,
+          region: 'pool',
+          coverage: { label: '本月重点客户覆盖', count: 51, note: '7家未覆盖，其中3家超过60天无拜访记录' },
+          process: { title: '本月销售过程', description: '本月累计新增与推进；各节点并非同一批商机', period: '09-01—09-23',
+            flow: [['新增商机', 18, 485], ['首次口头报价', 11, 276], ['首次正式报价', 8, 320], ['确认成交', 4, 380]],
+            note: '期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万' },
+        },
+        quarter: {
+          choice: '示例：2026年第三季度',
+          help: '本季尚未结束；季度累计截至9月23日',
+          scope: '本季累计 07-01—09-23 · 当前存量截至 09-23 09:30',
+          signalPeriod: '本季经营判断',
+          signal: '第三季度目标 <b>¥1,500万</b>，已确认成交 <b>¥1,100万</b>；计入 Commit 后仍有 <em>¥200万待落实</em>。7—9月成交节奏见下方，季度尚未结束。',
+          targetDescription: '完整季度目标 · 本季累计成交 · 季内预计成交',
+          targetLabel: '第三季度确认成交目标',
+          target: 1500, won: 1100, commit: 200, upside: 150,
+          region: 'quarter',
+          coverage: { label: '本季重点客户覆盖', count: 54, note: '4家本季尚未覆盖；当前客户总量截至9月23日' },
+          process: { title: '本季销售过程', description: '季度累计新增与推进；各节点并非同一批商机', period: '07-01—09-23',
+            flow: [['新增商机', 54, 1450], ['首次口头报价', 35, 890], ['首次正式报价', 22, 850], ['确认成交', 13, 1100]],
+            note: '期间结果：丢单 7个 / ¥290万 · 需求消失 8个 / ¥160万' },
+          rhythm: { title: '季度成交节奏', description: '逐月成交与月度目标对照；9月尚未结束', period: '2026 Q3',
+            months: [['7月', 320, 450], ['8月', 400, 450], ['9月', 380, 600]] },
+        },
+        year: {
+          choice: '示例：2026年度累计',
+          help: '全年目标固定；成交累计截至9月23日',
+          scope: '本年累计 01-01—09-23 · 当前存量截至 09-23 09:30',
+          signalPeriod: '年度经营判断',
+          signal: '全年目标 <b>¥6,000万</b>，年初至今确认成交 <b>¥4,000万</b>；计入年内 Commit 后仍有 <em>¥1,500万缺口</em>。当前有效商机池为 <b>¥1,864万</b>。',
+          targetDescription: '完整年度目标 · 年初至今成交 · 年内预计成交',
+          targetLabel: '2026年确认成交目标',
+          target: 6000, won: 4000, commit: 500, upside: 300,
+          region: 'year',
+          coverage: { label: '本年重点客户覆盖', count: 58, note: '58家今年均至少拜访一次；当前客户总量截至9月23日' },
+          process: { title: '本年销售过程', description: '年初至今新增与推进；各节点并非同一批商机', period: '01-01—09-23',
+            flow: [['新增商机', 144, 4100], ['首次口头报价', 101, 2900], ['首次正式报价', 67, 2500], ['确认成交', 51, 4000]],
+            note: '期间结果：丢单 26个 / ¥870万 · 需求消失 19个 / ¥420万' },
+          rhythm: { title: '年度月度成交趋势', description: '年初至今各月确认成交；9月尚未结束', period: '2026年',
+            months: [['1月', 350], ['2月', 400], ['3月', 450], ['4月', 500], ['5月', 600], ['6月', 600], ['7月', 320], ['8月', 400], ['9月', 380]] },
+        },
+      }
+      const periodRegions = {
+        quarter: [
+          { name: '江苏大区', target: 500, won: 300 }, { name: '浙江大区', target: 400, won: 320 },
+          { name: '泵浦组', target: 300, won: 220 }, { name: '华南大区', target: 200, won: 160 },
+          { name: '其他区域', target: 100, won: 100 },
+        ],
+        year: [
+          { name: '江苏大区', target: 2100, won: 1400 }, { name: '浙江大区', target: 1500, won: 1100 },
+          { name: '泵浦组', target: 1100, won: 800 }, { name: '华南大区', target: 800, won: 500 },
+          { name: '其他区域', target: 500, won: 200 },
+        ],
+      }
+      const byId = (id) => document.getElementById(id)
+      const money = (value) => `¥${value.toLocaleString('zh-CN')}万`
+
+      function renderRegions(mode) {
+        const list = byId('region-list')
+        if (mode === 'pool') {
+          byId('region-description').textContent = '人员所属大区 · 当前商机池规模'
+          byId('region-period').textContent = '截至今日'
+          list.innerHTML = currentRegions.map(({ name, pool, stagnant, formal }) =>
+            `<div class="region-item"><div class="region-head"><strong>${name}</strong><b>${money(pool)}</b></div>` +
+            `<div class="region-bar"><span style="width:${((pool - stagnant) / 612 * 100).toFixed(1)}%"></span><i style="width:${(stagnant / 612 * 100).toFixed(1)}%"></i></div>` +
+            `<div class="region-meta"><span>正式报价 ${formal}</span><span class="risk">停滞 ${money(stagnant)}</span></div></div>`
+          ).join('')
+          byId('region-legend').innerHTML = '<span style="--swatch:var(--blue)">非停滞金额</span><span style="--swatch:var(--red)">停滞金额 · 条长以最大大区为基准</span>'
+          return
+        }
+        const isQuarter = mode === 'quarter'
+        byId('region-description').textContent = `人员所属大区 · ${isQuarter ? '本季' : '本年'}成交与目标`
+        byId('region-period').textContent = isQuarter ? '季度累计' : '年度累计'
+        list.innerHTML = periodRegions[mode].map(({ name, target, won }) =>
+          `<div class="region-item"><div class="region-head"><strong>${name}</strong><b>${money(won)}</b></div>` +
+          `<div class="region-bar"><span style="width:${(won / target * 100).toFixed(1)}%"></span></div>` +
+          `<div class="region-meta"><span>目标 ${money(target)}</span><span>完成 ${(won / target * 100).toFixed(1)}%</span></div></div>`
+        ).join('')
+        byId('region-legend').innerHTML = '<span style="--swatch:var(--blue)">确认成交 / 同期目标 · 每条以本大区目标为100%</span>'
+      }
+
+      function renderRhythm(view, mode) {
+        const panel = byId('rhythm-panel')
+        panel.hidden = !view.rhythm
+        if (!view.rhythm) return
+        const { title, description, period, months } = view.rhythm
+        byId('rhythm-title').textContent = title
+        byId('rhythm-description').textContent = description
+        byId('rhythm-period').textContent = period
+        if (mode === 'quarter') {
+          byId('rhythm-body').innerHTML = '<div class="rhythm">' + months.map(([label, won, target], index) =>
+            `<div class="rhythm-row${index === 2 ? ' current' : ''}"><strong>${label}</strong>` +
+            `<div class="rhythm-track"><span style="width:${(won / target * 100).toFixed(1)}%"></span></div>` +
+            `<small>${money(won)} / 目标${money(target)}</small></div>`
+          ).join('') + '</div><div class="rhythm-caption">三个月成交 320 + 400 + 380 = 1,100万；季度目标 450 + 450 + 600 = 1,500万。9月为未结期。</div>'
+        } else {
+          byId('rhythm-body').innerHTML = '<div class="year-bars">' + months.map(([label, won], index) =>
+            `<div class="year-bar${index === 8 ? ' current' : ''}"><strong>${won}</strong><i style="--h:${Math.round(won / 600 * 68)}px"></i><small>${label}</small></div>`
+          ).join('') + '</div><div class="rhythm-caption">1—9月成交累计4,000万；7—9月累计1,100万。柱高按单月成交金额比较。</div>'
+        }
+      }
+
+      function render(mode) {
+        const view = views[mode]
+        document.querySelectorAll('[data-view]').forEach((button) => {
+          const active = button.dataset.view === mode
+          button.classList.toggle('active', active)
+          button.setAttribute('aria-pressed', String(active))
+        })
+        byId('period-choice').textContent = view.choice
+        byId('period-help').textContent = view.help
+        byId('period-scope').textContent = view.scope
+        byId('signal-period').textContent = view.signalPeriod
+        byId('signal-copy').innerHTML = view.signal
+        byId('target-description').textContent = view.targetDescription
+        byId('target-label').textContent = view.targetLabel
+        byId('target-value').innerHTML = `¥${view.target.toLocaleString('zh-CN')}<small>万</small>`
+        const gap = view.target - view.won - view.commit
+        byId('target-gap').textContent = money(gap)
+        byId('target-axis-label').textContent = `目标 ${money(view.target)}`
+        byId('target-track').style.setProperty('--won-share', `${view.won / view.target * 100}%`)
+        byId('target-track').style.setProperty('--commit-share', `${view.commit / view.target * 100}%`)
+        byId('target-track').style.setProperty('--gap-share', `${gap / view.target * 100}%`)
+        byId('target-track').setAttribute('aria-label', `目标覆盖关系：已成交${view.won}万，Commit预测${view.commit}万，缺口${gap}万`)
+        byId('won-value').textContent = money(view.won)
+        byId('won-percent').textContent = `完成目标 ${(view.won / view.target * 100).toFixed(1)}%`
+        byId('commit-value').textContent = money(view.commit)
+        byId('gap-value').textContent = money(gap)
+        byId('upside-value').textContent = `${money(view.upside)} Upside`
+
+        renderRegions(view.region)
+        const coverage = view.coverage
+        const coveragePercent = coverage.count / 58 * 100
+        byId('customer-description').textContent = `当前在案客户 · ${coverage.label}`
+        byId('customer-period').textContent = `存量 / ${mode === 'month' ? '本月' : mode === 'quarter' ? '本季' : '本年'}`
+        byId('coverage-label').textContent = coverage.label
+        byId('coverage-value').textContent = `${coverage.count} / 58 · ${coveragePercent.toFixed(1)}%`
+        byId('coverage-bar').style.width = `${coveragePercent}%`
+        byId('coverage-note').textContent = coverage.note
+
+        const process = view.process
+        byId('process-title').textContent = process.title
+        byId('process-description').textContent = process.description
+        byId('process-period').textContent = process.period
+        byId('flow-row').innerHTML = process.flow.map(([label, count, amount]) =>
+          `<div class="flow-node"><span>${label}</span><strong>${count}</strong><small>${money(amount)}</small></div>`
+        ).join('')
+        byId('flow-note').textContent = process.note
+        renderRhythm(view, mode)
+      }
+
+      document.querySelectorAll('[data-view]').forEach((button) =>
+        button.addEventListener('click', () => render(button.dataset.view))
+      )
+      render('month')
+    </script>
   </body>
 </html>
