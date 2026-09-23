@@ -55,6 +55,12 @@
       .head-tools span { padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: #162940; color: #c8dcf0; font-size: 11px; }
       .head-tools .mode { border-color: #447795; color: #a8dfff; }
       .content { max-width: 1840px; padding: 17px 24px 26px; margin: 0 auto; }
+      .period-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+      .period-modes { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: #102238; }
+      .period-modes span { padding: 5px 10px; border-radius: 4px; color: var(--muted); font-size: 11px; font-weight: 650; white-space: nowrap; }
+      .period-modes span.active { color: #e8f7ff; background: #286280; }
+      .period-choice { padding: 7px 12px; border: 1px solid #42647f; border-radius: 5px; color: #d8edfa; background: #162b42; font-size: 11px; white-space: nowrap; }
+      .period-help { color: var(--quiet); font-size: 10px; }
       .scope {
         display: flex; align-items: center; justify-content: space-between; gap: 16px;
         margin-bottom: 12px; color: var(--muted); font-size: 11px;
@@ -197,11 +203,16 @@
       <header class="topbar">
         <div class="brand"><div class="brand-mark">L</div><div><strong>LITECRM</strong><small>SALES OPERATIONS</small></div></div>
         <div class="title"><h1>销售经营驾驶舱</h1><p>目标 · 销售储备 · 大区 · 风险态势</p></div>
-        <div class="head-tools"><span>2026年9月 ▾</span><span>全公司 ▾</span><span class="mode">展示模式 ⛶</span></div>
+        <div class="head-tools"><span>全公司 ▾</span><span class="mode">展示模式 ⛶</span></div>
       </header>
       <div class="content">
+        <div class="period-row" aria-label="经营周期">
+          <div class="period-modes"><span class="active">月度经营</span><span>季度复盘</span><span>年度累计</span></div>
+          <span class="period-choice">2026年9月 ▾</span>
+          <span class="period-help">季度按自然季度；当季、当年尚未结束时标明累计截止日</span>
+        </div>
         <div class="scope">
-          <div><strong>全公司销售经营</strong><i class="dot"></i>本期 09-01—09-23 · 当前存量截至 09-23 09:30</div>
+          <div><strong>全公司销售经营</strong><i class="dot"></i>本月累计 09-01—09-23 · 当前存量截至 09-23 09:30</div>
           <div class="sources"><span><i class="source-dot"></i>现有CRM可计算</span><span><i class="source-dot planned"></i>需新增CRM模型</span></div>
         </div>
         <section class="signal" aria-label="经营结论">
@@ -213,7 +224,7 @@
         <div class="board">
           <div class="stack">
             <section class="panel">
-              <div class="panel-head"><div><h2>大区经营脉搏</h2><p>人员所属大区 · 按商机池规模排列</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>大区经营脉搏</h2><p>人员所属大区 · 当前商机池规模</p></div><span class="tag">截至今日</span></div>
               <div class="panel-body region-list">
                 <div class="region-item"><div class="region-head"><strong>江苏大区</strong><b>¥612万</b></div><div class="region-bar"><span style="width:60.1%"></span><i style="width:39.9%"></i></div><div class="region-meta"><span>正式报价 36.8%</span><span class="risk">停滞 ¥244万</span></div></div>
                 <div class="region-item"><div class="region-head"><strong>浙江大区</strong><b>¥486万</b></div><div class="region-bar"><span style="width:70.6%"></span><i style="width:8.8%"></i></div><div class="region-meta"><span>正式报价 56.2%</span><span>停滞 ¥54万</span></div></div>
@@ -224,7 +235,7 @@
               </div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>客户资产</h2><p>重点客户是否得到持续经营</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>客户资产</h2><p>当前在案客户 · 本月重点客户覆盖</p></div><span class="tag">存量 / 本月</span></div>
               <div class="panel-body">
                 <div class="grade-cards"><div class="grade-card"><span>在案客户</span><strong>326</strong></div><div class="grade-card"><span>S/A重点客户</span><strong>58</strong></div></div>
                 <div class="coverage"><div class="coverage-head"><span>本月重点客户覆盖</span><b>51 / 58 · 87.9%</b></div><div class="coverage-track"><span></span></div><div class="coverage-note">7家未覆盖，其中3家超过60天无拜访记录</div></div>
@@ -234,7 +245,7 @@
 
           <div class="stack">
             <section class="panel primary">
-              <div class="panel-head"><div><h2>目标、预测与缺口</h2><p>本月销售目标与可兑现储备</p></div><span class="tag planned">目标 / 预测需新增模型</span></div>
+              <div class="panel-head"><div><h2>目标、预测与缺口</h2><p>完整月度目标 · 本月累计成交 · 本月预计成交</p></div><span class="tag planned">目标 / 预测需新增模型</span></div>
               <div class="panel-body">
                 <div class="target-top"><div><div class="eyebrow">本月确认成交目标</div><div class="target-value">¥1,200<small>万</small></div></div><div class="target-status">确认成交 + Commit 后的目标缺口<strong>¥500万</strong></div></div>
                 <div class="target-track" aria-label="目标覆盖关系：已成交380万，Commit预测320万，缺口500万"><span class="won"></span><span class="commit"></span><span class="gap"></span></div>
@@ -248,7 +259,7 @@
               </div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>当前商机池</h2><p>规模、报价成熟度与推进健康度</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>当前商机池</h2><p>规模、报价成熟度与推进健康度</p></div><span class="tag">截至今日</span></div>
               <div class="panel-body">
                 <div class="pool-top"><div><div class="eyebrow">有效开放商机金额</div><div class="pool-total">¥1,864万</div></div><div class="pool-count">商机数量<strong>72个</strong></div></div>
                 <div class="amount-bar" aria-label="商机当前有效金额构成"><span class="estimate"></span><span class="oral"></span><span class="formal"></span></div>
@@ -257,14 +268,14 @@
               </div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>本期销售过程</h2><p>看新增与推进，事件并非同一批商机的转化漏斗</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>本月销售过程</h2><p>本月累计新增与推进；各节点并非同一批商机</p></div><span class="tag">09-01—09-23</span></div>
               <div class="panel-body"><div class="flow-row"><div class="flow-node"><span>新增商机</span><strong>18</strong><small>¥485万</small></div><div class="flow-node"><span>首次口头报价</span><strong>11</strong><small>¥276万</small></div><div class="flow-node"><span>首次正式报价</span><strong>8</strong><small>¥320万</small></div><div class="flow-node"><span>确认成交</span><strong>4</strong><small>¥380万</small></div></div><div class="flow-note">期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万</div></div>
             </section>
           </div>
 
           <div class="stack">
             <section class="panel">
-              <div class="panel-head"><div><h2>销售风险态势</h2><p>风险有多大，集中在哪个大区</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>销售风险态势</h2><p>风险有多大，集中在哪个大区</p></div><span class="tag">截至今日</span></div>
               <div class="panel-body">
                 <div class="risk-total"><div><span>超过30天未推进的商机</span><strong>¥420万</strong></div><small>12个商机<br />占有效池 22.5%</small></div>
                 <div class="risk-track" aria-label="停滞商机金额占有效池22.5%"><span></span></div>
@@ -274,7 +285,7 @@
               </div>
             </section>
             <section class="panel">
-              <div class="panel-head"><div><h2>销售执行</h2><p>本周拜访与商机跟进计划</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-head"><div><h2>销售执行</h2><p>拜访与商机跟进计划 · 周度独立观察</p></div><span class="tag">本周 09-21—09-27</span></div>
               <div class="panel-body"><div class="execution-top"><div><span>计划</span><strong>126</strong></div><div><span>按期完成</span><strong style="color:var(--green)">92</strong></div><div><span>已逾期</span><strong style="color:var(--red)">18</strong></div></div><div class="execution-track"><span class="done"></span><span class="open"></span><span class="overdue"></span></div><div class="execution-caption"><span>完成 73.0%</span><span>未到期 12.7%</span><span>逾期 14.3%</span></div></div>
             </section>
           </div>
