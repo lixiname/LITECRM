@@ -158,13 +158,21 @@
       .coverage-track { height: 8px; overflow: hidden; margin-top: 6px; border-radius: 5px; background: #30445a; }
       .coverage-track span { display: block; width: 87.9%; height: 100%; background: var(--green); }
       .coverage-note { margin-top: 6px; color: var(--quiet); font-size: 9px; }
-      .attention-item { display: grid; grid-template-columns: 24px 1fr auto; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
-      .attention-item:first-child { padding-top: 2px; }
-      .attention-item:last-child { border: 0; padding-bottom: 0; }
-      .attention-count { width: 23px; height: 23px; display: grid; place-items: center; border-radius: 4px; color: var(--tone); background: color-mix(in srgb, var(--tone) 14%, transparent); font-size: 10px; font-weight: 750; }
-      .attention-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
-      .attention-item small { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
-      .attention-item b { color: var(--tone); font-size: 11px; white-space: nowrap; }
+      .risk-total { display: flex; align-items: end; justify-content: space-between; gap: 8px; }
+      .risk-total span { display: block; color: var(--muted); font-size: 10px; }
+      .risk-total strong { display: block; margin-top: 2px; color: var(--red); font-size: 28px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+      .risk-total small { color: var(--muted); font-size: 9px; text-align: right; }
+      .risk-track { height: 11px; overflow: hidden; margin-top: 11px; border-radius: 6px; background: #2b4055; }
+      .risk-track span { display: block; width: 22.5%; height: 100%; background: var(--red); }
+      .risk-caption { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: var(--quiet); font-size: 9px; }
+      .risk-focus { margin-top: 17px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+      .risk-focus span { color: var(--muted); font-size: 10px; }
+      .risk-focus strong { display: block; margin-top: 3px; font-size: 15px; }
+      .risk-focus strong b { color: var(--amber); }
+      .risk-focus-track { height: 8px; overflow: hidden; margin-top: 8px; border-radius: 5px; background: #2b4055; }
+      .risk-focus-track span { display: block; width: 58.1%; height: 100%; background: var(--amber); }
+      .risk-focus small { display: block; margin-top: 7px; color: var(--quiet); font-size: 9px; }
+      .drill-note { margin-top: 15px; padding: 8px 10px; border: 1px solid #34516d; border-radius: 5px; color: #a7c8e4; background: #173047; font-size: 10px; }
       .execution-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
       .execution-top div { padding: 7px; border-radius: 4px; background: #1a3046; text-align: center; }
       .execution-top span { display: block; color: var(--muted); font-size: 9px; }
@@ -188,7 +196,7 @@
     <main class="screen">
       <header class="topbar">
         <div class="brand"><div class="brand-mark">L</div><div><strong>LITECRM</strong><small>SALES OPERATIONS</small></div></div>
-        <div class="title"><h1>销售经营驾驶舱</h1><p>目标 · 销售储备 · 大区 · 管理介入</p></div>
+        <div class="title"><h1>销售经营驾驶舱</h1><p>目标 · 销售储备 · 大区 · 风险态势</p></div>
         <div class="head-tools"><span>2026年9月 ▾</span><span>全公司 ▾</span><span class="mode">展示模式 ⛶</span></div>
       </header>
       <div class="content">
@@ -256,12 +264,13 @@
 
           <div class="stack">
             <section class="panel">
-              <div class="panel-head"><div><h2>管理介入</h2><p>按金额影响和紧迫度排列</p></div><span class="tag">现有CRM</span></div>
-              <div class="panel-body attention-list">
-                <div class="attention-item" style="--tone:var(--red)"><span class="attention-count">12</span><div><strong>商机超30天未推进</strong><small>江苏大区占主要风险</small></div><b>¥420万</b></div>
-                <div class="attention-item" style="--tone:var(--amber)"><span class="attention-count">8</span><div><strong>商机没有下一步行动</strong><small>其中5个已有正式报价</small></div><b>待安排</b></div>
-                <div class="attention-item" style="--tone:var(--amber)"><span class="attention-count">5</span><div><strong>预计成交日已过</strong><small>需要重新判断时间</small></div><b>待核实</b></div>
-                <div class="attention-item" style="--tone:var(--violet)"><span class="attention-count">7</span><div><strong>S/A客户本月未覆盖</strong><small>3家超过60天未拜访</small></div><b>待维护</b></div>
+              <div class="panel-head"><div><h2>销售风险态势</h2><p>风险有多大，集中在哪个大区</p></div><span class="tag">现有CRM</span></div>
+              <div class="panel-body">
+                <div class="risk-total"><div><span>超过30天未推进的商机</span><strong>¥420万</strong></div><small>12个商机<br />占有效池 22.5%</small></div>
+                <div class="risk-track" aria-label="停滞商机金额占有效池22.5%"><span></span></div>
+                <div class="risk-caption"><span>停滞 22.5%</span><span>其余有效商机 77.5%</span></div>
+                <div class="risk-focus"><span>风险最集中区域</span><strong>江苏大区 <b>¥244万</b></strong><div class="risk-focus-track" aria-label="江苏大区占全公司停滞商机金额58.1%"><span></span></div><small>占全公司停滞商机金额 58.1%</small></div>
+                <div class="drill-note">具体商机、负责人和风险原因进入「商机检视」查看 →</div>
               </div>
             </section>
             <section class="panel">
