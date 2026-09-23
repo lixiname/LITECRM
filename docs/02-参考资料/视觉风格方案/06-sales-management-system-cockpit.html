@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LITECRM 销售经营驾驶舱 · 经营管理阶段原型</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+        font-synthesis: none;
+        --page: #eef2f7;
+        --surface: #ffffff;
+        --surface-soft: #f6f8fb;
+        --ink: #172237;
+        --muted: #667085;
+        --faint: #98a2b3;
+        --line: #e2e8f0;
+        --line-strong: #cbd5e1;
+        --navy: #13243a;
+        --navy-soft: #203752;
+        --blue: #2868d8;
+        --blue-soft: #eaf1fd;
+        --cyan: #2aa8b8;
+        --cyan-soft: #e7f7f8;
+        --green: #23866f;
+        --green-soft: #e8f5f1;
+        --amber: #c77a12;
+        --amber-soft: #fff4df;
+        --red: #c34a4a;
+        --red-soft: #fceceb;
+        --violet: #7257c7;
+        --violet-soft: #f0edfb;
+        --shadow: 0 8px 26px rgb(34 51 84 / 6%);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-width: 1240px;
+        min-height: 100%;
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+      }
+
+      body {
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      button,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: default;
+      }
+
+      .app-shell {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        height: 72px;
+        display: grid;
+        grid-template-columns: 310px minmax(360px, 1fr) auto;
+        align-items: center;
+        gap: 22px;
+        padding: 0 28px;
+        color: #f8fbff;
+        background:
+          linear-gradient(105deg, rgb(255 255 255 / 5%) 0 18%, transparent 18% 100%),
+          linear-gradient(115deg, #101e31, #18304b 58%, #102137);
+        box-shadow: 0 8px 28px rgb(15 31 51 / 18%);
+      }
+
+      .brand,
+      .brand-mark,
+      .header-actions,
+      .tabs,
+      .legend,
+      .section-title,
+      .status-pill,
+      .metric-label,
+      .pipeline-legend,
+      .region-name,
+      .attention-main,
+      .footnote {
+        display: flex;
+        align-items: center;
+      }
+
+      .brand {
+        gap: 11px;
+      }
+
+      .brand-mark {
+        width: 35px;
+        height: 35px;
+        justify-content: center;
+        border: 1px solid rgb(255 255 255 / 18%);
+        border-radius: 9px;
+        color: #dcecff;
+        background: rgb(255 255 255 / 7%);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .brand strong,
+      .brand small {
+        display: block;
+      }
+
+      .brand strong {
+        font-size: 14px;
+        letter-spacing: 0.03em;
+      }
+
+      .brand small {
+        margin-top: 1px;
+        color: rgb(236 244 255 / 56%);
+        font-size: 9px;
+        letter-spacing: 0.17em;
+      }
+
+      .title {
+        text-align: center;
+      }
+
+      .title h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 680;
+        letter-spacing: 0.08em;
+      }
+
+      .title p {
+        margin: 2px 0 0;
+        color: rgb(236 244 255 / 62%);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+      }
+
+      .header-actions {
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .header-select,
+      .header-button {
+        height: 32px;
+        border: 1px solid rgb(255 255 255 / 17%);
+        border-radius: 6px;
+        color: #f3f7fc;
+        background: rgb(255 255 255 / 7%);
+      }
+
+      .header-select {
+        min-width: 116px;
+        padding: 0 28px 0 10px;
+      }
+
+      .header-select option {
+        color: var(--ink);
+      }
+
+      .header-button {
+        padding: 0 11px;
+      }
+
+      .workspace {
+        max-width: 1700px;
+        margin: 0 auto;
+        padding: 15px 22px 24px;
+      }
+
+      .context-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 11px;
+      }
+
+      .tabs {
+        gap: 5px;
+      }
+
+      .tab {
+        position: relative;
+        height: 34px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+        font-weight: 600;
+      }
+
+      .tab.active {
+        color: #174f9d;
+        background: #dfeafa;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        right: 12px;
+        bottom: -11px;
+        left: 12px;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--blue);
+      }
+
+      .legend {
+        gap: 13px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .legend span::before,
+      .source::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        display: inline-block;
+        margin-right: 5px;
+        border-radius: 50%;
+        background: var(--green);
+      }
+
+      .legend .planned::before,
+      .source.planned::before {
+        background: var(--violet);
+      }
+
+      .decision-banner {
+        min-height: 78px;
+        display: grid;
+        grid-template-columns: 128px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 18px;
+        border: 1px solid #d5dfec;
+        border-left: 4px solid var(--amber);
+        border-radius: 10px;
+        background: linear-gradient(100deg, #ffffff, #fbfcff 65%, #f4f7fb);
+        box-shadow: var(--shadow);
+      }
+
+      .decision-label {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .decision-label strong {
+        display: block;
+        margin-top: 2px;
+        color: var(--amber);
+        font-size: 17px;
+        letter-spacing: 0;
+      }
+
+      .decision-copy {
+        font-size: 15px;
+        line-height: 1.6;
+      }
+
+      .decision-copy strong {
+        color: #153f75;
+      }
+
+      .decision-asof {
+        color: var(--muted);
+        font-size: 10px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .decision-asof strong {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+
+      .primary-grid,
+      .secondary-grid,
+      .bottom-grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .primary-grid {
+        grid-template-columns: minmax(0, 2.05fr) minmax(340px, 0.95fr);
+      }
+
+      .secondary-grid {
+        grid-template-columns: minmax(0, 1.65fr) minmax(390px, 1fr);
+      }
+
+      .bottom-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .panel.hero-panel {
+        border-top: 3px solid var(--blue);
+      }
+
+      .panel-head {
+        min-height: 56px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 15px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section-title {
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .section-index {
+        width: 20px;
+        height: 20px;
+        display: grid;
+        flex: 0 0 auto;
+        place-items: center;
+        margin-top: 1px;
+        border-radius: 5px;
+        color: #225aa7;
+        background: var(--blue-soft);
+        font-size: 10px;
+        font-weight: 800;
+      }
+
+      .section-title h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .section-title p {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .source {
+        color: var(--muted);
+        font-size: 10px;
+        white-space: nowrap;
+      }
+
+      .panel-body {
+        padding: 15px;
+      }
+
+      .target-summary {
+        display: grid;
+        grid-template-columns: 178px minmax(0, 1fr);
+        gap: 20px;
+      }
+
+      .target-main {
+        padding-right: 18px;
+        border-right: 1px solid var(--line);
+      }
+
+      .target-main span,
+      .target-main strong,
+      .target-main small {
+        display: block;
+      }
+
+      .target-main span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .target-main strong {
+        margin-top: 3px;
+        font-size: 31px;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .target-main small {
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .target-main em {
+        color: var(--blue);
+        font-style: normal;
+        font-weight: 700;
+      }
+
+      .target-track {
+        height: 20px;
+        display: flex;
+        overflow: hidden;
+        border-radius: 5px;
+        background: #edf1f6;
+      }
+
+      .target-track span + span {
+        border-left: 2px solid white;
+      }
+
+      .won-segment {
+        width: 31.7%;
+        background: var(--blue);
+      }
+
+      .commit-segment {
+        width: 26.7%;
+        background: var(--cyan);
+      }
+
+      .upside-segment {
+        width: 17.5%;
+        background: #8eb4e8;
+      }
+
+      .gap-segment {
+        width: 24.1%;
+        background: #e8edf3;
+      }
+
+      .target-legend {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 11px;
+      }
+
+      .target-legend article {
+        min-width: 0;
+      }
+
+      .target-legend span,
+      .target-legend strong,
+      .target-legend small {
+        display: block;
+      }
+
+      .target-legend span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .target-legend span::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        display: inline-block;
+        margin-right: 5px;
+        border-radius: 2px;
+        background: var(--legend-color);
+      }
+
+      .target-legend strong {
+        margin-top: 3px;
+        font-size: 16px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .target-legend small {
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      .target-cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .mini-metric {
+        padding: 9px 10px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--surface-soft);
+      }
+
+      .metric-label {
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .mini-metric strong {
+        display: block;
+        margin-top: 3px;
+        font-size: 17px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .mini-metric small {
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      .status-pill {
+        width: fit-content;
+        min-height: 20px;
+        gap: 4px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        color: var(--violet);
+        background: var(--violet-soft);
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .attention-list {
+        display: grid;
+        gap: 0;
+      }
+
+      .attention-row {
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 0;
+      }
+
+      .attention-row + .attention-row {
+        border-top: 1px solid var(--line);
+      }
+
+      .attention-icon {
+        width: 25px;
+        height: 25px;
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        color: var(--risk-color);
+        background: var(--risk-bg);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .attention-main {
+        min-width: 0;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .attention-copy {
+        min-width: 0;
+      }
+
+      .attention-copy strong,
+      .attention-copy small {
+        display: block;
+      }
+
+      .attention-copy strong {
+        overflow: hidden;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .attention-copy small {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .attention-value {
+        color: var(--risk-color);
+        font-size: 14px;
+        font-weight: 750;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .attention-action {
+        color: var(--blue);
+        font-size: 10px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+
+      .pipeline-total {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .pipeline-total span,
+      .pipeline-total strong,
+      .pipeline-total small {
+        display: block;
+      }
+
+      .pipeline-total span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .pipeline-total strong {
+        margin-top: 1px;
+        font-size: 29px;
+        letter-spacing: -0.035em;
+      }
+
+      .pipeline-total small {
+        color: var(--muted);
+        font-size: 10px;
+        text-align: right;
+      }
+
+      .pipeline-bar {
+        height: 24px;
+        display: flex;
+        overflow: hidden;
+        margin-top: 12px;
+        border-radius: 5px;
+        background: var(--surface-soft);
+      }
+
+      .pipeline-bar span {
+        position: relative;
+        display: block;
+      }
+
+      .pipeline-bar span + span {
+        border-left: 2px solid white;
+      }
+
+      .pipeline-bar .estimate {
+        width: 31.9%;
+        background: #a9b7c9;
+      }
+
+      .pipeline-bar .oral {
+        width: 23.3%;
+        background: #65a9b3;
+      }
+
+      .pipeline-bar .formal {
+        width: 44.8%;
+        background: var(--blue);
+      }
+
+      .pipeline-legend {
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 9px;
+      }
+
+      .pipeline-legend article {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .pipeline-legend span,
+      .pipeline-legend strong {
+        display: block;
+      }
+
+      .pipeline-legend span {
+        color: var(--muted);
+        font-size: 10px;
+      }
+
+      .pipeline-legend span::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        display: inline-block;
+        margin-right: 5px;
+        border-radius: 2px;
+        background: var(--legend-color);
+      }
+
+      .pipeline-legend strong {
+        margin-top: 2px;
+        font-size: 15px;
+      }
+
+      .health-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 13px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+      }
+
+      .health-item {
+        padding: 9px;
+        border-radius: 6px;
+        background: var(--health-bg);
+      }
+
+      .health-item span,
+      .health-item strong,
+      .health-item small {
+        display: block;
+      }
+
+      .health-item span {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .health-item strong {
+        margin-top: 2px;
+        color: var(--health-color);
+        font-size: 16px;
+      }
+
+      .health-item small {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .process-flow {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 15px;
+      }
+
+      .process-node {
+        position: relative;
+        padding: 10px 8px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: var(--surface-soft);
+        text-align: center;
+      }
+
+      .process-node:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        top: 50%;
+        right: -13px;
+        color: var(--line-strong);
+        transform: translateY(-52%);
+      }
+
+      .process-node span,
+      .process-node strong,
+      .process-node small {
+        display: block;
+      }
+
+      .process-node span {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .process-node strong {
+        margin-top: 3px;
+        font-size: 16px;
+      }
+
+      .process-node small {
+        margin-top: 1px;
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      .region-panel {
+        margin-top: 12px;
+      }
+
+      .region-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .region-table th,
+      .region-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid var(--line);
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .region-table th {
+        color: var(--muted);
+        background: #fafbfd;
+        font-size: 9px;
+        font-weight: 650;
+      }
+
+      .region-table th:first-child,
+      .region-table td:first-child {
+        width: 145px;
+        text-align: left;
+      }
+
+      .region-table th:nth-child(2),
+      .region-table td:nth-child(2) {
+        width: 190px;
+        text-align: left;
+      }
+
+      .region-table tbody tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .region-table tbody tr:first-child {
+        background: #fbfdff;
+      }
+
+      .region-name {
+        gap: 7px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .region-rank {
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        border-radius: 5px;
+        color: var(--blue);
+        background: var(--blue-soft);
+        font-size: 9px;
+      }
+
+      .completion {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 38px;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .completion-track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 4px;
+        background: #e7ecf2;
+      }
+
+      .completion-track span {
+        width: var(--w);
+        height: 100%;
+        display: block;
+        border-radius: 4px;
+        background: var(--bar-color, var(--blue));
+      }
+
+      .completion strong {
+        font-size: 10px;
+      }
+
+      .numeric {
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .trend-up,
+      .trend-down {
+        font-size: 9px;
+        font-weight: 700;
+      }
+
+      .trend-up {
+        color: var(--green);
+      }
+
+      .trend-down {
+        color: var(--red);
+      }
+
+      .customer-summary,
+      .execution-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .summary-cell {
+        padding: 9px;
+        border-radius: 6px;
+        background: var(--surface-soft);
+      }
+
+      .summary-cell span,
+      .summary-cell strong,
+      .summary-cell small {
+        display: block;
+      }
+
+      .summary-cell span {
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .summary-cell strong {
+        margin-top: 2px;
+        font-size: 16px;
+      }
+
+      .summary-cell small {
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      .customer-band,
+      .execution-band {
+        height: 11px;
+        display: flex;
+        overflow: hidden;
+        margin-top: 13px;
+        border-radius: 6px;
+        background: #edf1f5;
+      }
+
+      .customer-band span + span,
+      .execution-band span + span {
+        border-left: 2px solid white;
+      }
+
+      .customer-caption,
+      .execution-caption {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 9px;
+      }
+
+      .footnote {
+        justify-content: space-between;
+        gap: 18px;
+        padding: 10px 2px 0;
+        color: var(--faint);
+        font-size: 9px;
+      }
+
+      @media (max-width: 1400px) {
+        .workspace {
+          padding-right: 16px;
+          padding-left: 16px;
+        }
+
+        .topbar {
+          grid-template-columns: 245px minmax(300px, 1fr) auto;
+          padding: 0 20px;
+        }
+
+        .target-summary {
+          grid-template-columns: 160px minmax(0, 1fr);
+        }
+
+        .target-legend strong {
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">L</div>
+          <div>
+            <strong>LITECRM</strong>
+            <small>SALES OPERATING SYSTEM</small>
+          </div>
+        </div>
+        <div class="title">
+          <h1>销售经营驾驶舱</h1>
+          <p>目标 · 储备 · 预测 · 区域责任 · 管理介入</p>
+        </div>
+        <div class="header-actions">
+          <select class="header-select" aria-label="统计期间">
+            <option>2026年9月</option>
+            <option>2026年8月</option>
+            <option>本周</option>
+          </select>
+          <select class="header-select" aria-label="组织范围">
+            <option>全公司</option>
+            <option>江苏大区</option>
+            <option>浙江大区</option>
+            <option>泵浦组</option>
+          </select>
+          <button class="header-button">展示模式</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <div class="context-row">
+          <nav class="tabs" aria-label="驾驶舱分析层级">
+            <button class="tab active">公司总览</button>
+            <button class="tab">商机检视</button>
+            <button class="tab">客户资产</button>
+            <button class="tab">团队执行</button>
+          </nav>
+          <div class="legend" aria-label="数据来源说明">
+            <span>现有CRM数据可计算</span>
+            <span class="planned">需新增CRM模型</span>
+          </div>
+        </div>
+
+        <section class="decision-banner" aria-label="经营结论">
+          <div class="decision-label">
+            MANAGEMENT SIGNAL
+            <strong>需要关注</strong>
+          </div>
+          <div class="decision-copy">
+            本月按“确认成交＋Commit预测”计算仍有 <strong>¥500万目标缺口</strong>；有效商机池规模足够，
+            但正式报价占比仅44.8%，其中 <strong>¥420万已超过30天未推进</strong>，风险主要集中在江苏大区。
+          </div>
+          <div class="decision-asof">
+            <strong>全公司 · 2026年9月</strong>
+            存量截至 09-23 09:30
+          </div>
+        </section>
+
+        <div class="primary-grid">
+          <section class="panel hero-panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">01</span>
+                <div>
+                  <h2>目标、预测与缺口</h2>
+                  <p>先判断本期是否可能达成，再决定是否需要补充储备或加快推进</p>
+                </div>
+              </div>
+              <span class="source planned">目标与Forecast Category需新增模型</span>
+            </header>
+            <div class="panel-body">
+              <div class="target-summary">
+                <div class="target-main">
+                  <span>本月确认成交目标</span>
+                  <strong>¥1,200万</strong>
+                  <small>当前完成 <em>31.7%</em> · 剩余7天</small>
+                </div>
+                <div>
+                  <div class="target-track" aria-label="目标构成">
+                    <span class="won-segment" title="已确认成交"></span>
+                    <span class="commit-segment" title="Commit预测"></span>
+                    <span class="upside-segment" title="Upside预测"></span>
+                    <span class="gap-segment" title="目标缺口"></span>
+                  </div>
+                  <div class="target-legend">
+                    <article style="--legend-color: var(--blue)">
+                      <span>已确认成交</span>
+                      <strong>¥380万</strong>
+                      <small>CRM成交口径</small>
+                    </article>
+                    <article style="--legend-color: var(--cyan)">
+                      <span>Commit预测</span>
+                      <strong>¥320万</strong>
+                      <small>本期承诺争取</small>
+                    </article>
+                    <article style="--legend-color: #8eb4e8">
+                      <span>Upside预测</span>
+                      <strong>¥210万</strong>
+                      <small>可能成交</small>
+                    </article>
+                    <article style="--legend-color: #d5dce6">
+                      <span>承诺后缺口</span>
+                      <strong>¥500万</strong>
+                      <small>目标减成交与Commit</small>
+                    </article>
+                  </div>
+                </div>
+              </div>
+              <div class="target-cards">
+                <article class="mini-metric">
+                  <div class="metric-label">有效商机池 <span>当前</span></div>
+                  <strong>¥1,864万</strong>
+                  <small>72个开放商机</small>
+                </article>
+                <article class="mini-metric">
+                  <div class="metric-label">Pipeline Coverage <span class="status-pill">规划</span></div>
+                  <strong>1.55×</strong>
+                  <small>有效池 ÷ 本期目标</small>
+                </article>
+                <article class="mini-metric">
+                  <div class="metric-label">本期预测成交 <span class="status-pill">规划</span></div>
+                  <strong>¥530万</strong>
+                  <small>Commit＋Upside</small>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">!</span>
+                <div>
+                  <h2>管理介入清单</h2>
+                  <p>按影响金额与紧迫度排序，而非罗列全部异常</p>
+                </div>
+              </div>
+              <span class="source">现有数据</span>
+            </header>
+            <div class="panel-body attention-list">
+              <article class="attention-row" style="--risk-color: var(--red); --risk-bg: var(--red-soft)">
+                <span class="attention-icon">12</span>
+                <div class="attention-main">
+                  <div class="attention-copy">
+                    <strong>商机超过30天未推进</strong>
+                    <small>涉及金额 ¥420万 · 江苏大区占58%</small>
+                  </div>
+                  <strong class="attention-value">高</strong>
+                </div>
+                <span class="attention-action">查看商机 →</span>
+              </article>
+              <article class="attention-row" style="--risk-color: var(--amber); --risk-bg: var(--amber-soft)">
+                <span class="attention-icon">8</span>
+                <div class="attention-main">
+                  <div class="attention-copy">
+                    <strong>开放商机没有下一步行动</strong>
+                    <small>其中5个已有正式报价</small>
+                  </div>
+                  <strong class="attention-value">中</strong>
+                </div>
+                <span class="attention-action">安排动作 →</span>
+              </article>
+              <article class="attention-row" style="--risk-color: var(--amber); --risk-bg: var(--amber-soft)">
+                <span class="attention-icon">5</span>
+                <div class="attention-main">
+                  <div class="attention-copy">
+                    <strong>预计成交日期已经过去</strong>
+                    <small>需要销售重新判断预计时间</small>
+                  </div>
+                  <strong class="attention-value">中</strong>
+                </div>
+                <span class="attention-action">重新判断 →</span>
+              </article>
+              <article class="attention-row" style="--risk-color: var(--violet); --risk-bg: var(--violet-soft)">
+                <span class="attention-icon">7</span>
+                <div class="attention-main">
+                  <div class="attention-copy">
+                    <strong>S/A客户本月尚未覆盖</strong>
+                    <small>3家连续60天没有拜访记录</small>
+                  </div>
+                  <strong class="attention-value">关注</strong>
+                </div>
+                <span class="attention-action">查看客户 →</span>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <div class="secondary-grid">
+          <section class="panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">02</span>
+                <div>
+                  <h2>商机池健康度</h2>
+                  <p>同一批开放商机，从金额成熟度和推进健康度两个角度观察</p>
+                </div>
+              </div>
+              <span class="source">金额构成现有 · 预测需新增</span>
+            </header>
+            <div class="panel-body">
+              <div class="pipeline-total">
+                <div>
+                  <span>当前有效商机池</span>
+                  <strong>¥1,864万</strong>
+                </div>
+                <small>72个开放商机<br />正式报价金额 ¥835万</small>
+              </div>
+              <div class="pipeline-bar" aria-label="商机金额构成">
+                <span class="estimate"></span>
+                <span class="oral"></span>
+                <span class="formal"></span>
+              </div>
+              <div class="pipeline-legend">
+                <article style="--legend-color: #a9b7c9">
+                  <span>仅预估</span>
+                  <strong>¥594万 · 31.9%</strong>
+                </article>
+                <article style="--legend-color: #65a9b3">
+                  <span>口头报价</span>
+                  <strong>¥435万 · 23.3%</strong>
+                </article>
+                <article style="--legend-color: var(--blue)">
+                  <span>正式报价</span>
+                  <strong>¥835万 · 44.8%</strong>
+                </article>
+              </div>
+              <div class="health-grid">
+                <article class="health-item" style="--health-color: var(--green); --health-bg: var(--green-soft)">
+                  <span>正常推进</span>
+                  <strong>¥1,106万</strong>
+                  <small>最近30天有推进且已有下一步</small>
+                </article>
+                <article class="health-item" style="--health-color: var(--amber); --health-bg: var(--amber-soft)">
+                  <span>需要关注</span>
+                  <strong>¥338万</strong>
+                  <small>近期动作不足或预计日期临近</small>
+                </article>
+                <article class="health-item" style="--health-color: var(--red); --health-bg: var(--red-soft)">
+                  <span>需要介入</span>
+                  <strong>¥420万</strong>
+                  <small>超过30天未推进或预计日期已过</small>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">03</span>
+                <div>
+                  <h2>本期销售过程</h2>
+                  <p>事件流量，不将独立事件误算为连续漏斗转化率</p>
+                </div>
+              </div>
+              <span class="source">现有CRM事件</span>
+            </header>
+            <div class="panel-body">
+              <div class="process-flow">
+                <article class="process-node">
+                  <span>客户拜访</span>
+                  <strong>86</strong>
+                  <small>本期完成</small>
+                </article>
+                <article class="process-node">
+                  <span>新增商机</span>
+                  <strong>18</strong>
+                  <small>¥485万</small>
+                </article>
+                <article class="process-node">
+                  <span>首次口头报价</span>
+                  <strong>11</strong>
+                  <small>¥276万</small>
+                </article>
+                <article class="process-node">
+                  <span>首次正式报价</span>
+                  <strong>8</strong>
+                  <small>¥320万</small>
+                </article>
+                <article class="process-node">
+                  <span>确认成交</span>
+                  <strong>4</strong>
+                  <small>¥380万</small>
+                </article>
+              </div>
+              <div class="target-cards">
+                <article class="mini-metric">
+                  <div class="metric-label">丢单 <span>本期</span></div>
+                  <strong>2个 · ¥96万</strong>
+                  <small>查看结构化原因</small>
+                </article>
+                <article class="mini-metric">
+                  <div class="metric-label">需求消失 <span>本期</span></div>
+                  <strong>3个 · ¥58万</strong>
+                  <small>与丢单分开统计</small>
+                </article>
+                <article class="mini-metric">
+                  <div class="metric-label">商机金额净变化 <span class="status-pill">规划</span></div>
+                  <strong>+¥146万</strong>
+                  <small>依赖完整变更历史</small>
+                </article>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel region-panel">
+          <header class="panel-head">
+            <div class="section-title">
+              <span class="section-index">04</span>
+              <div>
+                <h2>大区经营脉搏</h2>
+                <p>大区是一级经营责任单元；点击大区后再进入成员层</p>
+              </div>
+            </div>
+            <span class="source planned">目标与预测需新增 · 其余现有</span>
+          </header>
+          <table class="region-table">
+            <thead>
+              <tr>
+                <th>销售大区</th>
+                <th>目标完成</th>
+                <th>有效商机池</th>
+                <th>本期预测</th>
+                <th>正式报价占比</th>
+                <th>停滞商机金额</th>
+                <th>较上期变化</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="region-name"><span class="region-rank">1</span>浙江大区</div></td>
+                <td><div class="completion"><div class="completion-track"><span style="--w: 76%; --bar-color: var(--green)"></span></div><strong>76%</strong></div></td>
+                <td class="numeric">¥486万</td>
+                <td class="numeric">¥188万</td>
+                <td class="numeric">56.2%</td>
+                <td class="numeric">¥54万</td>
+                <td><span class="trend-up">↑ 储备 +12%</span></td>
+              </tr>
+              <tr>
+                <td><div class="region-name"><span class="region-rank">2</span>泵浦组</div></td>
+                <td><div class="completion"><div class="completion-track"><span style="--w: 64%; --bar-color: var(--blue)"></span></div><strong>64%</strong></div></td>
+                <td class="numeric">¥372万</td>
+                <td class="numeric">¥116万</td>
+                <td class="numeric">49.4%</td>
+                <td class="numeric">¥63万</td>
+                <td><span class="trend-up">↑ 正式报价 +8%</span></td>
+              </tr>
+              <tr>
+                <td><div class="region-name"><span class="region-rank">3</span>江苏大区</div></td>
+                <td><div class="completion"><div class="completion-track"><span style="--w: 41%; --bar-color: var(--amber)"></span></div><strong>41%</strong></div></td>
+                <td class="numeric">¥612万</td>
+                <td class="numeric">¥142万</td>
+                <td class="numeric">36.1%</td>
+                <td class="numeric" style="color: var(--red); font-weight: 700">¥244万</td>
+                <td><span class="trend-down">↓ 逾期 +6个</span></td>
+              </tr>
+              <tr>
+                <td><div class="region-name"><span class="region-rank">4</span>华南大区</div></td>
+                <td><div class="completion"><div class="completion-track"><span style="--w: 38%; --bar-color: var(--amber)"></span></div><strong>38%</strong></div></td>
+                <td class="numeric">¥248万</td>
+                <td class="numeric">¥52万</td>
+                <td class="numeric">42.7%</td>
+                <td class="numeric">¥38万</td>
+                <td><span class="trend-down">↓ 新增商机 -18%</span></td>
+              </tr>
+              <tr>
+                <td><div class="region-name"><span class="region-rank">5</span>其他区域</div></td>
+                <td><div class="completion"><div class="completion-track"><span style="--w: 29%; --bar-color: #a6b1c0"></span></div><strong>29%</strong></div></td>
+                <td class="numeric">¥146万</td>
+                <td class="numeric">¥32万</td>
+                <td class="numeric">31.5%</td>
+                <td class="numeric">¥21万</td>
+                <td><span class="trend-up">→ 基本持平</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <div class="bottom-grid">
+          <section class="panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">05</span>
+                <div>
+                  <h2>客户资产健康</h2>
+                  <p>客户分级不是标签统计，而是判断重点客户是否得到有效经营</p>
+                </div>
+              </div>
+              <span class="source">现有CRM数据</span>
+            </header>
+            <div class="panel-body">
+              <div class="customer-summary">
+                <article class="summary-cell"><span>在案客户</span><strong>326</strong><small>个人与团队名下</small></article>
+                <article class="summary-cell"><span>S/A重点客户</span><strong>58</strong><small>占在案17.8%</small></article>
+                <article class="summary-cell"><span>本月已覆盖</span><strong>51</strong><small>覆盖率87.9%</small></article>
+                <article class="summary-cell"><span>长期未拜访</span><strong style="color: var(--red)">7</strong><small>超过60天</small></article>
+              </div>
+              <div class="customer-band" aria-label="客户等级构成">
+                <span style="width: 7%; background: #203f68"></span>
+                <span style="width: 10.8%; background: #2e6fac"></span>
+                <span style="width: 30.7%; background: #57a3b7"></span>
+                <span style="width: 51.5%; background: #b9c5d2"></span>
+              </div>
+              <div class="customer-caption">
+                <span>S级 23</span><span>A级 35</span><span>B级 100</span><span>C级 168</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <header class="panel-head">
+              <div class="section-title">
+                <span class="section-index">06</span>
+                <div>
+                  <h2>销售执行质量</h2>
+                  <p>关注计划闭环和下一步行动，不以活动数量替代推进质量</p>
+                </div>
+              </div>
+              <span class="source">现有CRM数据</span>
+            </header>
+            <div class="panel-body">
+              <div class="execution-summary">
+                <article class="summary-cell"><span>本周计划</span><strong>126</strong><small>拜访与商机推进</small></article>
+                <article class="summary-cell"><span>按期完成</span><strong>92</strong><small>完成率73.0%</small></article>
+                <article class="summary-cell"><span>已逾期</span><strong style="color: var(--red)">18</strong><small>尚未执行</small></article>
+                <article class="summary-cell"><span>未安排下一步</span><strong style="color: var(--amber)">8</strong><small>开放商机</small></article>
+              </div>
+              <div class="execution-band" aria-label="计划执行构成">
+                <span style="width: 73%; background: var(--green)"></span>
+                <span style="width: 12.7%; background: #b9c5d2"></span>
+                <span style="width: 14.3%; background: var(--red)"></span>
+              </div>
+              <div class="execution-caption">
+                <span>按期完成 73.0%</span><span>未到期 12.7%</span><span>已逾期 14.3%</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="footnote">
+          <span>静态规划原型 · 示例数据不代表实际经营结果 · 紫色圆点表示需要补充CRM业务模型</span>
+          <span>CRM口径止于客户、商机、预测与确认成交；订单、交付、开票、回款、营收及毛利留待ERP接入</span>
+        </footer>
+      </div>
+    </main>
+  </body>
+</html>
