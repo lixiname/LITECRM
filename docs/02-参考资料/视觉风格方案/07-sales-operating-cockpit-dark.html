@@ -9,206 +9,179 @@
         color-scheme: dark;
         font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC", sans-serif;
         font-synthesis: none;
-        --bg: #0a1422;
-        --panel: #122238;
-        --panel-high: #172b45;
-        --panel-soft: #102035;
-        --line: #29425c;
-        --line-soft: #22384f;
+        --bg: #0a1523;
+        --panel: #13263a;
+        --panel-deep: #102135;
+        --line: #2c4962;
+        --line-soft: #253d53;
         --text: #eef6ff;
-        --muted: #96aec6;
-        --quiet: #6d89a5;
-        --cyan: #55c6df;
-        --blue: #5997ee;
-        --green: #4fc5a8;
-        --amber: #f0b45d;
-        --red: #ee7c7d;
-        --violet: #b5a1f2;
+        --muted: #9ab1c5;
+        --quiet: #7791a7;
+        --blue: #6b9ffa;
+        --cyan: #59c9e1;
+        --green: #58c6a6;
+        --amber: #eeb869;
+        --red: #ef8589;
       }
       * { box-sizing: border-box; }
-      html, body { min-width: 1200px; margin: 0; min-height: 100%; }
-      body { color: var(--text); background: var(--bg); font-size: 13px; line-height: 1.45; }
+      html, body { min-width: 1120px; min-height: 100%; margin: 0; }
+      body { background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.45; }
+      button { font: inherit; }
+      button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
       .screen {
         min-height: 100vh;
-        background:
-          radial-gradient(ellipse 48% 36% at 50% 12%, #193653 0%, transparent 100%),
-          linear-gradient(90deg, transparent 49.96%, #ffffff05 50%, transparent 50.04%),
-          var(--bg);
+        background: radial-gradient(ellipse 55% 32% at 50% 0%, #1b3955 0%, transparent 100%), var(--bg);
       }
       .topbar {
-        height: 72px; padding: 0 30px; display: grid; grid-template-columns: 1fr auto 1fr;
-        align-items: center; gap: 16px; border-bottom: 1px solid #35526b;
-        background: #0d1b2de8;
+        height: 68px; padding: 0 28px; display: grid; grid-template-columns: 1fr auto 1fr;
+        align-items: center; gap: 16px; border-bottom: 1px solid #34536e; background: #0e1d2ee8;
       }
-      .brand { display: flex; gap: 11px; align-items: center; }
-      .brand-mark {
-        width: 35px; height: 35px; display: grid; place-items: center; border: 1px solid #4981a0;
-        border-radius: 8px; color: #a5eaff; background: #1b3e59; font-size: 17px; font-weight: 800;
-      }
+      .brand { display: flex; align-items: center; gap: 10px; }
+      .brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #5387a2; border-radius: 7px; background: #1e455f; color: #b1effb; font-size: 17px; font-weight: 800; }
       .brand strong, .brand small { display: block; }
-      .brand strong { font-size: 14px; letter-spacing: .04em; }
-      .brand small { color: var(--quiet); font-size: 9px; letter-spacing: .17em; }
+      .brand strong { font-size: 14px; letter-spacing: .05em; }
+      .brand small { color: var(--quiet); font-size: 9px; letter-spacing: .16em; }
       .title { text-align: center; }
-      h1 { margin: 0; font-size: 23px; letter-spacing: .14em; font-weight: 700; }
-      .title p { margin: 2px 0 0; color: var(--muted); font-size: 10px; letter-spacing: .11em; }
-      .head-tools { justify-self: end; display: flex; align-items: center; gap: 9px; }
-      .head-tools span { padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: #162940; color: #c8dcf0; font-size: 11px; }
-      .head-tools .mode { border-color: #447795; color: #a8dfff; }
-      .content { max-width: 1840px; padding: 17px 24px 26px; margin: 0 auto; }
-      .period-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-      .period-modes { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 6px; background: #102238; }
-      .period-modes button { padding: 5px 10px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font: inherit; font-size: 11px; font-weight: 650; white-space: nowrap; cursor: pointer; }
-      .period-modes button.active { color: #e8f7ff; background: #286280; }
-      .period-modes button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-      .period-choice { padding: 7px 12px; border: 1px solid #42647f; border-radius: 5px; color: #d8edfa; background: #162b42; font-size: 11px; white-space: nowrap; }
-      .period-help { color: var(--quiet); font-size: 10px; }
-      .scope {
-        display: flex; align-items: center; justify-content: space-between; gap: 16px;
-        margin-bottom: 12px; color: var(--muted); font-size: 11px;
-      }
-      .scope strong { color: #dceafb; font-size: 13px; }
-      .scope .dot { display: inline-block; width: 6px; height: 6px; margin: 0 7px 2px; border-radius: 50%; background: var(--cyan); }
-      .scope .sources { display: flex; gap: 15px; }
-      .source-dot { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--green); }
-      .source-dot.planned { background: var(--violet); }
-      .signal {
-        display: grid; grid-template-columns: 120px 1fr auto; align-items: center; gap: 18px;
-        min-height: 76px; padding: 12px 18px; border: 1px solid #48627c; border-left: 4px solid var(--amber);
-        border-radius: 8px; background: linear-gradient(105deg, #172b41 0%, #12253b 58%, #172940 100%);
-      }
-      .signal-label { color: var(--muted); font-size: 10px; letter-spacing: .1em; }
-      .signal-label strong { display: block; color: var(--amber); font-size: 17px; letter-spacing: 0; }
-      .signal-copy { font-size: 15px; }
-      .signal-copy b { color: #a6e7f1; font-weight: 700; }
-      .signal-copy em { color: #ffd08e; font-style: normal; font-weight: 700; }
-      .signal-note { color: var(--muted); font-size: 10px; text-align: right; white-space: nowrap; }
-      .signal-note strong { display: block; color: #d6e9f7; font-size: 12px; }
-      .board { display: grid; grid-template-columns: minmax(245px, .82fr) minmax(500px, 1.62fr) minmax(260px, .86fr); gap: 13px; margin-top: 13px; align-items: start; }
-      .stack { display: grid; gap: 13px; }
-      .panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(145deg, var(--panel) 0%, var(--panel-soft) 100%); }
-      .panel.primary { border-color: #4b7e99; box-shadow: 0 0 0 1px #4b7e9922, 0 12px 35px #03111f55; background: linear-gradient(150deg, #19334e, #102239 68%); }
-      .panel-head { min-height: 51px; padding: 11px 15px 9px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; border-bottom: 1px solid var(--line-soft); }
-      .panel-head h2 { margin: 0; font-size: 14px; letter-spacing: .03em; }
-      .panel-head p { margin: 1px 0 0; color: var(--muted); font-size: 10px; }
-      .panel-head .tag { color: var(--quiet); white-space: nowrap; font-size: 9px; }
-      .panel-head .tag.planned { color: var(--violet); }
+      h1 { margin: 0; font-size: 22px; letter-spacing: .12em; }
+      .title p { margin: 1px 0 0; color: var(--muted); font-size: 10px; }
+      .head-tools { justify-self: end; display: flex; gap: 8px; }
+      .head-tools span { padding: 6px 10px; border: 1px solid var(--line); border-radius: 5px; background: #183149; color: #c9dded; font-size: 11px; }
+      .content { max-width: 1840px; margin: 0 auto; padding: 17px 24px 28px; }
+      .scope { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 12px; color: var(--muted); font-size: 11px; }
+      .scope strong { color: #e2f0fb; font-size: 13px; }
+      .scope .sep { color: #54728e; padding: 0 8px; }
+      .scope .sample { color: #c8b9ed; }
+      .panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(150deg, var(--panel), var(--panel-deep)); }
+      .panel.primary { border-color: #507e9b; box-shadow: 0 12px 30px #03111f40; }
+      .panel-head { min-height: 56px; padding: 11px 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; border-bottom: 1px solid var(--line-soft); }
+      .panel-head h2 { margin: 0; font-size: 15px; }
+      .panel-head p { margin: 2px 0 0; color: var(--muted); font-size: 10px; }
+      .panel-head .tag { padding-top: 2px; color: #bcaddf; font-size: 10px; white-space: nowrap; }
       .panel-body { padding: 15px; }
-      .target-top { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 18px; }
-      .eyebrow { color: var(--muted); font-size: 10px; letter-spacing: .1em; }
-      .target-value { margin-top: 2px; font-size: 37px; line-height: 1.1; font-weight: 750; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-      .target-value small { margin-left: 3px; color: var(--muted); font-size: 13px; font-weight: 500; letter-spacing: 0; }
-      .target-status { color: var(--muted); font-size: 11px; text-align: right; }
-      .target-status strong { display: block; color: var(--amber); font-size: 22px; font-variant-numeric: tabular-nums; }
-      .target-track { height: 25px; display: flex; overflow: hidden; margin-top: 16px; border-radius: 5px; background: #263a50; }
-      .target-track span + span { border-left: 2px solid #14283d; }
-      .target-track .won { width: var(--won-share, 63.33%); background: var(--blue); }
-      .target-track .commit { width: var(--commit-share, 20%); background: var(--cyan); }
-      .target-track .gap { width: var(--gap-share, 16.67%); background: #30455a; }
-      .target-axis { display: flex; justify-content: space-between; margin-top: 5px; color: var(--quiet); font-size: 9px; }
-      .target-parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 12px; }
-      .target-part { padding: 8px 9px; border: 1px solid #35516a; border-radius: 5px; background: #112b42aa; }
-      .target-part span, .target-part strong, .target-part small { display: block; }
-      .target-part span { color: var(--muted); font-size: 10px; }
-      .target-part span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: var(--swatch); }
-      .target-part strong { margin-top: 3px; font-size: 17px; font-variant-numeric: tabular-nums; }
-      .target-part small { color: var(--quiet); font-size: 9px; }
-      .upside { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; padding: 9px 11px; border: 1px dashed #51708b; border-radius: 5px; color: var(--muted); background: #132b43; font-size: 10px; }
-      .upside strong { color: #b8d4fa; font-size: 13px; }
-      .upside .planned-chip { padding: 2px 5px; border-radius: 3px; color: var(--violet); background: #b5a1f21a; font-size: 9px; }
-      .pool-top { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 12px; }
-      .pool-total { margin-top: 2px; font-size: 27px; line-height: 1.15; font-weight: 740; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
-      .pool-count { color: var(--muted); text-align: right; font-size: 10px; }
-      .pool-count strong { display: block; color: #d8eaff; font-size: 16px; }
-      .amount-bar { display: flex; height: 19px; overflow: hidden; margin-top: 12px; border-radius: 4px; background: #30445a; }
-      .amount-bar span + span { border-left: 2px solid #122840; }
-      .amount-bar .estimate { width: 31.9%; background: #8299b0; }
-      .amount-bar .oral { width: 23.3%; background: #4babb5; }
-      .amount-bar .formal { width: 44.8%; background: var(--blue); }
-      .amount-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 9px; }
-      .amount-legend div { min-width: 0; }
-      .amount-legend span { display: block; color: var(--muted); font-size: 9px; }
-      .amount-legend span::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 1px; background: var(--swatch); }
-      .amount-legend strong { display: block; margin-top: 2px; font-size: 13px; white-space: nowrap; }
-      .health-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
-      .health { padding: 8px; border-radius: 5px; background: #183047; }
-      .health span { display: block; color: var(--muted); font-size: 9px; }
-      .health strong { display: block; margin-top: 2px; color: var(--tone); font-size: 15px; font-variant-numeric: tabular-nums; }
-      .health small { color: var(--quiet); font-size: 9px; }
-      .flow-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-      .flow-node { position: relative; padding: 9px 6px; border: 1px solid #31516b; border-radius: 5px; text-align: center; background: #173047; }
-      .flow-node span { display: block; color: var(--muted); font-size: 9px; }
-      .flow-node strong { display: block; margin-top: 2px; font-size: 17px; }
-      .flow-node small { color: var(--quiet); font-size: 9px; }
-      .flow-note { margin-top: 9px; color: var(--quiet); font-size: 9px; }
-      .rhythm { display: grid; gap: 9px; }
-      .rhythm-row { display: grid; grid-template-columns: 56px minmax(0, 1fr) 120px; align-items: center; gap: 9px; }
-      .rhythm-row > strong { font-size: 10px; }
-      .rhythm-row small { color: var(--muted); font-size: 9px; text-align: right; white-space: nowrap; }
-      .rhythm-track { height: 9px; overflow: hidden; border-radius: 5px; background: #2b4056; }
-      .rhythm-track span { display: block; height: 100%; border-radius: 5px; background: var(--blue); }
-      .rhythm-row.current .rhythm-track span { background: var(--cyan); }
-      .rhythm-caption { margin-top: 11px; color: var(--quiet); font-size: 9px; }
-      .year-bars { height: 114px; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); align-items: end; gap: 7px; padding-top: 4px; }
-      .year-bar { min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
-      .year-bar strong { color: #d9edff; font-size: 9px; font-weight: 600; }
-      .year-bar i { display: block; width: min(100%, 27px); height: var(--h); min-height: 3px; border-radius: 3px 3px 0 0; background: var(--blue); }
-      .year-bar.current i { background: var(--cyan); }
-      .year-bar small { color: var(--quiet); font-size: 9px; }
-      .region-list, .attention-list { display: grid; gap: 0; }
-      .region-item { padding: 11px 0; border-bottom: 1px solid var(--line-soft); }
-      .region-item:first-child { padding-top: 2px; }
-      .region-item:last-child { border: 0; padding-bottom: 0; }
-      .region-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
-      .region-head strong { font-size: 11px; }
-      .region-head b { font-size: 14px; font-variant-numeric: tabular-nums; }
-      .region-bar { height: 7px; display: flex; margin-top: 6px; overflow: hidden; border-radius: 5px; background: #294057; }
-      .region-bar span { display: block; height: 100%; background: var(--blue); }
-      .region-bar i { display: block; height: 100%; background: var(--red); opacity: .9; }
-      .region-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 5px; color: var(--muted); font-size: 9px; }
-      .region-meta .risk { color: var(--red); }
-      .small-legend { display: flex; gap: 12px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--quiet); font-size: 9px; }
-      .small-legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 2px; background: var(--swatch); }
-      .grade-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
-      .grade-card { padding: 8px; border: 1px solid #314b62; border-radius: 5px; background: #182f46; }
-      .grade-card span { color: var(--muted); font-size: 9px; }
-      .grade-card strong { display: block; margin-top: 2px; font-size: 17px; }
-      .coverage { margin-top: 12px; }
-      .coverage-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
-      .coverage-head b { color: var(--green); }
-      .coverage-track { height: 8px; overflow: hidden; margin-top: 6px; border-radius: 5px; background: #30445a; }
-      .coverage-track span { display: block; width: 87.9%; height: 100%; background: var(--green); }
-      .coverage-note { margin-top: 6px; color: var(--quiet); font-size: 9px; }
-      .risk-total { display: flex; align-items: end; justify-content: space-between; gap: 8px; }
-      .risk-total span { display: block; color: var(--muted); font-size: 10px; }
-      .risk-total strong { display: block; margin-top: 2px; color: var(--red); font-size: 28px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-      .risk-total small { color: var(--muted); font-size: 9px; text-align: right; }
-      .risk-track { height: 11px; overflow: hidden; margin-top: 11px; border-radius: 6px; background: #2b4055; }
-      .risk-track span { display: block; width: 22.5%; height: 100%; background: var(--red); }
-      .risk-caption { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; color: var(--quiet); font-size: 9px; }
-      .risk-focus { margin-top: 17px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
-      .risk-focus span { color: var(--muted); font-size: 10px; }
-      .risk-focus strong { display: block; margin-top: 3px; font-size: 15px; }
-      .risk-focus strong b { color: var(--amber); }
-      .risk-focus-track { height: 8px; overflow: hidden; margin-top: 8px; border-radius: 5px; background: #2b4055; }
-      .risk-focus-track span { display: block; width: 58.1%; height: 100%; background: var(--amber); }
-      .risk-focus small { display: block; margin-top: 7px; color: var(--quiet); font-size: 9px; }
-      .drill-note { margin-top: 15px; padding: 8px 10px; border: 1px solid #34516d; border-radius: 5px; color: #a7c8e4; background: #173047; font-size: 10px; }
-      .execution-top { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-      .execution-top div { padding: 7px; border-radius: 4px; background: #1a3046; text-align: center; }
-      .execution-top span { display: block; color: var(--muted); font-size: 9px; }
-      .execution-top strong { display: block; margin-top: 2px; font-size: 16px; }
-      .execution-track { height: 9px; display: flex; overflow: hidden; margin-top: 12px; border-radius: 5px; background: #2b3f54; }
-      .execution-track .done { width: 73%; background: var(--green); }
-      .execution-track .open { width: 12.7%; background: #7f97ab; }
-      .execution-track .overdue { width: 14.3%; background: var(--red); }
-      .execution-caption { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 9px; }
-      .bottom-note { display: flex; justify-content: space-between; gap: 16px; margin-top: 12px; color: var(--quiet); font-size: 9px; }
-      @media (max-width: 1420px) {
+      .annual-intro { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+      .annual-intro strong { font-size: 12px; }
+      .annual-intro span { color: var(--quiet); font-size: 10px; }
+      .annual-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+      .result-card { min-width: 0; padding: 11px 13px; border: 1px solid #3b5b75; border-left: 3px solid var(--tone); border-radius: 5px; background: #193149; }
+      .result-card span, .result-card small { display: block; color: var(--muted); font-size: 10px; }
+      .result-card strong { display: block; margin: 2px 0; font-size: 23px; font-variant-numeric: tabular-nums; }
+      .result-card strong em { margin-left: 4px; color: var(--muted); font-size: 11px; font-style: normal; font-weight: 400; }
+      .result-track { position: relative; height: 10px; margin: 10px 0 7px; overflow: hidden; border-radius: 99px; background: #0c1d2e; }
+      .result-track .actual { display: block; height: 100%; border-radius: inherit; background: var(--tone); }
+      .result-track .planned { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; box-shadow: 0 0 5px #fff9; }
+      .result-card .progress-label { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 10px; }
+      .result-card .progress-label b { color: #e8f5ff; }
+      .band-label { display: flex; justify-content: space-between; gap: 12px; margin: 15px 0 7px; color: #d3e5f5; font-size: 11px; font-weight: 700; }
+      .band-label small { color: var(--quiet); font-size: 10px; font-weight: 400; }
+      .quarter-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .quarter-card { min-width: 0; padding: 9px 11px; border: 1px solid #36556e; border-radius: 5px; background: #183047; color: var(--text); text-align: left; cursor: pointer; }
+      .quarter-card:hover { border-color: #70a7bf; }
+      .quarter-card.context { background: #1c3c54; }
+      .quarter-card.selected { border-color: var(--cyan); box-shadow: inset 0 0 0 1px #59c9e155; }
+      .quarter-card .quarter-title { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; font-weight: 700; }
+      .quarter-card .quarter-title small { color: var(--muted); font-size: 9px; font-weight: 400; }
+      .quarter-card .quarter-values { display: flex; justify-content: space-between; gap: 5px; margin-top: 7px; color: #dcebf6; font-size: 10px; font-variant-numeric: tabular-nums; }
+      .quarter-card .quarter-values b { color: var(--muted); font-size: 9px; font-weight: 500; }
+      .quarter-track { display: block; height: 5px; margin-top: 8px; border-radius: 99px; background: #0b2031; overflow: hidden; }
+      .quarter-track span { display: block; height: 100%; background: var(--green); }
+      .quarter-card .quarter-note { display: block; margin-top: 4px; color: var(--quiet); font-size: 9px; }
+      .trend-grid { display: grid; gap: 7px; }
+      .trend-row { display: grid; grid-template-columns: 105px repeat(12, minmax(0, 1fr)); gap: 4px; align-items: end; min-height: 107px; padding: 8px; border: 1px solid #35536b; border-radius: 5px; background: #132a3e; }
+      .trend-label { align-self: center; color: #deedf8; font-size: 11px; }
+      .trend-label::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 2px; background: var(--tone); }
+      .trend-cell { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; width: 100%; height: 88px; padding: 3px 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
+      .trend-cell:hover, .trend-cell.selected { border-color: #61bdd1; background: #1e425a; }
+      .trend-cell.quarter-start { box-shadow: inset 2px 0 #395c76; }
+      .trend-cell .trend-value { display: block; height: 13px; color: #e3f0f9; font-size: 9px; font-variant-numeric: tabular-nums; text-align: center; }
+      .trend-cell .bars { position: relative; display: block; width: 100%; height: 51px; border-bottom: 1px solid #547089; }
+      .trend-cell .goal, .trend-cell .done { position: absolute; bottom: 0; width: 29%; min-height: 2px; border-radius: 2px 2px 0 0; }
+      .trend-cell .goal { left: 17%; background: #49637a; }
+      .trend-cell .done { right: 17%; background: var(--tone); }
+      .trend-cell.current .done { background: repeating-linear-gradient(135deg, var(--tone) 0 4px, #315a69 4px 7px); }
+      .trend-cell .trend-month { color: var(--muted); font-size: 9px; text-align: center; }
+      .trend-legend { display: flex; align-items: center; gap: 14px; color: var(--quiet); font-size: 10px; }
+      .trend-legend i { display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; vertical-align: middle; }
+      .focus { display: grid; grid-template-columns: minmax(175px, .75fr) repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch; margin-top: 10px; }
+      .focus-title, .focus-metric { padding: 9px 11px; border: 1px solid #385c76; border-radius: 5px; background: #18364d; }
+      .focus-title strong, .focus-title small, .focus-metric span, .focus-metric strong, .focus-metric small { display: block; }
+      .focus-title strong { color: #dff4ff; font-size: 12px; }
+      .focus-title small, .focus-metric small { color: var(--muted); font-size: 9px; }
+      .focus-metric span { color: var(--muted); font-size: 10px; }
+      .focus-metric strong { margin: 2px 0; font-size: 17px; font-variant-numeric: tabular-nums; }
+      .method-note { display: flex; justify-content: space-between; gap: 14px; margin-top: 10px; color: var(--quiet); font-size: 10px; }
+      .support { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 12px; margin-top: 12px; }
+      .support-note { margin-top: 10px; color: var(--quiet); font-size: 10px; }
+      .bridge-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .bridge-step { min-width: 0; padding: 10px 11px; border: 1px solid #35536c; border-top: 3px solid var(--tone); border-radius: 5px; background: #183047; }
+      .bridge-step .question { color: var(--muted); font-size: 10px; }
+      .bridge-step strong { display: block; margin: 4px 0 2px; font-size: 19px; font-variant-numeric: tabular-nums; }
+      .bridge-step small { display: block; color: var(--muted); font-size: 9px; }
+      .bridge-step p { margin: 8px 0 0; padding-top: 7px; border-top: 1px solid var(--line-soft); color: #c3d7e7; font-size: 10px; }
+      .structure { margin-top: 12px; }
+      .unit-tabs { display: flex; gap: 7px; }
+      .unit-tab { padding: 6px 12px; border: 1px solid #42627d; border-radius: 5px; background: #172d43; color: #bfd5e5; cursor: pointer; }
+      .unit-tab.selected { border-color: var(--cyan); background: #215270; color: #fff; }
+      .composition-title { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; color: var(--muted); font-size: 10px; }
+      .composition-title strong { color: #deebf6; font-weight: 600; }
+      .unit-composition { display: flex; gap: 3px; height: 43px; margin-bottom: 13px; padding: 3px; border: 1px solid #42627d; border-radius: 6px; background: #0d2133; }
+      .unit-composition button { min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 7px; padding: 0 11px; border: 1px solid transparent; border-radius: 4px; background: #295776; color: #f2f9ff; cursor: pointer; font-size: 11px; }
+      .unit-composition button:nth-child(2) { background: #41687b; }
+      .unit-composition button.selected { border-color: #a8eaf5; box-shadow: inset 0 0 0 1px #a8eaf555; }
+      .unit-composition button small { color: #deebf7; white-space: nowrap; font-size: 10px; }
+      .structure-layout { display: grid; grid-template-columns: minmax(260px, .65fr) minmax(360px, 1fr) minmax(290px, .8fr); gap: 13px; }
+      .structure-subhead { margin-bottom: 9px; color: #dbeaf6; font-size: 11px; font-weight: 700; }
+      .unit-summary { display: grid; gap: 7px; }
+      .unit-summary-item { padding: 9px 10px; border: 1px solid #35536c; border-radius: 5px; background: #173047; }
+      .unit-summary-item span, .unit-summary-item small { display: block; color: var(--muted); font-size: 10px; }
+      .unit-summary-item strong { display: block; margin: 2px 0; font-size: 20px; font-variant-numeric: tabular-nums; }
+      .unit-summary-item .unit-track { height: 5px; margin-top: 7px; border-radius: 99px; background: #0a1f31; overflow: hidden; }
+      .unit-summary-item .unit-track i { display: block; height: 100%; background: var(--tone); }
+      .region-result-list { display: grid; gap: 7px; }
+      .region-result { width: 100%; display: grid; grid-template-columns: 100px minmax(0, 1fr) 80px; align-items: center; gap: 9px; padding: 8px; border: 1px solid #314d64; border-radius: 5px; background: #172d43; color: var(--text); text-align: left; cursor: pointer; font-size: 11px; }
+      .region-result:hover, .region-result.selected { border-color: var(--cyan); background: #1b3a51; }
+      .region-result b { font-size: 10px; }
+      .region-result .region-bar { display: block; height: 8px; border-radius: 99px; background: #0d2031; overflow: hidden; }
+      .region-result .region-bar i { display: block; height: 100%; background: var(--green); }
+      .region-result strong { text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+      .region-result.total { border-color: #4b7190; background: #1a3851; cursor: default; }
+      .region-chooser { display: flex; gap: 5px; margin-bottom: 10px; }
+      .region-chooser button { padding: 4px 8px; border: 1px solid #35536c; border-radius: 4px; background: #172d43; color: var(--muted); cursor: pointer; font-size: 10px; }
+      .region-chooser button.selected { border-color: var(--cyan); color: #fff; }
+      .territory-map { position: relative; min-height: 245px; overflow: hidden; border: 1px solid #35536c; border-radius: 7px; background: radial-gradient(circle at 60% 35%, #1c465c 0%, #10263a 55%, #0c1d30 100%); }
+      .territory-map::before { content: ""; position: absolute; inset: 0; opacity: .5; background-image: linear-gradient(#2d4b5c50 1px, transparent 1px), linear-gradient(90deg, #2d4b5c50 1px, transparent 1px); background-size: 28px 28px; }
+      .map-caption { position: absolute; z-index: 1; top: 10px; left: 11px; color: #c1dbed; font-size: 10px; }
+      .map-label { position: absolute; z-index: 1; transform: translate(-50%, -50%); min-width: 67px; padding: 8px 7px; border: 1px solid #48748a; border-radius: 8px; background: #1b4055db; color: #e5f4fc; text-align: center; cursor: pointer; font-size: 10px; box-shadow: 0 9px 18px #06142380; }
+      .map-label:hover, .map-label.selected { border-color: var(--cyan); background: #27677a; }
+      .map-label small { display: block; color: #a8c8d9; font-size: 9px; }
+      .map-note { margin-top: 6px; color: var(--quiet); font-size: 9px; }
+      .region-detail { margin-top: 12px; }
+      .region-detail[hidden] { display: none; }
+      .region-detail .panel-head { align-items: center; }
+      .region-detail .band-label { margin-top: 13px; }
+      .region-contribution { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .region-contribution div { padding: 9px 11px; border: 1px solid #35536c; border-radius: 5px; background: #173047; }
+      .region-contribution span, .region-contribution small { display: block; color: var(--muted); font-size: 10px; }
+      .region-contribution strong { display: block; margin: 2px 0; font-size: 19px; font-variant-numeric: tabular-nums; }
+      .region-contribution small b { color: #cce7f3; }
+      .region-quarters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .region-quarter { padding: 8px 10px; border: 1px solid #35536c; border-radius: 5px; background: #173047; color: var(--muted); text-align: left; cursor: pointer; font-size: 10px; }
+      .region-quarter:hover { border-color: #70a7bf; }
+      .region-quarter strong { display: block; color: var(--text); font-size: 11px; }
+      .region-quarter.selected { border-color: var(--cyan); }
+      .region-quarter span { display: block; margin-top: 3px; font-variant-numeric: tabular-nums; }
+      .region-quarter.future { background: #14293b; }
+      .region-focus { display: grid; grid-template-columns: 160px repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 9px; }
+      .region-focus > div { padding: 8px 10px; border: 1px solid #35536c; border-radius: 5px; background: #19364c; }
+      .region-focus span, .region-focus small { display: block; color: var(--muted); font-size: 9px; }
+      .region-focus strong { display: block; margin: 2px 0; color: var(--text); font-size: 15px; font-variant-numeric: tabular-nums; }
+      .region-close { padding: 5px 9px; border: 1px solid #43617a; border-radius: 4px; background: #1a3449; color: #d9ecf8; cursor: pointer; font-size: 10px; }
+      @media (max-width: 1350px) {
         .content { padding-left: 15px; padding-right: 15px; }
-        .board { grid-template-columns: minmax(220px, .78fr) minmax(460px, 1.62fr) minmax(235px, .82fr); gap: 9px; }
         .panel-body { padding: 12px; }
-        .panel-head { padding-left: 12px; padding-right: 12px; }
-        .signal-copy { font-size: 13px; }
+        .focus { grid-template-columns: 155px repeat(3, minmax(0, 1fr)); }
+        .structure-layout { grid-template-columns: minmax(220px, .6fr) minmax(300px, 1fr); }
+        .map-column { grid-column: 1 / -1; }
+        .territory-map { min-height: 155px; }
       }
     </style>
   </head>
@@ -216,274 +189,312 @@
     <main class="screen">
       <header class="topbar">
         <div class="brand"><div class="brand-mark">L</div><div><strong>LITECRM</strong><small>SALES OPERATIONS</small></div></div>
-        <div class="title"><h1>销售经营驾驶舱</h1><p>目标 · 销售储备 · 大区 · 风险态势</p></div>
-        <div class="head-tools"><span>全公司 ▾</span><span class="mode">展示模式 ⛶</span></div>
+        <div class="title"><h1>销售经营驾驶舱</h1><p>全年经营节奏 · 销售储备 · 大区结构</p></div>
+        <div class="head-tools"><span>全公司</span><span>展示模式 ⛶</span></div>
       </header>
+
       <div class="content">
-        <div class="period-row" aria-label="经营周期">
-          <div class="period-modes" role="group" aria-label="切换经营周期"><button type="button" class="active" data-view="month" aria-pressed="true">月度经营</button><button type="button" data-view="quarter" aria-pressed="false">季度复盘</button><button type="button" data-view="year" aria-pressed="false">年度累计</button></div>
-          <span class="period-choice" id="period-choice">示例：2026年9月</span>
-          <span class="period-help" id="period-help">点击左侧切换示例；存量指标始终标明统计时点</span>
-        </div>
-        <div class="scope">
-          <div><strong>全公司销售经营</strong><i class="dot"></i><span id="period-scope">本月累计 09-01—09-23 · 当前存量截至 09-23 09:30</span></div>
-          <div class="sources"><span><i class="source-dot"></i>现有CRM可计算</span><span><i class="source-dot planned"></i>需新增CRM模型</span></div>
-        </div>
-        <section class="signal" aria-label="经营结论">
-          <div class="signal-label">MANAGEMENT SIGNAL<strong>需要关注</strong></div>
-          <div class="signal-copy" id="signal-copy">本月按确认成交与 Commit 判断仍有 <em>¥100万缺口</em>；商机储备 <b>¥1,864万</b>，但 <em>¥420万已超过30天未推进</em>，风险主要集中在江苏大区。</div>
-          <div class="signal-note"><strong id="signal-period">本月经营判断</strong>示例数据 · 可切换原型</div>
+        <div class="scope"><div><strong>2026 年经营总览</strong><span class="sep">/</span>公司 → 业务板块 → 地域大区<span class="sep">/</span>示例时点：9月23日</div><div class="sample">设计原型 · 所有金额均为示例，非真实经营数据</div></div>
+
+        <section class="panel primary" aria-label="全年经营主轴">
+          <div class="panel-head"><div><h2>年度经营主轴 · 公司总体</h2><p>年度结果常驻；点击季度或月份仅改变聚焦，不替换公司总体</p></div><span class="tag">经营结果 · ERP接入后</span></div>
+          <div class="panel-body">
+            <div class="annual-intro"><strong>全年目标与截至目前的实际</strong><span>目标按12个月汇总 · 实际累计截至9月23日</span></div>
+            <div class="annual-summary" id="annual-summary"></div>
+            <div class="band-label"><span>四个季度</span><small>季度数字为三个单月汇总；Q4仅列目标</small></div>
+            <div class="quarter-strip" id="quarter-strip"></div>
+            <div class="band-label"><span>1—12月经营节奏</span><small>目标与实际成对比较 · 9月未结月 · 点击月份聚焦</small></div>
+            <div class="trend-grid" id="month-trends" aria-label="2026年每月订单、发货业绩和回款图"></div>
+            <div class="trend-legend"><span><i style="background:#49637a"></i>月度目标</span><span><i style="background:var(--green)"></i>月度实际（颜色按指标区分）</span><span>未来月份仅有目标</span></div>
+            <div class="focus" id="focus" aria-live="polite"></div>
+            <div class="method-note"><span>订单按下单日、业绩按发货日、回款按实际收款日分别归月；三项不是同一批订单的月内转化。</span><span>未来月只列目标，不把未知实际记为零。</span></div>
+          </div>
         </section>
 
-        <div class="board">
-          <div class="stack">
-            <section class="panel">
-              <div class="panel-head"><div><h2 id="region-title">大区经营脉搏</h2><p id="region-description">人员所属大区 · 当前商机池规模</p></div><span class="tag" id="region-period">截至今日</span></div>
-              <div class="panel-body region-list" id="region-list">
-                <div class="region-item"><div class="region-head"><strong>江苏大区</strong><b>¥612万</b></div><div class="region-bar"><span style="width:60.1%"></span><i style="width:39.9%"></i></div><div class="region-meta"><span>正式报价 36.8%</span><span class="risk">停滞 ¥244万</span></div></div>
-                <div class="region-item"><div class="region-head"><strong>浙江大区</strong><b>¥486万</b></div><div class="region-bar"><span style="width:70.6%"></span><i style="width:8.8%"></i></div><div class="region-meta"><span>正式报价 56.2%</span><span>停滞 ¥54万</span></div></div>
-                <div class="region-item"><div class="region-head"><strong>泵浦组</strong><b>¥372万</b></div><div class="region-bar"><span style="width:50.5%"></span><i style="width:10.3%"></i></div><div class="region-meta"><span>正式报价 49.5%</span><span>停滞 ¥63万</span></div></div>
-                <div class="region-item"><div class="region-head"><strong>华南大区</strong><b>¥248万</b></div><div class="region-bar"><span style="width:34.3%"></span><i style="width:6.2%"></i></div><div class="region-meta"><span>正式报价 42.7%</span><span>停滞 ¥38万</span></div></div>
-                <div class="region-item"><div class="region-head"><strong>其他区域</strong><b>¥146万</b></div><div class="region-bar"><span style="width:20.4%"></span><i style="width:3.4%"></i></div><div class="region-meta"><span>正式报价 32.2%</span><span>停滞 ¥21万</span></div></div>
-              </div>
-              <div class="small-legend" id="region-legend" style="margin: 0 15px 13px"><span style="--swatch:var(--blue)">非停滞金额</span><span style="--swatch:var(--red)">停滞金额 · 条长以最大大区为基准</span></div>
-            </section>
-            <section class="panel">
-              <div class="panel-head"><div><h2>客户资产</h2><p id="customer-description">当前在案客户 · 本月重点客户覆盖</p></div><span class="tag" id="customer-period">存量 / 本月</span></div>
-              <div class="panel-body">
-                <div class="grade-cards"><div class="grade-card"><span>在案客户</span><strong>326</strong></div><div class="grade-card"><span>S/A重点客户</span><strong>58</strong></div></div>
-                <div class="coverage"><div class="coverage-head"><span id="coverage-label">本月重点客户覆盖</span><b id="coverage-value">51 / 58 · 87.9%</b></div><div class="coverage-track"><span id="coverage-bar"></span></div><div class="coverage-note" id="coverage-note">7家未覆盖，其中3家超过60天无拜访记录</div></div>
-              </div>
-            </section>
-          </div>
-
-          <div class="stack">
-            <section class="panel primary">
-              <div class="panel-head"><div><h2>目标、预测与缺口</h2><p id="target-description">完整月度目标 · 本月累计成交 · 本月预计成交</p></div><span class="tag planned">目标 / 预测需新增模型</span></div>
-              <div class="panel-body">
-                <div class="target-top"><div><div class="eyebrow" id="target-label">本月确认成交目标</div><div class="target-value" id="target-value">¥600<small>万</small></div></div><div class="target-status">确认成交 + Commit 后的目标缺口<strong id="target-gap">¥100万</strong></div></div>
-                <div class="target-track" id="target-track" aria-label="目标覆盖关系：已成交380万，Commit预测120万，缺口100万"><span class="won"></span><span class="commit"></span><span class="gap"></span></div>
-                <div class="target-axis"><span>0</span><span id="target-axis-label">目标 ¥600万</span></div>
-                <div class="target-parts">
-                  <div class="target-part" style="--swatch:var(--blue)"><span>CRM确认成交</span><strong id="won-value">¥380万</strong><small id="won-percent">完成目标 63.3%</small></div>
-                  <div class="target-part" style="--swatch:var(--cyan)"><span>Commit预测</span><strong id="commit-value">¥120万</strong><small>尚未成交，销售承诺</small></div>
-                  <div class="target-part" style="--swatch:#637a90"><span>目标缺口</span><strong id="gap-value">¥100万</strong><small>目标减已成交与Commit</small></div>
-                </div>
-                <div class="upside"><span>另有 <strong id="upside-value">¥80万 Upside</strong> 具备本期成交可能，未计入上方承诺覆盖</span><span class="planned-chip">预测模型</span></div>
-              </div>
-            </section>
-            <section class="panel">
-              <div class="panel-head"><div><h2>当前商机池</h2><p>规模、报价成熟度与推进健康度</p></div><span class="tag">截至今日</span></div>
-              <div class="panel-body">
-                <div class="pool-top"><div><div class="eyebrow">有效开放商机金额</div><div class="pool-total">¥1,864万</div></div><div class="pool-count">商机数量<strong>72个</strong></div></div>
-                <div class="amount-bar" aria-label="商机当前有效金额构成"><span class="estimate"></span><span class="oral"></span><span class="formal"></span></div>
-                <div class="amount-legend"><div style="--swatch:#8299b0"><span>仅预估 · 31.9%</span><strong>¥594万</strong></div><div style="--swatch:#4babb5"><span>口头报价 · 23.3%</span><strong>¥435万</strong></div><div style="--swatch:var(--blue)"><span>正式报价 · 44.8%</span><strong>¥835万</strong></div></div>
-                <div class="health-row"><div class="health" style="--tone:var(--green)"><span>正常推进</span><strong>¥1,106万</strong><small>59.3% · 现有规则</small></div><div class="health" style="--tone:var(--amber)"><span>需要关注</span><strong>¥338万</strong><small>18.1% · 现有规则</small></div><div class="health" style="--tone:var(--red)"><span>需要介入</span><strong>¥420万</strong><small>22.5% · 超30天</small></div></div>
-              </div>
-            </section>
-            <section class="panel">
-              <div class="panel-head"><div><h2 id="process-title">本月销售过程</h2><p id="process-description">本月累计新增与推进；各节点并非同一批商机</p></div><span class="tag" id="process-period">09-01—09-23</span></div>
-              <div class="panel-body"><div class="flow-row" id="flow-row"><div class="flow-node"><span>新增商机</span><strong>18</strong><small>¥485万</small></div><div class="flow-node"><span>首次口头报价</span><strong>11</strong><small>¥276万</small></div><div class="flow-node"><span>首次正式报价</span><strong>8</strong><small>¥320万</small></div><div class="flow-node"><span>确认成交</span><strong>4</strong><small>¥380万</small></div></div><div class="flow-note" id="flow-note">期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万</div></div>
-            </section>
-            <section class="panel" id="rhythm-panel" hidden>
-              <div class="panel-head"><div><h2 id="rhythm-title">季度成交节奏</h2><p id="rhythm-description">每个月的成交与月度目标对照</p></div><span class="tag" id="rhythm-period">季度累计</span></div>
-              <div class="panel-body" id="rhythm-body"></div>
-            </section>
-          </div>
-
-          <div class="stack">
-            <section class="panel">
-              <div class="panel-head"><div><h2>销售风险态势</h2><p>风险有多大，集中在哪个大区</p></div><span class="tag">截至今日</span></div>
-              <div class="panel-body">
-                <div class="risk-total"><div><span>超过30天未推进的商机</span><strong>¥420万</strong></div><small>12个商机<br />占有效池 22.5%</small></div>
-                <div class="risk-track" aria-label="停滞商机金额占有效池22.5%"><span></span></div>
-                <div class="risk-caption"><span>停滞 22.5%</span><span>其余有效商机 77.5%</span></div>
-                <div class="risk-focus"><span>风险最集中区域</span><strong>江苏大区 <b>¥244万</b></strong><div class="risk-focus-track" aria-label="江苏大区占全公司停滞商机金额58.1%"><span></span></div><small>占全公司停滞商机金额 58.1%</small></div>
-                <div class="drill-note">具体商机、负责人和风险原因进入「商机检视」查看 →</div>
-              </div>
-            </section>
-            <section class="panel">
-              <div class="panel-head"><div><h2>销售执行</h2><p>拜访与商机跟进计划 · 周度独立观察</p></div><span class="tag">本周 09-21—09-27</span></div>
-              <div class="panel-body"><div class="execution-top"><div><span>计划</span><strong>126</strong></div><div><span>按期完成</span><strong style="color:var(--green)">92</strong></div><div><span>已逾期</span><strong style="color:var(--red)">18</strong></div></div><div class="execution-track"><span class="done"></span><span class="open"></span><span class="overdue"></span></div><div class="execution-caption"><span>完成 73.0%</span><span>未到期 12.7%</span><span>逾期 14.3%</span></div></div>
-            </section>
-          </div>
+        <div class="support">
+          <section class="panel" aria-label="经营结果之间的承接">
+            <div class="panel-head"><div><h2>差距承接在哪里</h2><p>从商机到订单、从订单到发货；回款按合同付款节点另行判断</p></div><span class="tag">不把不同期间金额相减</span></div>
+            <div class="panel-body"><div class="bridge-grid">
+              <div class="bridge-step" style="--tone:var(--blue)"><span class="question">后续订单从哪里来？</span><strong>¥1,864万</strong><small>CRM有效开放商机 · 当前存量</small><p>其中 ¥420万超过30天未推进；商机池不等于确定订单。</p></div>
+              <div class="bridge-step" style="--tone:var(--green)"><span class="question">订单何时形成发货业绩？</span><strong>¥1,320万</strong><small>在手待发订单 · ERP时点余额示意</small><p>需要看交付排期与延期；不能用“本年订单－本年发货”推算。</p></div>
+              <div class="bridge-step" style="--tone:var(--amber)"><span class="question">回款何时实际到账？</span><strong>¥260万</strong><small>已到期未收 · 财务时点余额示意</small><p>结合预收、分期及账期；部分款项可以早于发货。</p></div>
+            </div><div class="support-note">三处余额只是解释年度结果的承接状态，不与年度发生额直接求差或当作同一批订单的漏斗。</div></div>
+          </section>
         </div>
-        <div class="bottom-note"><span>静态原型 · 金额与事件为示例数据 · 经营结论依据页面展示的口径生成</span><span>CRM仅统计客户、商机、行动、预测与确认成交；订单、交付、回款、营收和毛利由ERP承接</span></div>
+        <section class="panel structure" aria-label="板块与地域经营贡献">
+          <div class="panel-head"><div><h2>差距落在哪个板块、哪个大区</h2><p>公司结果 = 各业务板块合计；选定板块内，各地域大区再汇总回板块</p></div><div class="unit-tabs" id="unit-tabs" aria-label="选择业务板块"></div></div>
+          <div class="panel-body"><div class="composition-title"><strong>发货业绩 · 板块构成</strong><span id="composition-total"></span></div><div class="unit-composition" id="unit-composition"></div><div class="structure-layout">
+            <div><div class="structure-subhead" id="unit-summary-title">板块贡献</div><div class="unit-summary" id="unit-summary"></div></div>
+            <div><div class="structure-subhead">地域大区 · 年初至今</div><div class="region-chooser" id="region-chooser" aria-label="选择大区比较指标"></div><div class="region-result-list" id="region-result-list"></div></div>
+            <div class="map-column"><div class="structure-subhead">地域索引 · 点击定位大区</div><div class="territory-map" id="territory-map"></div><div class="map-note" id="map-note"></div></div>
+          </div><div class="support-note">示例按“板块 × 地域大区”唯一归属分配。真实数据需核对人员所辖区域、客户所在地与订单/发货/回款归属；未归属单列，不得遗漏或重复。</div></div>
+        </section>
+        <section class="panel region-detail" id="region-detail" aria-label="所选大区经营详情" hidden>
+          <div class="panel-head"><div><h2 id="region-detail-title">大区全年经营</h2><p>公司主轴保持不变；此处按同一期间查看板块内大区贡献</p></div><button type="button" class="region-close" id="region-close">收起大区详情</button></div>
+          <div class="panel-body"><div class="region-contribution" id="region-contribution"></div><div class="band-label"><span>本区四个季度</span><small>与公司上方季度边界一致</small></div><div class="region-quarters" id="region-quarters"></div><div class="band-label"><span>本区 1—12 月经营节奏</span><small>目标与实际成对比较</small></div><div class="trend-grid" id="region-month-trends"></div><div class="region-focus" id="region-focus"></div></div>
+        </section>
       </div>
     </main>
     <script>
-      // 原型使用同一组自洽的示例经营数据；下方各视角不连接业务接口。
-      const currentRegions = [
-        { name: '江苏大区', pool: 612, stagnant: 244, formal: '36.8%' },
-        { name: '浙江大区', pool: 486, stagnant: 54, formal: '56.2%' },
-        { name: '泵浦组', pool: 372, stagnant: 63, formal: '49.5%' },
-        { name: '华南大区', pool: 248, stagnant: 38, formal: '42.7%' },
-        { name: '其他区域', pool: 146, stagnant: 21, formal: '32.2%' },
+      // 固定时点的交互示例。ERP结果与CRM商机池均为虚构样例，不连接真实接口。
+      const metrics = [
+        { name: '新增订单', tone: 'var(--blue)', actual: [420, 310, 510, 475, 560, 615, 480, 530, 380], target: [500, 450, 550, 550, 600, 650, 550, 600, 650, 650, 650, 650] },
+        { name: '发货业绩', tone: 'var(--green)', actual: [300, 280, 400, 430, 450, 510, 560, 490, 300], target: [400, 400, 450, 450, 500, 550, 500, 500, 550, 550, 550, 600] },
+        { name: '实际回款', tone: 'var(--amber)', actual: [240, 210, 360, 330, 390, 410, 450, 470, 290], target: [350, 350, 400, 400, 450, 500, 450, 450, 500, 500, 500, 550] },
       ]
-      const views = {
-        month: {
-          choice: '示例：2026年9月',
-          help: '点击左侧切换示例；存量指标始终标明统计时点',
-          scope: '本月累计 09-01—09-23 · 当前存量截至 09-23 09:30',
-          signalPeriod: '本月经营判断',
-          signal: '本月按确认成交与 Commit 判断仍有 <em>¥100万缺口</em>；商机储备 <b>¥1,864万</b>，但 <em>¥420万已超过30天未推进</em>，风险主要集中在江苏大区。',
-          targetDescription: '完整月度目标 · 本月累计成交 · 本月预计成交',
-          targetLabel: '本月确认成交目标',
-          target: 600, won: 380, commit: 120, upside: 80,
-          region: 'pool',
-          coverage: { label: '本月重点客户覆盖', count: 51, note: '7家未覆盖，其中3家超过60天无拜访记录' },
-          process: { title: '本月销售过程', description: '本月累计新增与推进；各节点并非同一批商机', period: '09-01—09-23',
-            flow: [['新增商机', 18, 485], ['首次口头报价', 11, 276], ['首次正式报价', 8, 320], ['确认成交', 4, 380]],
-            note: '期间结果：丢单 2个 / ¥96万 · 需求消失 3个 / ¥58万' },
-        },
-        quarter: {
-          choice: '示例：2026年第三季度',
-          help: '本季尚未结束；季度累计截至9月23日',
-          scope: '本季累计 07-01—09-23 · 当前存量截至 09-23 09:30',
-          signalPeriod: '本季经营判断',
-          signal: '第三季度目标 <b>¥1,500万</b>，已确认成交 <b>¥1,100万</b>；计入 Commit 后仍有 <em>¥200万待落实</em>。7—9月成交节奏见下方，季度尚未结束。',
-          targetDescription: '完整季度目标 · 本季累计成交 · 季内预计成交',
-          targetLabel: '第三季度确认成交目标',
-          target: 1500, won: 1100, commit: 200, upside: 150,
-          region: 'quarter',
-          coverage: { label: '本季重点客户覆盖', count: 54, note: '4家本季尚未覆盖；当前客户总量截至9月23日' },
-          process: { title: '本季销售过程', description: '季度累计新增与推进；各节点并非同一批商机', period: '07-01—09-23',
-            flow: [['新增商机', 54, 1450], ['首次口头报价', 35, 890], ['首次正式报价', 22, 850], ['确认成交', 13, 1100]],
-            note: '期间结果：丢单 7个 / ¥290万 · 需求消失 8个 / ¥160万' },
-          rhythm: { title: '季度成交节奏', description: '逐月成交与月度目标对照；9月尚未结束', period: '2026 Q3',
-            months: [['7月', 320, 450], ['8月', 400, 450], ['9月', 380, 600]] },
-        },
-        year: {
-          choice: '示例：2026年度累计',
-          help: '全年目标固定；成交累计截至9月23日',
-          scope: '本年累计 01-01—09-23 · 当前存量截至 09-23 09:30',
-          signalPeriod: '年度经营判断',
-          signal: '全年目标 <b>¥6,000万</b>，年初至今确认成交 <b>¥4,000万</b>；计入年内 Commit 后仍有 <em>¥1,500万缺口</em>。当前有效商机池为 <b>¥1,864万</b>。',
-          targetDescription: '完整年度目标 · 年初至今成交 · 年内预计成交',
-          targetLabel: '2026年确认成交目标',
-          target: 6000, won: 4000, commit: 500, upside: 300,
-          region: 'year',
-          coverage: { label: '本年重点客户覆盖', count: 58, note: '58家今年均至少拜访一次；当前客户总量截至9月23日' },
-          process: { title: '本年销售过程', description: '年初至今新增与推进；各节点并非同一批商机', period: '01-01—09-23',
-            flow: [['新增商机', 144, 4100], ['首次口头报价', 101, 2900], ['首次正式报价', 67, 2500], ['确认成交', 51, 4000]],
-            note: '期间结果：丢单 26个 / ¥870万 · 需求消失 19个 / ¥420万' },
-          rhythm: { title: '年度月度成交趋势', description: '年初至今各月确认成交；9月尚未结束', period: '2026年',
-            months: [['1月', 350], ['2月', 400], ['3月', 450], ['4月', 500], ['5月', 600], ['6月', 600], ['7月', 320], ['8月', 400], ['9月', 380]] },
-        },
-      }
-      const periodRegions = {
-        quarter: [
-          { name: '江苏大区', target: 500, won: 300 }, { name: '浙江大区', target: 400, won: 320 },
-          { name: '泵浦组', target: 300, won: 220 }, { name: '华南大区', target: 200, won: 160 },
-          { name: '其他区域', target: 100, won: 100 },
-        ],
-        year: [
-          { name: '江苏大区', target: 2100, won: 1400 }, { name: '浙江大区', target: 1500, won: 1100 },
-          { name: '泵浦组', target: 1100, won: 800 }, { name: '华南大区', target: 800, won: 500 },
-          { name: '其他区域', target: 500, won: 200 },
-        ],
-      }
-      const byId = (id) => document.getElementById(id)
-      const money = (value) => `¥${value.toLocaleString('zh-CN')}万`
-
-      function renderRegions(mode) {
-        const list = byId('region-list')
-        if (mode === 'pool') {
-          byId('region-description').textContent = '人员所属大区 · 当前商机池规模'
-          byId('region-period').textContent = '截至今日'
-          list.innerHTML = currentRegions.map(({ name, pool, stagnant, formal }) =>
-            `<div class="region-item"><div class="region-head"><strong>${name}</strong><b>${money(pool)}</b></div>` +
-            `<div class="region-bar"><span style="width:${((pool - stagnant) / 612 * 100).toFixed(1)}%"></span><i style="width:${(stagnant / 612 * 100).toFixed(1)}%"></i></div>` +
-            `<div class="region-meta"><span>正式报价 ${formal}</span><span class="risk">停滞 ${money(stagnant)}</span></div></div>`
-          ).join('')
-          byId('region-legend').innerHTML = '<span style="--swatch:var(--blue)">非停滞金额</span><span style="--swatch:var(--red)">停滞金额 · 条长以最大大区为基准</span>'
-          return
-        }
-        const isQuarter = mode === 'quarter'
-        byId('region-description').textContent = `人员所属大区 · ${isQuarter ? '本季' : '本年'}成交与目标`
-        byId('region-period').textContent = isQuarter ? '季度累计' : '年度累计'
-        list.innerHTML = periodRegions[mode].map(({ name, target, won }) =>
-          `<div class="region-item"><div class="region-head"><strong>${name}</strong><b>${money(won)}</b></div>` +
-          `<div class="region-bar"><span style="width:${(won / target * 100).toFixed(1)}%"></span></div>` +
-          `<div class="region-meta"><span>目标 ${money(target)}</span><span>完成 ${(won / target * 100).toFixed(1)}%</span></div></div>`
-        ).join('')
-        byId('region-legend').innerHTML = '<span style="--swatch:var(--blue)">确认成交 / 同期目标 · 每条以本大区目标为100%</span>'
-      }
-
-      function renderRhythm(view, mode) {
-        const panel = byId('rhythm-panel')
-        panel.hidden = !view.rhythm
-        if (!view.rhythm) return
-        const { title, description, period, months } = view.rhythm
-        byId('rhythm-title').textContent = title
-        byId('rhythm-description').textContent = description
-        byId('rhythm-period').textContent = period
-        if (mode === 'quarter') {
-          byId('rhythm-body').innerHTML = '<div class="rhythm">' + months.map(([label, won, target], index) =>
-            `<div class="rhythm-row${index === 2 ? ' current' : ''}"><strong>${label}</strong>` +
-            `<div class="rhythm-track"><span style="width:${(won / target * 100).toFixed(1)}%"></span></div>` +
-            `<small>${money(won)} / 目标${money(target)}</small></div>`
-          ).join('') + '</div><div class="rhythm-caption">三个月成交 320 + 400 + 380 = 1,100万；季度目标 450 + 450 + 600 = 1,500万。9月为未结期。</div>'
-        } else {
-          byId('rhythm-body').innerHTML = '<div class="year-bars">' + months.map(([label, won], index) =>
-            `<div class="year-bar${index === 8 ? ' current' : ''}"><strong>${won}</strong><i style="--h:${Math.round(won / 600 * 68)}px"></i><small>${label}</small></div>`
-          ).join('') + '</div><div class="rhythm-caption">1—9月成交累计4,000万；7—9月累计1,100万。柱高按单月成交金额比较。</div>'
-        }
-      }
-
-      function render(mode) {
-        const view = views[mode]
-        document.querySelectorAll('[data-view]').forEach((button) => {
-          const active = button.dataset.view === mode
-          button.classList.toggle('active', active)
-          button.setAttribute('aria-pressed', String(active))
+      // 板块和地域均为演示维度；泵浦是业务板块，不是大区。苏州单列后江苏其他不含苏州。
+      const units = [
+        { name: '过滤板块', areas: [
+          { name: '江苏其他', x: 62, y: 36, note: '不含苏州' }, { name: '苏州', x: 78, y: 49, note: '地级市' },
+          { name: '浙江', x: 71, y: 70, note: '省级' }, { name: '广东', x: 43, y: 82, note: '省级' }, { name: '其他区域', note: '不定位' },
+        ], shares: [[28, 23, 21, 18, 10], [25, 22, 23, 20, 10], [26, 21, 22, 19, 12]] },
+        { name: '泵浦板块', areas: [
+          { name: '江苏', x: 65, y: 43, note: '省级' }, { name: '浙江', x: 73, y: 68, note: '省级' },
+          { name: '广东', x: 43, y: 82, note: '省级' }, { name: '其他区域', note: '不定位' },
+        ], shares: [[35, 27, 26, 12], [32, 29, 27, 12], [33, 28, 25, 14]] },
+      ]
+      // 同一指标、月份先分板块再分大区；最后一组承接四舍五入余数，保证逐层加总。
+      const unitShares = [[68, 32], [70, 30], [66, 34]]
+      const sum = (values) => values.reduce((total, value) => total + value, 0)
+      const number = (value) => value.toLocaleString('zh-CN')
+      let focus = { kind: 'month', index: 8 }
+      let selectedUnit = 0
+      let selectedMetric = 1
+      let selectedRegion = null
+      function allocate(value, shares) {
+        let left = value
+        return shares.map((share, index) => {
+          if (index === shares.length - 1) return left
+          const portion = Math.round(value * share / 100)
+          left -= portion
+          return portion
         })
-        byId('period-choice').textContent = view.choice
-        byId('period-help').textContent = view.help
-        byId('period-scope').textContent = view.scope
-        byId('signal-period').textContent = view.signalPeriod
-        byId('signal-copy').innerHTML = view.signal
-        byId('target-description').textContent = view.targetDescription
-        byId('target-label').textContent = view.targetLabel
-        byId('target-value').innerHTML = `¥${view.target.toLocaleString('zh-CN')}<small>万</small>`
-        const gap = view.target - view.won - view.commit
-        byId('target-gap').textContent = money(gap)
-        byId('target-axis-label').textContent = `目标 ${money(view.target)}`
-        byId('target-track').style.setProperty('--won-share', `${view.won / view.target * 100}%`)
-        byId('target-track').style.setProperty('--commit-share', `${view.commit / view.target * 100}%`)
-        byId('target-track').style.setProperty('--gap-share', `${gap / view.target * 100}%`)
-        byId('target-track').setAttribute('aria-label', `目标覆盖关系：已成交${view.won}万，Commit预测${view.commit}万，缺口${gap}万`)
-        byId('won-value').textContent = money(view.won)
-        byId('won-percent').textContent = `完成目标 ${(view.won / view.target * 100).toFixed(1)}%`
-        byId('commit-value').textContent = money(view.commit)
-        byId('gap-value').textContent = money(gap)
-        byId('upside-value').textContent = `${money(view.upside)} Upside`
+      }
+      const unitMetrics = units.map((_, unitIndex) => metrics.map((metric, metricIndex) => ({
+        name: metric.name,
+        tone: metric.tone,
+        actual: metric.actual.map((value) => allocate(value, unitShares[metricIndex])[unitIndex]),
+        target: metric.target.map((value) => allocate(value, unitShares[metricIndex])[unitIndex]),
+      })))
+      const areaMetrics = units.map((unit, unitIndex) => unit.areas.map((_, areaIndex) => unitMetrics[unitIndex].map((metric, metricIndex) => ({
+        name: metric.name,
+        tone: metric.tone,
+        actual: metric.actual.map((value) => allocate(value, unit.shares[metricIndex])[areaIndex]),
+        target: metric.target.map((value) => allocate(value, unit.shares[metricIndex])[areaIndex]),
+      }))))
 
-        renderRegions(view.region)
-        const coverage = view.coverage
-        const coveragePercent = coverage.count / 58 * 100
-        byId('customer-description').textContent = `当前在案客户 · ${coverage.label}`
-        byId('customer-period').textContent = `存量 / ${mode === 'month' ? '本月' : mode === 'quarter' ? '本季' : '本年'}`
-        byId('coverage-label').textContent = coverage.label
-        byId('coverage-value').textContent = `${coverage.count} / 58 · ${coveragePercent.toFixed(1)}%`
-        byId('coverage-bar').style.width = `${coveragePercent}%`
-        byId('coverage-note').textContent = coverage.note
+      document.getElementById('annual-summary').innerHTML = metrics.map(({ name, tone, actual, target }) => {
+        const done = sum(actual)
+        const goal = sum(target)
+        const planned = sum(target.slice(0, 9))
+        return `<div class="result-card" style="--tone:${tone}"><span>${name} · 年初至今</span><strong>¥${number(done)}万<em>截至9月23日</em></strong>` +
+          `<div class="result-track" role="img" aria-label="已发生${number(done)}万，全年目标${number(goal)}万，一至九月目标含九月全月${number(planned)}万"><i class="actual" style="width:${Math.min(100, done / goal * 100)}%"></i><i class="planned" style="left:${Math.min(100, planned / goal * 100)}%"></i></div>` +
+          `<div class="progress-label"><span>全年目标 ¥${number(goal)}万 · 白线为1—9月目标（含9月全月）</span><b>对1—9月目标 ${(done / planned * 100).toFixed(1)}%</b></div></div>`
+      }).join('')
 
-        const process = view.process
-        byId('process-title').textContent = process.title
-        byId('process-description').textContent = process.description
-        byId('process-period').textContent = process.period
-        byId('flow-row').innerHTML = process.flow.map(([label, count, amount]) =>
-          `<div class="flow-node"><span>${label}</span><strong>${count}</strong><small>${money(amount)}</small></div>`
+      function renderStructure() {
+        document.getElementById('unit-tabs').innerHTML = units.map((unit, index) =>
+          `<button type="button" class="unit-tab${selectedUnit === index ? ' selected' : ''}" data-unit="${index}" aria-pressed="${selectedUnit === index}">${unit.name}</button>`
         ).join('')
-        byId('flow-note').textContent = process.note
-        renderRhythm(view, mode)
+        const companyShipment = sum(metrics[1].actual)
+        document.getElementById('composition-total').textContent = `过滤 + 泵浦 = 公司 ¥${number(companyShipment)}万 · 点击板块下钻`
+        document.getElementById('unit-composition').innerHTML = units.map((unit, index) => {
+          const shipment = sum(unitMetrics[index][1].actual)
+          const share = shipment / companyShipment * 100
+          return `<button type="button" class="${selectedUnit === index ? 'selected' : ''}" data-unit="${index}" aria-pressed="${selectedUnit === index}" style="width:${share}%"><span>${unit.name}</span><small>¥${number(shipment)}万 · ${share.toFixed(0)}%</small></button>`
+        }).join('')
+        document.getElementById('unit-summary-title').textContent = `${units[selectedUnit].name} · 占公司实际`
+        document.getElementById('unit-summary').innerHTML = unitMetrics[selectedUnit].map((metric, index) => {
+          const actual = sum(metric.actual)
+          const company = sum(metrics[index].actual)
+          const share = actual / company * 100
+          return `<div class="unit-summary-item" style="--tone:${metric.tone}"><span>${metric.name} · 年初至今</span><strong>¥${number(actual)}万</strong><small>占公司 ¥${number(company)}万的 ${share.toFixed(1)}%</small><div class="unit-track"><i style="width:${share}%"></i></div></div>`
+        }).join('')
+        document.getElementById('region-chooser').innerHTML = metrics.map((metric, index) =>
+          `<button type="button" data-metric="${index}" class="${selectedMetric === index ? 'selected' : ''}" aria-pressed="${selectedMetric === index}">${metric.name}</button>`
+        ).join('')
+        renderRegionList()
+        renderMap()
       }
 
-      document.querySelectorAll('[data-view]').forEach((button) =>
-        button.addEventListener('click', () => render(button.dataset.view))
-      )
-      render('month')
+      function renderRegionList() {
+        const boardTotal = sum(unitMetrics[selectedUnit][selectedMetric].actual)
+        const rows = units[selectedUnit].areas.map((area, index) => ({ index, name: area.name, actual: sum(areaMetrics[selectedUnit][index][selectedMetric].actual) }))
+          .sort((a, b) => b.actual - a.actual)
+          .map(({ index, name, actual }) => `<button type="button" class="region-result${selectedRegion === index ? ' selected' : ''}" data-region="${index}" aria-pressed="${selectedRegion === index}" aria-label="${name}，${metrics[selectedMetric].name}${number(actual)}万元，占本板块${(actual / boardTotal * 100).toFixed(1)}%">` +
+            `<b>${name}</b><span class="region-bar"><i style="width:${actual / boardTotal * 100}%"></i></span><strong>¥${number(actual)}万</strong></button>`).join('')
+        document.getElementById('region-result-list').innerHTML = rows +
+          `<div class="region-result total"><b>板块合计</b><span class="region-bar"><i style="width:100%"></i></span><strong>¥${number(boardTotal)}万</strong></div>`
+      }
+
+      function renderMap() {
+        const areas = units[selectedUnit].areas
+        document.getElementById('map-note').textContent = selectedUnit === 0
+          ? '位置示意，非行政边界图；苏州单列后不再计入“江苏其他”。金额比较看左侧条形图。'
+          : '位置示意，非行政边界图；本板块按省级大区演示。金额比较看左侧条形图。'
+        document.getElementById('territory-map').innerHTML = '<span class="map-caption">省 / 地级市定位示意 · 非边界面积图</span>' + areas.map((area, index) =>
+          area.x === undefined ? '' : `<button type="button" class="map-label${selectedRegion === index ? ' selected' : ''}" data-map-region="${index}" aria-pressed="${selectedRegion === index}" style="left:${area.x}%;top:${area.y}%">${area.name}<small>${area.note}</small></button>`
+        ).join('')
+      }
+
+      function renderQuarterStrip() {
+        document.getElementById('quarter-strip').innerHTML = Array.from({ length: 4 }, (_, quarter) => {
+          const start = quarter * 3
+          const end = start + 3
+          const future = quarter === 3
+          const selected = focus.kind === 'quarter' && focus.index === quarter
+          const context = focus.kind === 'month' && Math.floor(focus.index / 3) === quarter
+          const amounts = metrics.map(({ actual, target }) => future ? sum(target.slice(start, end)) : sum(actual.slice(start, end)))
+          const shipmentGoal = sum(metrics[1].target.slice(start, end))
+          const shipmentProgress = future ? 0 : Math.min(100, amounts[1] / shipmentGoal * 100)
+          return `<button type="button" class="quarter-card${selected ? ' selected' : ''}${context ? ' context' : ''}" data-quarter="${quarter}" aria-pressed="${selected}">` +
+            `<span class="quarter-title">Q${quarter + 1} · ${start + 1}—${end}月<small>${future ? '未来季度 · 目标' : quarter === 2 ? '累计至9月23日' : '已结季度 · 实际'}</small></span>` +
+            `<span class="quarter-values"><span><b>订单</b> ${number(amounts[0])}</span><span><b>发货</b> ${number(amounts[1])}</span><span><b>回款</b> ${number(amounts[2])}</span></span>` +
+            `<span class="quarter-track"><span style="width:${shipmentProgress}%"></span></span><span class="quarter-note">发货业绩 ${future ? '待发生' : `达季度目标 ${shipmentProgress.toFixed(0)}%`}</span></button>`
+        }).join('')
+      }
+
+      function renderTrends(containerId, rows, buttonAttribute) {
+        document.getElementById(containerId).innerHTML = rows.map(({ name, tone, actual, target }) => {
+          const ceiling = Math.max(...target, ...actual) * 1.05
+          return `<div class="trend-row"><div class="trend-label" style="--tone:${tone}">${name}<small style="display:block;color:var(--quiet);font-size:9px">万元 / 月</small></div>` +
+            target.map((goal, index) => {
+              const done = actual[index]
+              const selected = focus.kind === 'month' && focus.index === index
+              return `<button type="button" class="trend-cell${selected ? ' selected' : ''}${index === 8 ? ' current' : ''}${index % 3 === 0 ? ' quarter-start' : ''}" style="--tone:${tone}" ${buttonAttribute}="${index}" aria-pressed="${selected}" title="${index + 1}月${name}：${done === undefined ? '实际尚无' : `实际${number(done)}万`}，目标${number(goal)}万">` +
+                `<span class="trend-value">${done === undefined ? '—' : number(done)}</span><span class="bars"><i class="goal" style="height:${goal / ceiling * 100}%"></i>${done === undefined ? '' : `<i class="done" style="height:${done / ceiling * 100}%"></i>`}</span>` +
+                `<span class="trend-month">${index + 1}月</span></button>`
+            }).join('') + '</div>'
+        }).join('')
+      }
+
+      function renderFocus() {
+        const month = focus.kind === 'month'
+        const start = month ? focus.index : focus.index * 3
+        const end = month ? start + 1 : start + 3
+        const future = start > 8
+        const label = month ? `${start + 1}月` : `Q${focus.index + 1} · ${start + 1}—${end}月`
+        const period = future ? '未来期间 · 仅有目标' : end > 8 ? '截至9月23日 · 未结期' : '已结期 · 实际与目标'
+        document.getElementById('focus').innerHTML = `<div class="focus-title"><strong>聚焦 ${label}</strong><small>${period}</small></div>` +
+          metrics.map(({ name, actual, target }) => {
+            const goal = sum(target.slice(start, end))
+            const done = sum(actual.slice(start, end))
+            return `<div class="focus-metric"><span>${name}</span><strong>${future ? '—' : `¥${number(done)}万`}</strong><small>${future ? '尚无实际 · ' : ''}期间目标 ¥${number(goal)}万</small></div>`
+          }).join('')
+      }
+
+      function renderRegionDetail() {
+        const detail = document.getElementById('region-detail')
+        detail.hidden = selectedRegion === null
+        if (selectedRegion === null) return
+        const rows = areaMetrics[selectedUnit][selectedRegion]
+        document.getElementById('region-detail-title').textContent = `${units[selectedUnit].name} / ${units[selectedUnit].areas[selectedRegion].name} · 全年经营`
+        document.getElementById('region-contribution').innerHTML = rows.map((metric, index) => {
+          const actual = sum(metric.actual)
+          const company = sum(metrics[index].actual)
+          const board = sum(unitMetrics[selectedUnit][index].actual)
+          const target = sum(metric.target)
+          return `<div><span>${metric.name} · 年初至今</span><strong>¥${number(actual)}万</strong>` +
+            `<small>占本板块 <b>${(actual / board * 100).toFixed(1)}%</b> · 占公司 ${(actual / company * 100).toFixed(1)}% · 本区全年目标 ¥${number(target)}万</small></div>`
+        }).join('')
+        document.getElementById('region-quarters').innerHTML = Array.from({ length: 4 }, (_, quarter) => {
+          const start = quarter * 3
+          const end = start + 3
+          const future = quarter === 3
+          const selected = focus.kind === 'quarter' && focus.index === quarter
+          const values = rows.map(({ actual, target }) => number(sum((future ? target : actual).slice(start, end))))
+          return `<button type="button" class="region-quarter${selected ? ' selected' : ''}${future ? ' future' : ''}" data-region-quarter="${quarter}" aria-pressed="${selected}">` +
+            `<strong>Q${quarter + 1} · ${start + 1}—${end}月</strong><span>${future ? '目标' : '实际'}：订单 ${values[0]} · 发货 ${values[1]} · 回款 ${values[2]}</span></button>`
+        }).join('')
+        renderTrends('region-month-trends', rows, 'data-region-month')
+        const month = focus.kind === 'month'
+        const start = month ? focus.index : focus.index * 3
+        const end = month ? start + 1 : start + 3
+        const future = start > 8
+        const label = month ? `${start + 1}月` : `Q${focus.index + 1}`
+        document.getElementById('region-focus').innerHTML = `<div><span>与公司同一聚焦期间</span><strong>${label}</strong><small>${future ? '未来只看目标' : end > 8 ? '实际截至9月23日' : '已结期间实际'}</small></div>` +
+          rows.map((metric, index) => {
+            const actual = sum(metric.actual.slice(start, end))
+            const company = sum(metrics[index].actual.slice(start, end))
+            const board = sum(unitMetrics[selectedUnit][index].actual.slice(start, end))
+            const target = sum(metric.target.slice(start, end))
+            return `<div><span>${metric.name}</span><strong>${future ? '—' : `¥${number(actual)}万`}</strong>` +
+              `<small>${future ? `本区目标 ¥${number(target)}万` : `占本板块 ${(board ? actual / board * 100 : 0).toFixed(1)}% · 占公司 ${(company ? actual / company * 100 : 0).toFixed(1)}%`}</small></div>`
+          }).join('')
+      }
+
+      function renderSelection() {
+        renderQuarterStrip()
+        renderTrends('month-trends', metrics, 'data-month')
+        renderFocus()
+        renderStructure()
+        renderRegionDetail()
+      }
+      document.getElementById('quarter-strip').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-quarter]')
+        if (!button) return
+        focus = { kind: 'quarter', index: Number(button.dataset.quarter) }
+        renderSelection()
+      })
+      document.getElementById('month-trends').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-month]')
+        if (!button) return
+        focus = { kind: 'month', index: Number(button.dataset.month) }
+        renderSelection()
+      })
+      document.getElementById('region-result-list').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-region]')
+        if (!button) return
+        selectedRegion = Number(button.dataset.region)
+        renderRegionList()
+        renderMap()
+        renderRegionDetail()
+        document.getElementById('region-detail').scrollIntoView({ block: 'nearest' })
+      })
+      document.getElementById('region-close').addEventListener('click', () => {
+        selectedRegion = null
+        renderRegionList()
+        renderMap()
+        renderRegionDetail()
+      })
+      function selectUnit(event) {
+        const button = event.target.closest('[data-unit]')
+        if (!button) return
+        selectedUnit = Number(button.dataset.unit)
+        selectedRegion = null
+        renderStructure()
+        renderRegionDetail()
+      }
+      document.getElementById('unit-tabs').addEventListener('click', selectUnit)
+      document.getElementById('unit-composition').addEventListener('click', selectUnit)
+      document.getElementById('region-chooser').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-metric]')
+        if (!button) return
+        selectedMetric = Number(button.dataset.metric)
+        renderStructure()
+      })
+      document.getElementById('territory-map').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-map-region]')
+        if (!button) return
+        selectedRegion = Number(button.dataset.mapRegion)
+        renderRegionList()
+        renderMap()
+        renderRegionDetail()
+        document.getElementById('region-detail').scrollIntoView({ block: 'nearest' })
+      })
+      document.getElementById('region-quarters').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-region-quarter]')
+        if (!button) return
+        focus = { kind: 'quarter', index: Number(button.dataset.regionQuarter) }
+        renderSelection()
+      })
+      document.getElementById('region-month-trends').addEventListener('click', (event) => {
+        const button = event.target.closest('[data-region-month]')
+        if (!button) return
+        focus = { kind: 'month', index: Number(button.dataset.regionMonth) }
+        renderSelection()
+      })
+      renderSelection()
     </script>
   </body>
 </html>
