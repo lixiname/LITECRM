@@ -91,7 +91,7 @@
                 popper-class="week-view-add-popper"
                 @command="(command: AddCommand) => handleAddCommand(command, day)"
               >
-                <el-button type="primary" plain size="small">＋ 新增</el-button>
+                <el-button type="primary" plain size="small">＋ 日报</el-button>
                 <template #dropdown>
                   <el-dropdown-menu class="week-view__add-menu">
                     <el-dropdown-item command="customer" class="week-view__add-option">

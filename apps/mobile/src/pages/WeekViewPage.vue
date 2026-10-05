@@ -110,7 +110,7 @@
         >
           <span class="work-action__icon"><van-icon name="add-square" /></span>
           <span>
-            <strong>记业务</strong>
+            <strong>日报</strong>
             <small>{{ isFutureSelectedDate ? '未来日期不可填' : '记录已发生业务' }}</small>
           </span>
         </button>
