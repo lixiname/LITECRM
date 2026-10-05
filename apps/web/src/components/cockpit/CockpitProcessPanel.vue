@@ -103,14 +103,15 @@ function compactMoney(value: number): string {
 .cockpit-process__actions article {
   padding: 8px 9px;
   border-radius: 6px;
-  background: #f4f7f5;
+  border: 1px solid #e1effa;
+  background: linear-gradient(125deg, #fafdff, #e9f5ff);
 }
 .cockpit-process__actions span,
 .cockpit-process__actions strong {
   display: block;
 }
 .cockpit-process__actions span {
-  color: #718078;
+  color: #6381a0;
   font-size: 10px;
 }
 .cockpit-process__actions strong {
@@ -120,18 +121,18 @@ function compactMoney(value: number): string {
 }
 .cockpit-process__nodes {
   padding-top: 11px;
-  border-top: 1px solid #e3e9e6;
+  border-top: 1px solid #d5e9f8;
 }
 .cockpit-process__nodes > header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #66766e;
+  color: #6381a0;
   font-size: 11px;
 }
 .cockpit-process__nodes > header small {
-  color: #87958e;
+  color: #7899b5;
   font-size: 9px;
 }
 .cockpit-process__nodes > div {
@@ -144,7 +145,7 @@ function compactMoney(value: number): string {
   position: relative;
   padding: 7px 4px;
   border-radius: 5px;
-  background: #e9f0f4;
+  background: #e5f3ff;
   text-align: center;
 }
 .cockpit-process__nodes article:not(:last-child)::after {
@@ -154,7 +155,7 @@ function compactMoney(value: number): string {
   right: -6px;
   width: 6px;
   height: 1px;
-  background: #cbd7d1;
+  background: #a6d5f6;
 }
 .cockpit-process__nodes strong,
 .cockpit-process__nodes span {
@@ -164,7 +165,7 @@ function compactMoney(value: number): string {
   font-size: 17px;
 }
 .cockpit-process__nodes span {
-  color: #66766e;
+  color: #6381a0;
   font-size: 9px;
 }
 .cockpit-process footer {
@@ -172,11 +173,11 @@ function compactMoney(value: number): string {
   flex-wrap: wrap;
   gap: 6px 14px;
   padding-top: 10px;
-  border-top: 1px solid #e3e9e6;
-  color: #718078;
+  border-top: 1px solid #d5e9f8;
+  color: #6381a0;
   font-size: 10px;
 }
 .cockpit-process footer b {
-  color: #263a32;
+  color: #123458;
 }
 </style>

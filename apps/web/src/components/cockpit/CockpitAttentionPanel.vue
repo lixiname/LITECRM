@@ -79,14 +79,14 @@ function compactMoney(value: number): string {
   gap: 10px;
   padding: 8px 0;
   border: 0;
-  border-bottom: 1px solid #e7ece9;
+  border-bottom: 1px solid #e2eef8;
   color: inherit;
   background: transparent;
   text-align: left;
   cursor: pointer;
 }
 .cockpit-attention button:hover .cockpit-attention__copy strong {
-  color: #2c6653;
+  color: #187cf3;
 }
 .cockpit-attention__grade {
   width: 26px;
@@ -119,7 +119,7 @@ function compactMoney(value: number): string {
 .cockpit-attention__copy small {
   margin-top: 2px;
   overflow: hidden;
-  color: #718078;
+  color: #6381a0;
   font-size: 10px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -127,7 +127,7 @@ function compactMoney(value: number): string {
 .cockpit-attention__tag {
   padding: 3px 6px;
   border-radius: 4px;
-  color: #aa504c;
+  color: #bb741e;
   background: #f8e9e7;
   font-size: 10px;
   white-space: nowrap;
@@ -137,7 +137,7 @@ function compactMoney(value: number): string {
   justify-content: space-between;
   gap: 12px;
   padding-top: 10px;
-  color: #7a8981;
+  color: #6381a0;
   font-size: 10px;
 }
 </style>

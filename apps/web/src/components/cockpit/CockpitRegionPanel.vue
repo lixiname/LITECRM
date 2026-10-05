@@ -59,18 +59,18 @@ function compactMoney(value: number): string {
   overflow: hidden;
   margin-top: 5px;
   border-radius: 4px;
-  background: #e9efec;
+  background: #e1f0fc;
 }
 .cockpit-regions article i {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #397361;
+  background: linear-gradient(90deg, #70d3ef, #187cf3);
 }
 .cockpit-regions article small {
   display: block;
   margin-top: 3px;
-  color: #718078;
+  color: #6381a0;
   font-size: 10px;
 }
 </style>

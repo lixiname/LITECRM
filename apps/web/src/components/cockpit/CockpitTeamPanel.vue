@@ -70,7 +70,7 @@ function segmentStyle(value: number) {
   grid-template-columns: 24px 100px minmax(120px, 1fr) 58px;
   align-items: center;
   gap: 9px;
-  border-bottom: 1px solid #edf1ef;
+  border-bottom: 1px solid #e2eef8;
 }
 .cockpit-team__rank {
   width: 20px;
@@ -78,8 +78,8 @@ function segmentStyle(value: number) {
   display: grid;
   place-items: center;
   border-radius: 5px;
-  color: #587067;
-  background: #edf2ef;
+  color: #286da8;
+  background: #e5f3ff;
   font-size: 10px;
   font-weight: 700;
 }
@@ -92,7 +92,7 @@ function segmentStyle(value: number) {
 }
 .cockpit-team__identity small,
 .cockpit-team__activity small {
-  color: #7a8981;
+  color: #6381a0;
   font-size: 9px;
 }
 .cockpit-team__activity > div {
@@ -106,28 +106,28 @@ function segmentStyle(value: number) {
   min-width: 0;
 }
 .is-visit {
-  background: #397361;
+  background: #187cf3;
 }
 .is-follow {
-  background: #507b95;
+  background: #20bddd;
 }
 .is-quote {
-  background: #bd7e35;
+  background: #e1a153;
 }
 .cockpit-team__risk {
-  color: #718078;
+  color: #6381a0;
   font-size: 10px;
   text-align: right;
 }
 .cockpit-team__risk.is-risk {
-  color: #aa504c;
+  color: #bb741e;
   font-weight: 650;
 }
 .cockpit-team footer {
   display: flex;
   gap: 14px;
   margin-top: 10px;
-  color: #718078;
+  color: #6381a0;
   font-size: 10px;
 }
 .cockpit-team footer i {

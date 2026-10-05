@@ -27,50 +27,54 @@ defineProps<{ metrics: CockpitMetric[] }>()
 <style scoped>
 .cockpit-metrics {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
   overflow: hidden;
-  border: 1px solid #d8e2dd;
+  padding: 8px;
+  border: 1px solid #c4dff4;
   border-radius: 9px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgb(31 62 51 / 5%);
+  background: linear-gradient(135deg, rgb(255 255 255 / 90%), rgb(227 244 255 / 70%));
+  box-shadow: 0 3px 15px rgb(52 136 190 / 8%);
 }
 .cockpit-metric {
   min-width: 0;
-  padding: 13px 15px 12px;
+  padding: 9px 10px;
+  border: 1px solid #e2f1fb;
+  border-radius: 5px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 90%), rgb(220 239 255 / 65%));
 }
 .cockpit-metric + .cockpit-metric {
-  border-left: 1px solid #e2e9e5;
+  border-left: 1px solid #e2f1fb;
 }
 .cockpit-metric:nth-child(5) {
-  border-left-width: 5px;
-  border-left-color: #edf2ef;
+  border-left-width: 1px;
 }
 .cockpit-metric header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #66766e;
+  color: #587a9b;
   font-size: 12px;
 }
 .cockpit-metric header small {
   padding: 2px 5px;
   border-radius: 3px;
-  color: #275b49;
-  background: #e5f0eb;
+  color: #167ce6;
+  background: #e6f4ff;
   font-size: 10px;
   font-weight: 700;
 }
 .cockpit-metric header small.is-flow {
-  color: #365f76;
-  background: #e8f0f4;
+  color: #078d85;
+  background: #e2f7f5;
 }
 .cockpit-metric > strong {
   display: block;
   margin-top: 5px;
   overflow: hidden;
-  color: #172a23;
-  font-size: clamp(20px, 1.55vw, 27px);
+  color: #123458;
+  font-size: clamp(20px, 1.8vw, 27px);
   font-weight: 750;
   letter-spacing: -0.035em;
   font-variant-numeric: tabular-nums;
@@ -80,27 +84,17 @@ defineProps<{ metrics: CockpitMetric[] }>()
 .cockpit-metric p {
   margin: 3px 0 0;
   overflow: hidden;
-  color: #718078;
+  color: #6381a0;
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .cockpit-metric p.is-risk {
-  color: #aa504c;
+  color: #bb741e;
 }
-@media (max-width: 1360px) {
+@media (max-width: 680px) {
   .cockpit-metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .cockpit-metric:nth-child(4) {
-    border-left: 0;
-  }
-  .cockpit-metric:nth-child(n + 4) {
-    border-top: 1px solid #e2e9e5;
-  }
-  .cockpit-metric:nth-child(5) {
-    border-left-width: 1px;
-    border-left-color: #e2e9e5;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

@@ -73,25 +73,28 @@
     <AppQueryState :error="error" @retry="reload" />
     <div v-loading="loading" class="sales-cockpit__content">
       <template v-if="pipeline && team && keyCustomers && expenses && !error">
-        <CockpitMetricStrip :metrics="metrics" />
-
         <div class="sales-cockpit__grid">
-          <CockpitProcessPanel
-            class="sales-cockpit__process"
-            :flow="pipeline.flow"
-            :team="team"
-            :expense-amount="expenses.total.amount"
-            :period-label="periodLabel"
-          />
-          <CockpitPipelinePanel class="sales-cockpit__pipeline" :pool="pipeline.pool" />
-          <CockpitRegionPanel class="sales-cockpit__regions" :rows="pipeline.byRegion" />
-          <CockpitTeamPanel class="sales-cockpit__team" :rows="team.members" />
-          <CockpitAttentionPanel
-            class="sales-cockpit__attention"
-            :rows="keyCustomers.items"
-            :total-count="keyCustomers.totalCount"
-            :attention-count="keyCustomers.attentionCount"
-          />
+          <div class="sales-cockpit__column sales-cockpit__left">
+            <CockpitRegionPanel :rows="pipeline.byRegion" />
+            <CockpitProcessPanel
+              :flow="pipeline.flow"
+              :team="team"
+              :expense-amount="expenses.total.amount"
+              :period-label="periodLabel"
+            />
+          </div>
+          <div class="sales-cockpit__center">
+            <CockpitMetricStrip :metrics="metrics" />
+            <CockpitPipelinePanel :pool="pipeline.pool" />
+          </div>
+          <div class="sales-cockpit__column sales-cockpit__right">
+            <CockpitTeamPanel :rows="team.members" />
+            <CockpitAttentionPanel
+              :rows="keyCustomers.items"
+              :total-count="keyCustomers.totalCount"
+              :attention-count="keyCustomers.attentionCount"
+            />
+          </div>
         </div>
 
         <footer class="sales-cockpit__foot">
@@ -421,31 +424,6 @@ function compactMoney(value: number): string {
   margin: 0 auto;
   padding: 0 22px 18px;
 }
-.sales-cockpit__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1.5fr) minmax(0, 1fr);
-  grid-template-areas:
-    'process pipeline regions'
-    'team attention attention';
-  gap: 12px;
-  margin-top: 12px;
-  align-items: stretch;
-}
-.sales-cockpit__process {
-  grid-area: process;
-}
-.sales-cockpit__pipeline {
-  grid-area: pipeline;
-}
-.sales-cockpit__regions {
-  grid-area: regions;
-}
-.sales-cockpit__team {
-  grid-area: team;
-}
-.sales-cockpit__attention {
-  grid-area: attention;
-}
 .sales-cockpit__foot {
   display: flex;
   justify-content: space-between;
@@ -457,13 +435,6 @@ function compactMoney(value: number): string {
 @media (max-width: 1500px) {
   .sales-cockpit__hero {
     grid-template-columns: minmax(150px, 1fr) auto minmax(300px, 1fr);
-  }
-  .sales-cockpit__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas:
-      'pipeline pipeline'
-      'process regions'
-      'team attention';
   }
 }
 @media (max-width: 1180px) {
@@ -479,6 +450,133 @@ function compactMoney(value: number): string {
   }
   .sales-cockpit__filters {
     justify-content: flex-start;
+  }
+}
+/* Ice-blue operating-room treatment, adapted from the visual reference. */
+.sales-cockpit {
+  --cockpit-ink: #123458;
+  --cockpit-muted: #6381a0;
+  --cockpit-blue: #187cf3;
+  --cockpit-cyan: #20bddd;
+  --cockpit-line: #c4dff4;
+  color: var(--cockpit-ink);
+  background:
+    linear-gradient(rgb(131 182 219 / 6%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(131 182 219 / 6%) 1px, transparent 1px),
+    radial-gradient(ellipse at 50% 25%, #fbfdff, #e7f3ff 58%, #d6eaff);
+  background-size:
+    30px 30px,
+    30px 30px,
+    auto;
+}
+.sales-cockpit.is-fullscreen {
+  min-width: 0;
+}
+.sales-cockpit__hero {
+  min-height: 82px;
+  gap: 18px;
+  padding: 0 24px;
+  border-bottom: 1px solid #a6d5f6;
+  color: var(--cockpit-ink);
+  background: linear-gradient(180deg, #f8fcff, #e0f1ff);
+  box-shadow: 0 3px 20px rgb(52 136 190 / 9%);
+}
+.sales-cockpit__brand > span {
+  border-color: #b7e1ff;
+  color: #fff;
+  background: linear-gradient(145deg, #20bddd, #187cf3);
+  box-shadow: 0 3px 10px rgb(24 124 243 / 18%);
+}
+.sales-cockpit__brand strong {
+  color: #187cf3;
+}
+.sales-cockpit__brand small {
+  color: var(--cockpit-muted);
+}
+.sales-cockpit__title {
+  min-width: 390px;
+  padding: 10px 48px 12px;
+  clip-path: polygon(0 0, 100% 0, 92% 100%, 8% 100%);
+  color: #fff;
+  background: linear-gradient(180deg, #63b2fb, #147ee9 74%, #78c8ff);
+}
+.sales-cockpit__title h1 {
+  font-size: 23px;
+  font-weight: 750;
+}
+.sales-cockpit__title p {
+  color: #e6f6ff;
+}
+.sales-cockpit__actions :deep(.el-button.is-plain) {
+  border-color: #b7daf4;
+  color: #286da8;
+  background: rgb(255 255 255 / 66%);
+}
+.sales-cockpit__actions :deep(.el-button--primary) {
+  border-color: #187cf3;
+  color: #fff;
+  background: #187cf3;
+}
+.sales-cockpit__scope {
+  max-width: 1920px;
+  border-bottom: 1px solid #c4dff4;
+}
+.sales-cockpit__scope-copy span {
+  color: var(--cockpit-muted);
+}
+.sales-cockpit__content {
+  max-width: 1920px;
+  padding-top: 14px;
+}
+.sales-cockpit__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(460px, 1.75fr) minmax(300px, 1.1fr);
+  align-items: start;
+  gap: 14px;
+  margin-top: 0;
+}
+.sales-cockpit__column,
+.sales-cockpit__center {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+.sales-cockpit__foot {
+  color: var(--cockpit-muted);
+  font-size: 10px;
+}
+/* The application sidebar consumes 236px outside the cockpit itself. */
+@media (max-width: 1350px) {
+  .sales-cockpit__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sales-cockpit__center {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
+@media (max-width: 760px) {
+  .sales-cockpit__hero {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 12px;
+  }
+  .sales-cockpit__actions {
+    margin-left: auto;
+  }
+  .sales-cockpit__scope,
+  .sales-cockpit__content {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .sales-cockpit__grid {
+    grid-template-columns: 1fr;
+  }
+  .sales-cockpit__center {
+    grid-column: 1;
+  }
+  .sales-cockpit__foot {
+    flex-wrap: wrap;
   }
 }
 </style>
