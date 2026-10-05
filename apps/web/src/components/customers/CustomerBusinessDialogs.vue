@@ -8,6 +8,9 @@
       :title="`本次执行计划：${formatPlanTime(sourcePlan.plannedAt)} · ${sourcePlan.content}`"
     />
     <el-form label-width="100px">
+      <el-form-item label="客户">
+        <span class="business-dialog__customer-name">{{ customerName }}</span>
+      </el-form-item>
       <el-form-item label="拜访日期" required>
         <el-date-picker v-model="visitForm.occurredAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
@@ -61,6 +64,9 @@
 
   <el-dialog v-model="visible.complaint" title="登记客诉" width="520px">
     <el-form label-width="100px">
+      <el-form-item label="客户">
+        <span class="business-dialog__customer-name">{{ customerName }}</span>
+      </el-form-item>
       <el-form-item label="发生日期" required>
         <el-date-picker v-model="complaintForm.occurredAt" type="date" value-format="YYYY-MM-DD" />
       </el-form-item>
@@ -111,7 +117,7 @@ import {
 
 const props = defineProps<{
   customerId: string
-  customerName?: string
+  customerName: string
   currentVisitPlan?: SalesPlan
 }>()
 const emit = defineEmits<{
@@ -290,5 +296,9 @@ defineExpose({ openVisit, openOpportunity, openComplaint })
 <style scoped>
 .business-dialog__plan {
   margin-bottom: var(--crm-spacing-md);
+}
+.business-dialog__customer-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 </style>
