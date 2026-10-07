@@ -74,7 +74,6 @@
         v-model="form.productLines"
         multiple
         clearable
-        collapse-tags
         placeholder="选择相关产品线"
         style="width: 100%"
       >
