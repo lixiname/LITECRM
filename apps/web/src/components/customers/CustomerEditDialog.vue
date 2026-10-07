@@ -85,6 +85,32 @@
             </el-select>
           </el-form-item>
         </el-col>
+        <el-col v-if="form.industry === 'other'" :span="12">
+          <el-form-item
+            label="其他客户行业"
+            :required="!(customer.industry === 'other' && !customer.industryOtherText)"
+          >
+            <el-input
+              v-model="form.industryOtherText"
+              maxlength="80"
+              show-word-limit
+              placeholder="填写具体行业"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col v-if="form.subIndustry === 'other'" :span="12">
+          <el-form-item
+            label="其他具体领域"
+            :required="!(customer.subIndustry === 'other' && !customer.subIndustryOtherText)"
+          >
+            <el-input
+              v-model="form.subIndustryOtherText"
+              maxlength="80"
+              show-word-limit
+              placeholder="填写具体领域"
+            />
+          </el-form-item>
+        </el-col>
         <el-col :span="12">
           <el-form-item label="客户类型">
             <el-select v-model="form.customerType" clearable style="width: 100%">
@@ -147,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   CUSTOMER_GRADE_OPTIONS,
@@ -185,7 +211,9 @@ const form = reactive({
   provinceCode: '',
   cityCode: '',
   industry: '',
+  industryOtherText: '',
   subIndustry: '',
+  subIndustryOtherText: '',
   customerType: '',
   source: '',
   productLines: [] as string[],
@@ -197,6 +225,19 @@ const form = reactive({
 })
 const provinces = ref<AdministrativeDivision[]>([])
 const cities = ref<AdministrativeDivision[]>([])
+
+watch(
+  () => form.industry,
+  (value) => {
+    if (value !== 'other') form.industryOtherText = ''
+  },
+)
+watch(
+  () => form.subIndustry,
+  (value) => {
+    if (value !== 'other') form.subIndustryOtherText = ''
+  },
+)
 
 onMounted(async () => {
   const dimensions: CustomerDimension[] = [
@@ -227,7 +268,9 @@ async function open() {
     provinceCode: props.customer.provinceCode ?? '',
     cityCode: '',
     industry: props.customer.industry ?? '',
+    industryOtherText: props.customer.industryOtherText ?? '',
     subIndustry: props.customer.subIndustry ?? '',
+    subIndustryOtherText: props.customer.subIndustryOtherText ?? '',
     customerType: props.customer.customerType ?? '',
     source: props.customer.source ?? '',
     productLines: [...props.customer.productLines],
@@ -249,6 +292,14 @@ async function handleProvinceChange(provinceCode: string) {
 
 async function handleSave() {
   if (!form.name.trim()) return ElMessage.warning('客户名称必填')
+  const legacyIndustryOther =
+    props.customer.industry === 'other' && !props.customer.industryOtherText
+  const legacySegmentOther =
+    props.customer.subIndustry === 'other' && !props.customer.subIndustryOtherText
+  if (form.industry === 'other' && !form.industryOtherText.trim() && !legacyIndustryOther)
+    return ElMessage.warning('请填写具体客户行业')
+  if (form.subIndustry === 'other' && !form.subIndustryOtherText.trim() && !legacySegmentOther)
+    return ElMessage.warning('请填写具体领域')
   if (form.grade !== props.customer.grade && !form.gradeChangeReason.trim()) {
     return ElMessage.warning('调整客户等级必须填写原因')
   }
@@ -261,8 +312,26 @@ async function handleSave() {
       unifiedSocialCreditCode: form.unifiedSocialCreditCode.trim() || null,
       provinceCode: form.provinceCode || null,
       cityCode: form.cityCode || null,
-      industry: form.industry || null,
-      subIndustry: form.subIndustry || null,
+      industry:
+        legacyIndustryOther && form.industry === 'other' && !form.industryOtherText.trim()
+          ? undefined
+          : form.industry || null,
+      industryOtherText:
+        legacyIndustryOther && form.industry === 'other' && !form.industryOtherText.trim()
+          ? undefined
+          : form.industry === 'other'
+            ? form.industryOtherText.trim()
+            : null,
+      subIndustry:
+        legacySegmentOther && form.subIndustry === 'other' && !form.subIndustryOtherText.trim()
+          ? undefined
+          : form.subIndustry || null,
+      subIndustryOtherText:
+        legacySegmentOther && form.subIndustry === 'other' && !form.subIndustryOtherText.trim()
+          ? undefined
+          : form.subIndustry === 'other'
+            ? form.subIndustryOtherText.trim()
+            : null,
       customerType: form.customerType || null,
       source: form.source || null,
       productLines: form.productLines,

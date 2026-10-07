@@ -182,7 +182,14 @@ function labelOf(dimension: string, value?: string | null): string {
 
 function businessProfile(customer: CustomerItem): string {
   return (
-    [labelOf('industry', customer.industry), labelOf('sub_industry', customer.subIndustry)]
+    [
+      customer.industry === 'other' && customer.industryOtherText
+        ? customer.industryOtherText
+        : labelOf('industry', customer.industry),
+      customer.subIndustry === 'other' && customer.subIndustryOtherText
+        ? customer.subIndustryOtherText
+        : labelOf('sub_industry', customer.subIndustry),
+    ]
       .filter(Boolean)
       .join(' · ') || '业务画像待完善'
   )

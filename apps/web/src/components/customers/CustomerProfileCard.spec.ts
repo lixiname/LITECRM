@@ -19,6 +19,10 @@ describe('客户资料阅读布局', () => {
       productLines: [],
       customerCode: 'ERP20260904000012',
       unifiedSocialCreditCode: '913205000000000000',
+      industry: 'other',
+      industryOtherText: '精密陶瓷',
+      subIndustry: 'other',
+      subIndustryOtherText: '高纯过滤',
     } as unknown as CustomerDetail
     const wrapper = mount(CustomerProfileCard, {
       props: { customer, ownerLabel: '我', editable: true },
@@ -30,6 +34,8 @@ describe('客户资料阅读布局', () => {
       expect(wrapper.text()).toContain(customer.name)
       expect(wrapper.text()).toContain(customer.unifiedSocialCreditCode)
       expect(wrapper.text()).toContain('老客户')
+      expect(wrapper.text()).toContain('精密陶瓷')
+      expect(wrapper.text()).toContain('高纯过滤')
       await wrapper.get('button').trigger('click')
       expect(wrapper.emitted('edit')).toHaveLength(1)
       await wrapper.setProps({ editable: false })

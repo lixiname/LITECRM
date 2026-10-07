@@ -286,8 +286,12 @@ function dimensionLabel(dimension: string, value?: string | null): string {
 function businessProfile(customer: CustomerItem): string {
   return (
     [
-      dimensionLabel('industry', customer.industry),
-      dimensionLabel('sub_industry', customer.subIndustry),
+      customer.industry === 'other' && customer.industryOtherText
+        ? customer.industryOtherText
+        : dimensionLabel('industry', customer.industry),
+      customer.subIndustry === 'other' && customer.subIndustryOtherText
+        ? customer.subIndustryOtherText
+        : dimensionLabel('sub_industry', customer.subIndustry),
     ]
       .filter(Boolean)
       .join(' · ') || '业务画像待完善'

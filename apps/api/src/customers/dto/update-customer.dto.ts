@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsArray, IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator'
 import { CUSTOMER_GRADES, type CustomerGrade } from '../../common/constants'
 
 // 更新客户（§8.3：可维护 owner/管理链/admin；联系人走单独接口）
@@ -31,6 +40,17 @@ export class UpdateCustomerDto {
   industry?: string | null
 
   @ApiPropertyOptional({
+    description: '客户行业选择其他时的具体描述',
+    type: String,
+    nullable: true,
+    maxLength: 80,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  industryOtherText?: string | null
+
+  @ApiPropertyOptional({
     description: '具体领域（与客户行业无层级约束）',
     type: String,
     nullable: true,
@@ -38,6 +58,17 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   subIndustry?: string | null
+
+  @ApiPropertyOptional({
+    description: '具体领域选择其他时的具体描述',
+    type: String,
+    nullable: true,
+    maxLength: 80,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  subIndustryOtherText?: string | null
 
   @ApiPropertyOptional({ description: '客户类型', type: String, nullable: true })
   @IsOptional()

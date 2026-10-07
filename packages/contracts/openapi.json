@@ -3236,9 +3236,19 @@
             "type": "string",
             "description": "客户行业（独立字典维度）"
           },
+          "industryOtherText": {
+            "type": "string",
+            "description": "客户行业选择其他时的具体描述",
+            "maxLength": 80
+          },
           "subIndustry": {
             "type": "string",
             "description": "具体领域（与客户行业无层级约束）"
+          },
+          "subIndustryOtherText": {
+            "type": "string",
+            "description": "具体领域选择其他时的具体描述",
+            "maxLength": 80
           },
           "customerType": {
             "type": "string",
@@ -3418,10 +3428,22 @@
             "description": "客户行业",
             "nullable": true
           },
+          "industryOtherText": {
+            "type": "string",
+            "description": "客户行业选择其他时的具体描述",
+            "nullable": true,
+            "maxLength": 80
+          },
           "subIndustry": {
             "type": "string",
             "description": "具体领域（与客户行业无层级约束）",
             "nullable": true
+          },
+          "subIndustryOtherText": {
+            "type": "string",
+            "description": "具体领域选择其他时的具体描述",
+            "nullable": true,
+            "maxLength": 80
           },
           "customerType": {
             "type": "string",

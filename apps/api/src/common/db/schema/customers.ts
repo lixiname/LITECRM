@@ -74,7 +74,9 @@ export const customers = pgTable(
     unifiedSocialCreditCode: text('unified_social_credit_code'), // 统一社会信用代码（可选，权威硬查重）
     aliasNames: jsonb('alias_names').$type<string[]>().default([]).notNull(), // 别名/简称
     industry: text('industry'), // 客户行业（独立字典维度）
+    industryOtherText: text('industry_other_text'), // 行业=other 时的原始描述
     subIndustry: text('sub_industry'), // 具体领域（与客户行业正交，不是父子层级）
+    subIndustryOtherText: text('sub_industry_other_text'), // 领域=other 时的原始描述
     customerType: text('customer_type'), // 客户类型（字典快照）
     productLines: jsonb('product_lines').$type<string[]>().default([]).notNull(), // 产品线（字典快照）
     city: text('city'),

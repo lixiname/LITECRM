@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs'
 import { sql } from 'drizzle-orm'
 import request from 'supertest'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { seedAccounts } from '../../../scripts/seed'
+import { seedAccounts, seedDimensions } from '../../../scripts/seed'
 import { AppModule } from '../../app.module'
 import { db } from '../../common/db/db'
 
@@ -15,6 +15,7 @@ describe('客户 Excel 冷启动导入', () => {
 
   beforeAll(async () => {
     await seedAccounts()
+    await seedDimensions()
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile()
     app = moduleRef.createNestApplication()
     app.setGlobalPrefix('api')
@@ -150,7 +151,7 @@ describe('客户 Excel 冷启动导入', () => {
     expect(sheet?.getCell('A3').text).toContain('【示例】')
     expect(JSON.stringify(sheet?.getCell('B2').note)).toContain('条件必填')
     expect(sheet?.getCell('B4').dataValidation).toMatchObject({ type: 'list' })
-    expect(sheet?.getCell('M4').dataValidation).toMatchObject({ type: 'list' })
+    expect(sheet?.getCell('O4').dataValidation).toMatchObject({ type: 'list' })
     expect(sheet?.views[0]).toMatchObject({ state: 'frozen', ySplit: 2 })
 
     sheet!.getCell('A4').value = 'IMPORT_模板真实客户'
@@ -202,6 +203,54 @@ describe('客户 Excel 冷启动导入', () => {
       .set('Authorization', `Bearer ${salesToken}`)
       .attach('file', buffer, 'customers.xlsx')
     expect(response.status).toBe(403)
+  })
+
+  it('导入时把未收录行业写入其他说明，标准项仍保存字典代码', async () => {
+    const workbook = new ExcelJS.Workbook()
+    const sheet = workbook.addWorksheet('客户导入')
+    sheet.addRow(['客户名称', '客户行业', '具体领域', '具体领域-其他说明'])
+    sheet.addRow(['IMPORT_自定义画像', '精密陶瓷', '其他', '高纯过滤'])
+    sheet.addRow(['IMPORT_标准画像', '电镀', '五金', null])
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer())
+    const uploaded = await request(app.getHttpServer())
+      .post('/api/customers/imports')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .attach('file', buffer, 'customers.xlsx')
+    expect(uploaded.status).toBe(201)
+    const preview = await request(app.getHttpServer())
+      .post(`/api/customers/imports/${uploaded.body.id}/preview`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        mapping: uploaded.body.suggestedMapping,
+        defaultRelationship: 'prospect',
+        targetStatus: 'public',
+      })
+    expect(preview.body).toMatchObject({ readyRows: 2, failedRows: 0 })
+    await request(app.getHttpServer())
+      .post(`/api/customers/imports/${uploaded.body.id}/commit`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(201)
+    const rows = await request(app.getHttpServer())
+      .get('/api/customers?status=public&keyword=IMPORT_')
+      .set('Authorization', `Bearer ${adminToken}`)
+    expect(rows.body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'IMPORT_自定义画像',
+          industry: 'other',
+          industryOtherText: '精密陶瓷',
+          subIndustry: 'other',
+          subIndustryOtherText: '高纯过滤',
+        }),
+        expect.objectContaining({
+          name: 'IMPORT_标准画像',
+          industry: 'electroplating',
+          industryOtherText: null,
+          subIndustry: 'hardware',
+          subIndustryOtherText: null,
+        }),
+      ]),
+    )
   })
 
   async function login(username: string) {

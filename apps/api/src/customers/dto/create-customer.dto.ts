@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   MinLength,
+  MaxLength,
   ValidateNested,
 } from 'class-validator'
 import { Type } from 'class-transformer'
@@ -41,10 +42,22 @@ export class CreateCustomerDto {
   @IsString()
   industry?: string
 
+  @ApiPropertyOptional({ description: '客户行业选择其他时的具体描述', maxLength: 80 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  industryOtherText?: string
+
   @ApiPropertyOptional({ description: '具体领域（与客户行业无层级约束）' })
   @IsOptional()
   @IsString()
   subIndustry?: string
+
+  @ApiPropertyOptional({ description: '具体领域选择其他时的具体描述', maxLength: 80 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  subIndustryOtherText?: string
 
   @ApiPropertyOptional({ description: '客户类型（字典快照）' })
   @IsOptional()

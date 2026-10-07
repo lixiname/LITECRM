@@ -1453,8 +1453,12 @@ export interface components {
             unifiedSocialCreditCode?: string;
             /** @description 客户行业（独立字典维度） */
             industry?: string;
+            /** @description 客户行业选择其他时的具体描述 */
+            industryOtherText?: string;
             /** @description 具体领域（与客户行业无层级约束） */
             subIndustry?: string;
+            /** @description 具体领域选择其他时的具体描述 */
+            subIndustryOtherText?: string;
             /** @description 客户类型（字典快照） */
             customerType?: string;
             /** @description 产品线（字典快照） */
@@ -1541,8 +1545,12 @@ export interface components {
             unifiedSocialCreditCode?: string | null;
             /** @description 客户行业 */
             industry?: string | null;
+            /** @description 客户行业选择其他时的具体描述 */
+            industryOtherText?: string | null;
             /** @description 具体领域（与客户行业无层级约束） */
             subIndustry?: string | null;
+            /** @description 具体领域选择其他时的具体描述 */
+            subIndustryOtherText?: string | null;
             /** @description 客户类型 */
             customerType?: string | null;
             /** @description 关注产品线 */

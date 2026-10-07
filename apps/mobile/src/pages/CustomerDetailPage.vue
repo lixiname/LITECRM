@@ -184,8 +184,22 @@
         :value="[detail.province, detail.city].filter(Boolean).join(' / ') || '-'"
       />
       <van-cell title="销售大区" :value="detail.salesRegionName ?? '-'" />
-      <van-cell title="客户行业" :value="dimensionLabel('industry', detail.industry)" />
-      <van-cell title="具体领域" :value="dimensionLabel('sub_industry', detail.subIndustry)" />
+      <van-cell
+        title="客户行业"
+        :value="
+          detail.industry === 'other' && detail.industryOtherText
+            ? detail.industryOtherText
+            : dimensionLabel('industry', detail.industry)
+        "
+      />
+      <van-cell
+        title="具体领域"
+        :value="
+          detail.subIndustry === 'other' && detail.subIndustryOtherText
+            ? detail.subIndustryOtherText
+            : dimensionLabel('sub_industry', detail.subIndustry)
+        "
+      />
       <van-cell title="等级" :value="detail.grade" />
       <van-cell title="经营阶段" :value="relationshipLabel(detail.relationshipStage)" />
       <van-cell title="状态" :value="statusLabel(detail.status)" />

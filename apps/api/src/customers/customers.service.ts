@@ -38,6 +38,7 @@ import {
 import { AccessService } from '../access/access.service'
 import { GradeQuotaService } from './grade-quota.service'
 import { normalizeBusinessName, normalizePhone, normalizeWechatId } from './customer-normalizer'
+import { resolveCustomerDimensionOther } from './customer-dimension-other'
 import { scoreDuplicate, type DedupInput, type DedupScored } from './dedup'
 import type { AuthUser } from '../auth/auth.service'
 import type { CreateCustomerDto } from './dto/create-customer.dto'
@@ -60,7 +61,9 @@ export interface ImportedCustomerInput {
   city?: string | null
   address?: string | null
   industry?: string | null
+  industryOtherText?: string | null
   subIndustry?: string | null
+  subIndustryOtherText?: string | null
   customerType?: string | null
   source?: string | null
   grade?: 'S' | 'A' | 'B' | 'C'
@@ -91,13 +94,17 @@ export class CustomersService {
   // 仅 ERP 编码/信用代码唯一冲突硬拦截；名称归一化只做疑似重复提示。
   async create(dto: CreateCustomerDto, actor: AuthUser) {
     assertContactsHaveMethod(dto.contacts)
-    await Promise.all(
-      dto.contacts
+    await Promise.all([
+      ...dto.contacts
         .filter((contact) => contact.functionRole)
         .map((contact) =>
           this.catalogService.assertDimensionValue('contact_function', contact.functionRole!),
         ),
-    )
+      ...(dto.industry ? [this.catalogService.assertDimensionValue('industry', dto.industry)] : []),
+      ...(dto.subIndustry
+        ? [this.catalogService.assertDimensionValue('sub_industry', dto.subIndustry)]
+        : []),
+    ])
     const ownerId = dto.ownerId ?? actor.id
 
     try {
@@ -111,6 +118,16 @@ export class CustomersService {
 
   // 冷启动导入：允许联系人缺失；不伪造商机或成交，只写客户事实与可选期初金额。
   async createImportedCustomer(input: ImportedCustomerInput, actor: AuthUser) {
+    const industryOtherText = resolveCustomerDimensionOther(
+      '客户行业',
+      input.industry,
+      input.industryOtherText,
+    )
+    const subIndustryOtherText = resolveCustomerDimensionOther(
+      '具体领域',
+      input.subIndustry,
+      input.subIndustryOtherText,
+    )
     try {
       return await db.transaction(async (tx) => {
         if (input.status === 'active') {
@@ -129,7 +146,9 @@ export class CustomersService {
             city: input.city ?? null,
             address: input.address ?? null,
             industry: input.industry ?? null,
+            industryOtherText,
             subIndustry: input.subIndustry ?? null,
+            subIndustryOtherText,
             customerType: input.customerType ?? null,
             source: input.source ?? null,
             grade: input.grade ?? 'C',
@@ -268,6 +287,16 @@ export class CustomersService {
   }
 
   private async insertCustomer(dto: CreateCustomerDto, ownerId: string, actor: AuthUser) {
+    const industryOtherText = resolveCustomerDimensionOther(
+      '客户行业',
+      dto.industry,
+      dto.industryOtherText,
+    )
+    const subIndustryOtherText = resolveCustomerDimensionOther(
+      '具体领域',
+      dto.subIndustry,
+      dto.subIndustryOtherText,
+    )
     return db.transaction(async (tx) => {
       const grade = dto.grade ?? 'C'
       await this.assigneeService.assertAssignable(tx, ownerId)
@@ -292,7 +321,9 @@ export class CustomersService {
           unifiedSocialCreditCode: normalizeOptionalIdentifier(dto.unifiedSocialCreditCode),
           aliasNames: dto.aliasNames ?? [],
           industry: dto.industry ?? null,
+          industryOtherText,
           subIndustry: dto.subIndustry ?? null,
+          subIndustryOtherText,
           customerType: dto.customerType ?? null,
           productLines: dto.productLines ?? [],
           ...location,
@@ -778,6 +809,37 @@ export class CustomersService {
   async update(id: string, dto: UpdateCustomerDto, actor: AuthUser) {
     const customer = await this.findVisible(id, actor)
     await this.assertCanContribute(customer, actor)
+    await Promise.all([
+      ...(dto.industry && dto.industry !== customer.industry
+        ? [this.catalogService.assertDimensionValue('industry', dto.industry)]
+        : []),
+      ...(dto.subIndustry && dto.subIndustry !== customer.subIndustry
+        ? [this.catalogService.assertDimensionValue('sub_industry', dto.subIndustry)]
+        : []),
+    ])
+
+    const nextIndustry = dto.industry === undefined ? customer.industry : dto.industry
+    const nextSubIndustry = dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry
+    const industryOtherText =
+      dto.industry === undefined && dto.industryOtherText === undefined
+        ? customer.industryOtherText
+        : resolveCustomerDimensionOther(
+            '客户行业',
+            nextIndustry,
+            dto.industryOtherText === undefined && dto.industry === customer.industry
+              ? customer.industryOtherText
+              : dto.industryOtherText,
+          )
+    const subIndustryOtherText =
+      dto.subIndustry === undefined && dto.subIndustryOtherText === undefined
+        ? customer.subIndustryOtherText
+        : resolveCustomerDimensionOther(
+            '具体领域',
+            nextSubIndustry,
+            dto.subIndustryOtherText === undefined && dto.subIndustry === customer.subIndustry
+              ? customer.subIndustryOtherText
+              : dto.subIndustryOtherText,
+          )
 
     try {
       return await db.transaction(async (tx) => {
@@ -814,8 +876,10 @@ export class CustomersService {
               dto.unifiedSocialCreditCode === undefined
                 ? customer.unifiedSocialCreditCode
                 : normalizeOptionalIdentifier(dto.unifiedSocialCreditCode),
-            industry: dto.industry === undefined ? customer.industry : dto.industry,
-            subIndustry: dto.subIndustry === undefined ? customer.subIndustry : dto.subIndustry,
+            industry: nextIndustry,
+            industryOtherText,
+            subIndustry: nextSubIndustry,
+            subIndustryOtherText,
             customerType: dto.customerType === undefined ? customer.customerType : dto.customerType,
             productLines: dto.productLines === undefined ? customer.productLines : dto.productLines,
             city: shouldResolveLocation

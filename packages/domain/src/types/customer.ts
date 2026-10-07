@@ -25,7 +25,9 @@ export interface CustomerItem {
   unifiedSocialCreditCode: string | null
   aliasNames: string[]
   industry: string | null
+  industryOtherText: string | null
   subIndustry: string | null
+  subIndustryOtherText: string | null
   customerType: string | null
   productLines: string[]
   city: string | null

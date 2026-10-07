@@ -23,10 +23,16 @@
         customer.salesRegionName ?? '-'
       }}</el-descriptions-item>
       <el-descriptions-item label="客户行业">
-        {{ dimensionLabel('industry', customer.industry) }}
+        {{
+          customer.industry === 'other' && customer.industryOtherText
+            ? customer.industryOtherText
+            : dimensionLabel('industry', customer.industry)
+        }}
       </el-descriptions-item>
       <el-descriptions-item label="具体领域">{{
-        dimensionLabel('sub_industry', customer.subIndustry)
+        customer.subIndustry === 'other' && customer.subIndustryOtherText
+          ? customer.subIndustryOtherText
+          : dimensionLabel('sub_industry', customer.subIndustry)
       }}</el-descriptions-item>
       <el-descriptions-item label="客户类型">
         {{ dimensionLabel('customer_type', customer.customerType) }}

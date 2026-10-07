@@ -53,12 +53,32 @@
           @click="showIndustry = true"
         />
         <van-field
+          v-if="form.industry === 'other'"
+          v-model="form.industryOtherText"
+          label="其他客户行业"
+          placeholder="填写具体行业"
+          required
+          maxlength="80"
+          show-word-limit
+          :rules="[{ required: true, message: '请填写具体客户行业' }]"
+        />
+        <van-field
           v-model="segmentLabel"
           label="具体领域"
           readonly
           is-link
           placeholder="选择具体领域"
           @click="showSegment = true"
+        />
+        <van-field
+          v-if="form.subIndustry === 'other'"
+          v-model="form.subIndustryOtherText"
+          label="其他具体领域"
+          placeholder="填写具体领域"
+          required
+          maxlength="80"
+          show-word-limit
+          :rules="[{ required: true, message: '请填写具体领域' }]"
         />
         <van-field
           v-model="productLinesLabel"
@@ -221,7 +241,9 @@ const form = reactive({
   customerType: '',
   source: '',
   industry: '',
+  industryOtherText: '',
   subIndustry: '',
+  subIndustryOtherText: '',
   productLines: [] as string[],
   grade: 'C' as CustomerGrade,
   ownerId: '',
@@ -359,6 +381,7 @@ function pickCity({ selectedOptions }: { selectedOptions: PickerOption[] }) {
 }
 function pickIndustry({ selectedOptions }: { selectedOptions: PickerOption[] }) {
   form.industry = selectedOptions[0].value
+  if (form.industry !== 'other') form.industryOtherText = ''
   showIndustry.value = false
 }
 function pickCustomerType({ selectedOptions }: { selectedOptions: PickerOption[] }) {
@@ -371,6 +394,7 @@ function pickSource({ selectedOptions }: { selectedOptions: PickerOption[] }) {
 }
 function pickSegment({ selectedOptions }: { selectedOptions: PickerOption[] }) {
   form.subIndustry = selectedOptions[0].value
+  if (form.subIndustry !== 'other') form.subIndustryOtherText = ''
   showSegment.value = false
 }
 function pickGrade({ selectedOptions }: { selectedOptions: PickerOption[] }) {
@@ -387,6 +411,10 @@ function pickOwner({ selectedOptions }: { selectedOptions: PickerOption[] }) {
 }
 
 async function submit() {
+  if (form.industry === 'other' && !form.industryOtherText.trim())
+    return showToast('请填写具体客户行业')
+  if (form.subIndustry === 'other' && !form.subIndustryOtherText.trim())
+    return showToast('请填写具体领域')
   if (ownerRequired.value && !form.ownerId) {
     showToast('请选择客户负责人')
     return
@@ -417,7 +445,10 @@ async function submit() {
       customerType: form.customerType || undefined,
       source: form.source || undefined,
       industry: form.industry || undefined,
+      industryOtherText: form.industry === 'other' ? form.industryOtherText.trim() : undefined,
       subIndustry: form.subIndustry || undefined,
+      subIndustryOtherText:
+        form.subIndustry === 'other' ? form.subIndustryOtherText.trim() : undefined,
       productLines: form.productLines,
       grade: form.grade,
       ownerId: form.ownerId || undefined,

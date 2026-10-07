@@ -90,6 +90,66 @@ describe('客户工作台（资料、联系人、最近活动与时间线）', (
     })
   })
 
+  it('其他行业与领域分别保存原文，切回标准项时清除补充说明', async () => {
+    const missing = await request(app.getHttpServer())
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'WB_缺少其他说明',
+        industry: 'other',
+        contacts: [{ phone: '13800004001' }],
+      })
+    expect(missing.status).toBe(400)
+
+    const misplaced = await request(app.getHttpServer())
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'WB_标准项错填说明',
+        industry: 'electroplating',
+        industryOtherText: '精密陶瓷',
+        contacts: [{ phone: '13800004001' }],
+      })
+    expect(misplaced.status).toBe(400)
+
+    const created = await request(app.getHttpServer())
+      .post('/api/customers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'WB_其他行业客户',
+        industry: 'other',
+        industryOtherText: '  精密陶瓷  ',
+        subIndustry: 'other',
+        subIndustryOtherText: '  高纯过滤  ',
+        contacts: [{ phone: '13800004001' }],
+      })
+    expect(created.status).toBe(201)
+    expect(created.body).toMatchObject({
+      industry: 'other',
+      industryOtherText: '精密陶瓷',
+      subIndustry: 'other',
+      subIndustryOtherText: '高纯过滤',
+    })
+
+    const updated = await request(app.getHttpServer())
+      .patch(`/api/customers/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        version: created.body.version,
+        industry: 'electroplating',
+        industryOtherText: null,
+        subIndustry: 'hardware',
+        subIndustryOtherText: null,
+      })
+    expect(updated.status).toBe(200)
+    expect(updated.body).toMatchObject({
+      industry: 'electroplating',
+      industryOtherText: null,
+      subIndustry: 'hardware',
+      subIndustryOtherText: null,
+    })
+  })
+
   it('切换首要联系人保持唯一，并阻止删除最后一种联系方式', async () => {
     const customer = await createCustomer('WB_联系人')
     const before = await request(app.getHttpServer())

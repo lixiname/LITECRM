@@ -7,17 +7,24 @@ import {
 import ExcelJS from 'exceljs'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../common/db/db'
-import { customerImportBatches, customerImportRows, customers, users } from '../common/db/schema'
+import {
+  customerDimensionOptions,
+  customerImportBatches,
+  customerImportRows,
+  customers,
+  users,
+} from '../common/db/schema'
 import type { AuthUser } from '../auth/auth.service'
 import { normalizeBusinessName } from './customer-normalizer'
 import { CustomersService, type ImportedCustomerInput } from './customers.service'
+import { CatalogService } from '../catalog/catalog.service'
 import type { CustomerImportField, PreviewCustomerImportDto } from './dto/customer-import.dto'
 
 const MAX_IMPORT_ROWS = 2000
 const MAX_HEADER_SCAN_ROWS = 10
 const TEMPLATE_EXAMPLE_MARKER = '【示例】'
 const TEMPLATE_INSTRUCTION =
-  '填写说明：第 2 行为字段名称，请勿删除或修改。红色 * 表示必填或条件必填：客户名称始终必填；选择“逐行指定客户关系”时须填CRM启用前是否成交；导入在案客户且未选择默认负责人时须填负责人账号。第 3 行是系统自动忽略的示例，请覆盖、删除或从第 4 行开始填写。'
+  '填写说明：第 2 行为字段名称，请勿删除或修改。红色 * 表示必填或条件必填：客户名称始终必填；选择“逐行指定客户关系”时须填CRM启用前是否成交；导入在案客户且未选择默认负责人时须填负责人账号。行业/领域可填标准字典名称；填“其他”时在相邻说明列写具体内容，也可直接填未收录的名称。第 3 行是系统自动忽略的示例，请覆盖、删除或从第 4 行开始填写。'
 
 const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   name: ['客户名称', '名称', '公司名称', 'name'],
@@ -27,7 +34,9 @@ const HEADER_ALIASES: Record<CustomerImportField, string[]> = {
   city: ['城市', '地级市', 'city'],
   address: ['地址', '详细地址', 'address'],
   industry: ['客户行业', '行业', 'industry'],
+  industryOtherText: ['客户行业-其他说明', '行业其他说明', 'industryOtherText'],
   subIndustry: ['具体领域', '细分行业', 'subIndustry'],
+  subIndustryOtherText: ['具体领域-其他说明', '领域其他说明', 'subIndustryOtherText'],
   customerType: ['客户类型', 'customerType'],
   source: ['客户来源', '来源', 'source'],
   grade: ['客户等级', '等级', 'grade'],
@@ -50,7 +59,9 @@ const TEMPLATE_FIELD_ORDER: CustomerImportField[] = [
   'city',
   'address',
   'industry',
+  'industryOtherText',
   'subIndustry',
+  'subIndustryOtherText',
   'customerType',
   'source',
   'grade',
@@ -93,6 +104,8 @@ const TEMPLATE_EXAMPLE_VALUES: Partial<Record<CustomerImportField, string | numb
   ownerUsername: '请替换为系统用户名',
   customerCode: 'ERP-EXAMPLE-001',
   unifiedSocialCreditCode: '91320594MA0000000X',
+  industry: '其他',
+  industryOtherText: '精密陶瓷',
   province: '江苏省',
   city: '苏州市',
   address: '苏州工业园区示例路 88 号',
@@ -116,7 +129,10 @@ type ExistingCustomerImportMatch = {
 
 @Injectable()
 export class CustomerImportService {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(
+    private readonly customersService: CustomersService,
+    private readonly catalogService: CatalogService,
+  ) {}
 
   async createTemplate(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook()
@@ -277,6 +293,10 @@ export class CustomerImportService {
       .select({ id: users.id, username: users.username, displayName: users.displayName })
       .from(users)
       .where(and(eq(users.isActive, true), inArray(users.role, ['sales', 'executive'])))
+    const [industryOptions, segmentOptions] = await Promise.all([
+      this.catalogService.listByDimension('industry'),
+      this.catalogService.listByDimension('sub_industry'),
+    ])
     const assigneeByName = new Map<string, string>()
     for (const assignee of assignees) {
       assigneeByName.set(assignee.username.trim(), assignee.id)
@@ -293,7 +313,13 @@ export class CustomerImportService {
     const seenCreditCodes = new Set<string>()
     const results = []
     for (const row of importRows) {
-      const result = normalizeImportRow(row.rawData as RawRow, dto, assigneeByName)
+      const result = normalizeImportRow(
+        row.rawData as RawRow,
+        dto,
+        assigneeByName,
+        industryOptions,
+        segmentOptions,
+      )
       let status: 'ready' | 'duplicate' | 'invalid' = result.error ? 'invalid' : 'ready'
       let error = result.error
       let duplicateCustomerId: string | null = null
@@ -439,6 +465,8 @@ function normalizeImportRow(
   raw: RawRow,
   dto: PreviewCustomerImportDto,
   assigneeByName: Map<string, string>,
+  industryOptions: DimensionOption[],
+  segmentOptions: DimensionOption[],
 ): { data?: Omit<ImportedCustomerInput, 'importBatchId'>; error?: string } {
   const value = (field: CustomerImportField) => {
     const header = dto.mapping[field]
@@ -468,6 +496,21 @@ function normalizeImportRow(
   if (ownerText && !ownerId) return { error: `负责人不存在或不可承担客户：${ownerText}` }
   if (dto.targetStatus === 'active' && !ownerId) return { error: '在案客户缺少负责人' }
 
+  const industry = resolveImportDimension(
+    value('industry'),
+    value('industryOtherText'),
+    industryOptions,
+    '客户行业',
+  )
+  if (industry.error) return { error: industry.error }
+  const segment = resolveImportDimension(
+    value('subIndustry'),
+    value('subIndustryOtherText'),
+    segmentOptions,
+    '具体领域',
+  )
+  if (segment.error) return { error: segment.error }
+
   return {
     data: {
       name,
@@ -476,8 +519,10 @@ function normalizeImportRow(
       province: optional(value('province')),
       city: optional(value('city')),
       address: optional(value('address')),
-      industry: optional(value('industry')),
-      subIndustry: optional(value('subIndustry')),
+      industry: industry.code,
+      industryOtherText: industry.otherText,
+      subIndustry: segment.code,
+      subIndustryOtherText: segment.otherText,
       customerType: optional(value('customerType')),
       source: optional(value('source')),
       grade: (gradeText || 'C') as 'S' | 'A' | 'B' | 'C',
@@ -491,6 +536,39 @@ function normalizeImportRow(
       notes: optional(value('notes')),
     },
   }
+}
+
+type DimensionOption = typeof customerDimensionOptions.$inferSelect
+
+function resolveImportDimension(
+  value: string,
+  explicitOtherText: string,
+  options: DimensionOption[],
+  label: string,
+): { code: string | null; otherText: string | null; error?: string } {
+  if (!value && !explicitOtherText) return { code: null, otherText: null }
+  const option = options.find(
+    (item) =>
+      item.isActive && (item.name.toLowerCase() === value.toLowerCase() || item.label === value),
+  )
+  if (option && option.name !== 'other') {
+    return explicitOtherText
+      ? { code: null, otherText: null, error: `${label}为标准项时不能填写其他说明` }
+      : { code: option.name, otherText: null }
+  }
+  const text =
+    option?.name === 'other' || value === '其他' || value.toLowerCase() === 'other'
+      ? explicitOtherText
+      : value || explicitOtherText
+  if (!text) return { code: null, otherText: null, error: `选择其他${label}时，请填写具体内容` }
+  if (text.length > 80) return { code: null, otherText: null, error: `其他${label}不能超过80字` }
+  if (explicitOtherText && value && text === value) {
+    return { code: null, otherText: null, error: `${label}与其他说明请只填写一处具体内容` }
+  }
+  if (!options.some((item) => item.isActive && item.name === 'other')) {
+    return { code: null, otherText: null, error: `${label}的“其他”字典项未启用` }
+  }
+  return { code: 'other', otherText: text }
 }
 
 function findDuplicate(

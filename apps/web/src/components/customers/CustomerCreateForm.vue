@@ -57,6 +57,14 @@
         <el-option v-for="o in industries" :key="o.id" :label="o.label" :value="o.name" />
       </el-select>
     </el-form-item>
+    <el-form-item v-if="form.industry === 'other'" label="其他客户行业" required>
+      <el-input
+        v-model="form.industryOtherText"
+        maxlength="80"
+        show-word-limit
+        placeholder="填写具体行业"
+      />
+    </el-form-item>
 
     <el-form-item label="具体领域">
       <el-select
@@ -67,6 +75,14 @@
       >
         <el-option v-for="o in businessSegments" :key="o.id" :label="o.label" :value="o.name" />
       </el-select>
+    </el-form-item>
+    <el-form-item v-if="form.subIndustry === 'other'" label="其他具体领域" required>
+      <el-input
+        v-model="form.subIndustryOtherText"
+        maxlength="80"
+        show-word-limit
+        placeholder="填写具体领域"
+      />
     </el-form-item>
 
     <el-form-item label="产品线">
@@ -224,7 +240,9 @@ const form = reactive({
   customerType: undefined as string | undefined,
   source: undefined as string | undefined,
   industry: undefined as string | undefined,
+  industryOtherText: '',
   subIndustry: undefined as string | undefined,
+  subIndustryOtherText: '',
   productLines: [] as string[],
   grade: 'C',
   ownerId: '',
@@ -292,6 +310,19 @@ watch(
   },
 )
 
+watch(
+  () => form.industry,
+  (value) => {
+    if (value !== 'other') form.industryOtherText = ''
+  },
+)
+watch(
+  () => form.subIndustry,
+  (value) => {
+    if (value !== 'other') form.subIndustryOtherText = ''
+  },
+)
+
 async function handleDedupCheck() {
   if (!form.name.trim()) return ElMessage.warning('请先填写客户名称')
   const phone = form.contacts.find((contact) => contact.phone?.trim())?.phone
@@ -307,6 +338,10 @@ async function handleDedupCheck() {
 
 async function handleSubmit() {
   if (!form.name.trim()) return ElMessage.warning('客户名称必填')
+  if (form.industry === 'other' && !form.industryOtherText.trim())
+    return ElMessage.warning('请填写具体客户行业')
+  if (form.subIndustry === 'other' && !form.subIndustryOtherText.trim())
+    return ElMessage.warning('请填写具体领域')
   if (!form.ownerId && !canOwnCustomer.value) return ElMessage.warning('请选择客户负责人')
   if (form.contacts.length === 0) return ElMessage.warning('至少需要一位联系人')
   const phone = form.contacts.find((contact) => contact.phone?.trim())?.phone
@@ -342,7 +377,10 @@ async function handleSubmit() {
       customerType: form.customerType,
       source: form.source,
       industry: form.industry,
+      industryOtherText: form.industry === 'other' ? form.industryOtherText.trim() : undefined,
       subIndustry: form.subIndustry,
+      subIndustryOtherText:
+        form.subIndustry === 'other' ? form.subIndustryOtherText.trim() : undefined,
       productLines: form.productLines,
       grade: form.grade as CustomerGrade,
       ownerId: form.ownerId || undefined,
