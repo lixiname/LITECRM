@@ -4,7 +4,7 @@
 
     <section class="expenses__summary">
       <div>
-        <span>{{ currentMonthLabel }}已提交</span>
+        <span>{{ expenseMonthLabel(month) }}已提交</span>
         <strong>¥{{ money(submittedTotal) }}</strong>
       </div>
       <div>
@@ -13,63 +13,144 @@
       </div>
     </section>
 
-    <van-loading v-if="loading" class="expenses__loading" />
-    <van-empty v-else-if="loadError" :description="loadError">
-      <van-button size="small" type="primary" @click="load">重新加载</van-button>
-    </van-empty>
-    <van-cell-group v-else inset :title="`${currentMonthLabel}费用记录`">
-      <van-cell
-        v-for="expense in items"
-        :key="expense.id"
-        :title="expense.expenseDate"
-        :label="expenseSummary(expense)"
-        :is-link="expense.status === 'draft'"
-        @click="expense.status === 'draft' && edit(expense)"
-      >
-        <template #value>
-          <van-tag :type="statusType(expense.status)">{{ statusLabel(expense.status) }}</van-tag>
-        </template>
-        <template #right-icon>
-          <div v-if="expense.status === 'draft'" class="expenses__actions">
-            <van-button size="mini" type="success" @click.stop="submit(expense)">提交</van-button>
-            <van-button size="mini" type="danger" plain @click.stop="remove(expense)">
-              作废
-            </van-button>
+    <section class="expenses__calendar" aria-label="费用月历">
+      <div class="expenses__month-nav">
+        <button type="button" aria-label="上个月" @click="moveMonth(-1)">‹</button>
+        <strong>{{ expenseMonthLabel(month) }}</strong>
+        <button
+          type="button"
+          aria-label="下个月"
+          :disabled="month >= currentMonth"
+          @click="moveMonth(1)"
+        >
+          ›
+        </button>
+      </div>
+      <div v-if="loadError" class="expenses__error">
+        <span>{{ loadError }}</span>
+        <van-button size="small" type="primary" @click="load">重新加载</van-button>
+      </div>
+      <template v-else>
+        <p v-if="!loading && !items.length" class="expenses__month-empty">该月暂无费用记录</p>
+        <div class="expenses__grid" role="grid" :aria-label="`${expenseMonthLabel(month)}费用日历`">
+          <div v-for="weekday in weekdays" :key="weekday" class="expenses__weekday">
+            {{ weekday }}
           </div>
+          <div
+            v-for="(date, index) in calendarDays"
+            :key="date ?? `blank-${index}`"
+            class="expenses__cell"
+          >
+            <button
+              v-if="date"
+              type="button"
+              class="expenses__day"
+              :class="{
+                'expenses__day--selected': date === selectedDay,
+                'expenses__day--today': date === today,
+              }"
+              :aria-label="dayAriaLabel(date)"
+              :aria-pressed="date === selectedDay"
+              @click="selectedDay = date"
+            >
+              <span>{{ Number(date.slice(-2)) }}</span>
+              <i
+                v-if="expenseOn(date)"
+                class="expenses__dot"
+                :class="`expenses__dot--${expenseOn(date)?.status}`"
+              />
+            </button>
+          </div>
+        </div>
+        <div class="expenses__legend">
+          <span><i class="expenses__dot expenses__dot--submitted" />已提交</span>
+          <span><i class="expenses__dot expenses__dot--draft" />草稿</span>
+          <span><i class="expenses__dot expenses__dot--voided" />已作废</span>
+        </div>
+      </template>
+      <van-loading v-if="loading" class="expenses__loading" size="20" />
+    </section>
+
+    <section v-if="!loadError && !loading" class="expenses__detail" aria-label="所选日期费用明细">
+      <div class="expenses__detail-head">
+        <strong>{{ selectedDayLabel }}</strong>
+        <van-tag v-if="selectedExpense" :type="statusType(selectedExpense.status)">
+          {{ statusLabel(selectedExpense.status) }}
+        </van-tag>
+      </div>
+      <template v-if="selectedExpense">
+        <div class="expenses__amount">¥{{ money(totalOf(selectedExpense)) }}</div>
+        <div class="expenses__parts">
+          <span v-for="part in expenseParts(selectedExpense)" :key="part.label">
+            {{ part.label }} ¥{{ money(part.value) }}
+          </span>
+        </div>
+        <p v-if="selectedExpense.notes" class="expenses__notes">
+          备注：{{ selectedExpense.notes }}
+        </p>
+        <div class="expenses__actions">
           <van-button
-            v-else-if="expense.status === 'submitted'"
-            size="mini"
+            v-if="selectedExpense.status === 'draft'"
+            size="small"
+            type="primary"
+            plain
+            @click="edit(selectedExpense)"
+            >编辑草稿</van-button
+          >
+          <van-button
+            v-if="selectedExpense.status === 'draft'"
+            size="small"
+            type="success"
+            @click="submit(selectedExpense)"
+            >提交</van-button
+          >
+          <van-button
+            v-if="selectedExpense.status !== 'voided'"
+            size="small"
             type="danger"
             plain
-            @click.stop="remove(expense)"
+            @click="remove(selectedExpense)"
+            >作废</van-button
           >
-            作废
-          </van-button>
-        </template>
-      </van-cell>
-      <van-empty v-if="!items.length" description="本月暂无费用记录" :image-size="56" />
-    </van-cell-group>
+        </div>
+      </template>
+      <p v-else class="expenses__empty">该日暂无费用记录</p>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { showConfirmDialog, showToast } from 'vant'
 import {
+  expenseMonthCells,
+  expenseMonthLabel,
   listExpenses,
   localBusinessDate,
+  shiftExpenseMonth,
   submitExpense,
   voidExpense,
   type Expense,
 } from '@crm/domain'
 
 const router = useRouter()
+const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+const today = localBusinessDate()
+const currentMonth = today.slice(0, 7)
+const month = ref(currentMonth)
+const selectedDay = ref(today)
 const items = ref<Expense[]>([])
 const loading = ref(false)
 const loadError = ref('')
-const currentMonth = localBusinessDate().slice(0, 7)
-const currentMonthLabel = `${Number(currentMonth.slice(5))} 月`
+let loadRevision = 0
+
+const calendarDays = computed(() => expenseMonthCells(month.value))
+const byDate = computed(() => new Map(items.value.map((expense) => [expense.expenseDate, expense])))
+const selectedExpense = computed(() => byDate.value.get(selectedDay.value))
+const selectedDayLabel = computed(
+  () => `${Number(selectedDay.value.slice(5, 7))}月${Number(selectedDay.value.slice(8))}日`,
+)
 const submittedTotal = computed(() =>
   items.value
     .filter((item) => item.status === 'submitted')
@@ -77,19 +158,34 @@ const submittedTotal = computed(() =>
 )
 const draftCount = computed(() => items.value.filter((item) => item.status === 'draft').length)
 
+watch(month, load, { immediate: true })
+
 async function load() {
+  const revision = ++loadRevision
   loading.value = true
   loadError.value = ''
   try {
-    items.value = await listExpenses(currentMonth)
-  } catch (error) {
-    loadError.value = error instanceof Error ? error.message : '费用记录加载失败'
+    const result = await listExpenses(month.value)
+    if (revision === loadRevision) items.value = result
+  } catch (cause) {
+    if (revision === loadRevision) {
+      items.value = []
+      loadError.value = cause instanceof Error ? cause.message : '费用记录加载失败'
+    }
   } finally {
-    loading.value = false
+    if (revision === loadRevision) loading.value = false
   }
 }
-onMounted(load)
-
+function moveMonth(offset: number) {
+  const next = shiftExpenseMonth(month.value, offset)
+  if (next > currentMonth) return
+  month.value = next
+  selectedDay.value = next === currentMonth ? today : `${next}-01`
+  items.value = []
+}
+function expenseOn(date: string) {
+  return byDate.value.get(date)
+}
 function totalOf(expense: Expense): number {
   return [
     expense.dining,
@@ -102,21 +198,24 @@ function totalOf(expense: Expense): number {
 function money(value: number): string {
   return value.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
 }
-function expenseSummary(expense: Expense): string {
-  const categories = [
-    Number(expense.dining) ? `餐叙 ${money(Number(expense.dining))}` : '',
-    Number(expense.gifts) ? `礼品 ${money(Number(expense.gifts))}` : '',
-    Number(expense.tobaccoAlcohol) ? `烟酒 ${money(Number(expense.tobaccoAlcohol))}` : '',
-    Number(expense.entertainment) ? `娱乐招待 ${money(Number(expense.entertainment))}` : '',
-    Number(expense.lodging) ? `住宿 ${money(Number(expense.lodging))}` : '',
-  ].filter(Boolean)
-  return `¥${money(totalOf(expense))}${categories.length ? ` · ${categories.join('、')}` : ''}`
+function expenseParts(expense: Expense) {
+  return [
+    { label: '餐叙', value: Number(expense.dining) || 0 },
+    { label: '礼品', value: Number(expense.gifts) || 0 },
+    { label: '烟酒', value: Number(expense.tobaccoAlcohol) || 0 },
+    { label: '娱乐招待', value: Number(expense.entertainment) || 0 },
+    { label: '住宿', value: Number(expense.lodging) || 0 },
+  ].filter((part) => part.value > 0)
 }
 function statusLabel(status: string): string {
   return status === 'submitted' ? '已提交' : status === 'voided' ? '已作废' : '草稿'
 }
 function statusType(status: string): 'success' | 'danger' | 'warning' {
   return status === 'submitted' ? 'success' : status === 'voided' ? 'danger' : 'warning'
+}
+function dayAriaLabel(date: string): string {
+  const expense = expenseOn(date)
+  return `${date}${expense ? `，${statusLabel(expense.status)}，${money(totalOf(expense))}元` : '，无费用记录'}`
 }
 function edit(expense: Expense) {
   void router.push({ path: '/expenses/new', query: { date: expense.expenseDate } })
@@ -126,8 +225,8 @@ async function submit(expense: Expense) {
     await submitExpense(expense.id, expense.version)
     showToast('费用已提交')
     await load()
-  } catch (error) {
-    showToast(error instanceof Error ? error.message : '提交失败')
+  } catch (cause) {
+    showToast(cause instanceof Error ? cause.message : '提交失败')
   }
 }
 async function remove(expense: Expense) {
@@ -144,8 +243,8 @@ async function remove(expense: Expense) {
     await voidExpense(expense.id, expense.version)
     showToast('费用已作废')
     await load()
-  } catch (error) {
-    showToast(error instanceof Error ? error.message : '作废失败')
+  } catch (cause) {
+    showToast(cause instanceof Error ? cause.message : '作废失败')
   }
 }
 </script>
@@ -182,13 +281,150 @@ async function remove(expense: Expense) {
   margin-top: 4px;
   font-size: 20px;
 }
-.expenses__loading {
-  display: block;
-  margin: var(--crm-spacing-xl) auto;
+.expenses__calendar,
+.expenses__detail {
+  margin: var(--crm-spacing-md);
+  padding: 14px;
+  border: 1px solid var(--crm-color-border);
+  border-radius: var(--crm-radius-md);
+  background: var(--crm-color-bg-card);
 }
+.expenses__month-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.expenses__month-nav strong {
+  font-size: 16px;
+}
+.expenses__month-nav button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: var(--crm-color-bg-page);
+  border-radius: 8px;
+  color: var(--crm-color-text-primary);
+  font-size: 24px;
+  line-height: 1;
+}
+.expenses__month-nav button:disabled {
+  opacity: 0.35;
+}
+.expenses__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px 0;
+}
+.expenses__weekday {
+  padding: 6px 0 9px;
+  color: var(--crm-color-text-secondary);
+  text-align: center;
+  font-size: 12px;
+}
+.expenses__cell {
+  min-width: 0;
+}
+.expenses__day {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--crm-color-text-primary);
+  font-size: 14px;
+}
+.expenses__day--selected {
+  background: var(--crm-color-primary-light);
+  color: var(--crm-color-primary);
+  font-weight: 700;
+}
+.expenses__day--today:not(.expenses__day--selected) {
+  box-shadow: inset 0 0 0 1px var(--crm-color-primary);
+}
+.expenses__dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 50%;
+  background: #aab3c3;
+}
+.expenses__dot--submitted {
+  background: #348060;
+}
+.expenses__dot--draft {
+  background: #d19831;
+}
+.expenses__dot--voided {
+  background: #aab3c3;
+}
+.expenses__legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 12px;
+  color: var(--crm-color-text-secondary);
+  font-size: 11px;
+}
+.expenses__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.expenses__detail-head,
 .expenses__actions {
   display: flex;
-  gap: var(--crm-spacing-xs);
-  margin-left: var(--crm-spacing-sm);
+  align-items: center;
+  gap: 9px;
+}
+.expenses__detail-head strong {
+  font-size: 16px;
+}
+.expenses__amount {
+  margin-top: 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.expenses__parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin-top: 8px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+}
+.expenses__notes,
+.expenses__empty {
+  color: var(--crm-color-text-secondary);
+  font-size: 13px;
+}
+.expenses__actions {
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.expenses__loading {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+.expenses__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--crm-color-text-secondary);
+  font-size: 13px;
+}
+.expenses__month-empty {
+  margin: 0 0 10px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  text-align: center;
 }
 </style>
