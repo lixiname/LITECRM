@@ -692,6 +692,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/visits/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["VisitsController_getRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["VisitsController_updateRules"];
+        trace?: never;
+    };
     "/visits": {
         parameters: {
             query?: never;
@@ -1650,6 +1666,18 @@ export interface components {
         ReviewClaimDto: {
             /** @description 审批意见（拒绝时必填） */
             comment?: string;
+        };
+        VisitEntryRulesDto: {
+            /** @description 本次情况最少字数；0 表示不限制 */
+            businessSituationMinLength: number;
+            /** @description 下次拜访内容的额外最少字数；0 表示不附加限制，但内容仍必填 */
+            nextActionContentMinLength: number;
+        };
+        UpdateVisitEntryRulesDto: {
+            /** @description 本次情况最少字数；0 表示不限制 */
+            businessSituationMinLength: number;
+            /** @description 下次拜访内容的额外最少字数；0 表示不附加限制，但内容仍必填 */
+            nextActionContentMinLength: number;
         };
         /**
          * @description 拜访方式
@@ -3011,6 +3039,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    VisitsController_getRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 拜访填报字数下限，0 表示不附加限制 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitEntryRulesDto"];
+                };
+            };
+        };
+    };
+    VisitsController_updateRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVisitEntryRulesDto"];
+            };
+        };
+        responses: {
+            /** @description 更新拜访填报字数下限 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisitEntryRulesDto"];
+                };
             };
         };
     };

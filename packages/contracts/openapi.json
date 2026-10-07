@@ -1356,6 +1356,52 @@
         "tags": ["claims"]
       }
     },
+    "/visits/rules": {
+      "get": {
+        "operationId": "VisitsController_getRules",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "拜访填报字数下限，0 表示不附加限制",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitEntryRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["visits"]
+      },
+      "patch": {
+        "operationId": "VisitsController_updateRules",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVisitEntryRulesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新拜访填报字数下限",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitEntryRulesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": ["visits"]
+      }
+    },
     "/visits": {
       "post": {
         "operationId": "VisitsController_create",
@@ -3649,6 +3695,42 @@
             "description": "审批意见（拒绝时必填）"
           }
         }
+      },
+      "VisitEntryRulesDto": {
+        "type": "object",
+        "properties": {
+          "businessSituationMinLength": {
+            "type": "number",
+            "description": "本次情况最少字数；0 表示不限制",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "nextActionContentMinLength": {
+            "type": "number",
+            "description": "下次拜访内容的额外最少字数；0 表示不附加限制，但内容仍必填",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": ["businessSituationMinLength", "nextActionContentMinLength"]
+      },
+      "UpdateVisitEntryRulesDto": {
+        "type": "object",
+        "properties": {
+          "businessSituationMinLength": {
+            "type": "number",
+            "description": "本次情况最少字数；0 表示不限制",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "nextActionContentMinLength": {
+            "type": "number",
+            "description": "下次拜访内容的额外最少字数；0 表示不附加限制，但内容仍必填",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": ["businessSituationMinLength", "nextActionContentMinLength"]
       },
       "VisitMethod": {
         "type": "string",

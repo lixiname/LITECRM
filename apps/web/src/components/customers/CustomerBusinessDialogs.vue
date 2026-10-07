@@ -34,16 +34,29 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="本次情况">
+      <el-form-item label="本次情况" :required="visitRules.businessSituationMinLength > 0">
         <el-input
           v-model="visitForm.businessSituation"
           type="textarea"
           :rows="3"
           placeholder="客户经营、需求或本次沟通要点"
         />
+        <span v-if="visitRules.businessSituationMinLength" class="business-dialog__length-hint">
+          {{ visitTextLength(visitForm.businessSituation) }} / 至少
+          {{ visitRules.businessSituationMinLength }} 字
+        </span>
       </el-form-item>
-      <el-form-item label="下次拜访" required>
-        <el-input v-model="visitForm.nextActionContent" placeholder="下一步具体做什么" />
+      <el-form-item label="下次拜访内容" required>
+        <el-input
+          v-model="visitForm.nextActionContent"
+          type="textarea"
+          :rows="3"
+          placeholder="下一步具体做什么"
+        />
+        <span v-if="visitRules.nextActionContentMinLength" class="business-dialog__length-hint">
+          {{ visitTextLength(visitForm.nextActionContent) }} / 至少
+          {{ visitRules.nextActionContentMinLength }} 字
+        </span>
       </el-form-item>
       <el-form-item label="下次日期" required>
         <el-date-picker v-model="visitForm.nextActionAt" type="date" value-format="YYYY-MM-DD" />
@@ -51,7 +64,9 @@
     </el-form>
     <template #footer>
       <el-button @click="visible.visit = false">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="submitVisit">保存拜访</el-button>
+      <el-button type="primary" :loading="saving || checkingRules" @click="submitVisit">
+        保存拜访
+      </el-button>
     </template>
   </el-dialog>
 
@@ -109,8 +124,13 @@ import {
   VISIT_METHOD_OPTIONS,
   createComplaint,
   createVisit,
+  getVisitEntryRules,
   listDimensionOptions,
+  visitEntryValidationError,
+  visitTextLength,
+  DEFAULT_VISIT_ENTRY_RULES,
   type DimensionOption,
+  type VisitEntryRules,
   type VisitMethod,
   type SalesPlan,
 } from '@crm/domain'
@@ -126,6 +146,8 @@ const emit = defineEmits<{
 
 const visible = reactive({ visit: false, complaint: false })
 const saving = ref(false)
+const checkingRules = ref(false)
+const visitRules = ref<VisitEntryRules>({ ...DEFAULT_VISIT_ENTRY_RULES })
 const opportunityDialog = ref<InstanceType<typeof OpportunityCreateDialog>>()
 const sourcePlan = ref<SalesPlan>()
 const visitTypeOptions = ref<SelectOption[]>([])
@@ -180,6 +202,9 @@ function openVisit(plan?: SalesPlan, occurredDate?: string) {
     nextActionAt: existingPlan ? existingPlan.plannedAt : tomorrow(),
   })
   visible.visit = true
+  void getVisitEntryRules()
+    .then((rules) => (visitRules.value = rules))
+    .catch(() => ElMessage.error('拜访填报规则加载失败，提交时将重试'))
 }
 
 function openOpportunity() {
@@ -199,9 +224,25 @@ function openComplaint(occurredDate?: string) {
 }
 
 async function submitVisit() {
+  if (checkingRules.value || saving.value) return
   if (!visitForm.occurredAt || !visitForm.method) return ElMessage.warning('请填写沟通时间和方式')
   if (!visitForm.nextActionAt || !visitForm.nextActionContent.trim())
     return ElMessage.warning('请填写下次拜访时间和内容')
+  checkingRules.value = true
+  try {
+    const rules = await getVisitEntryRules()
+    visitRules.value = rules
+    const validationError = visitEntryValidationError(
+      rules,
+      visitForm.businessSituation,
+      visitForm.nextActionContent,
+    )
+    if (validationError) return ElMessage.warning(validationError)
+  } catch (error) {
+    return ElMessage.error(error instanceof Error ? error.message : '拜访填报规则加载失败')
+  } finally {
+    checkingRules.value = false
+  }
   await run(
     () =>
       createVisit({
@@ -300,5 +341,11 @@ defineExpose({ openVisit, openOpportunity, openComplaint })
 .business-dialog__customer-name {
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+.business-dialog__length-hint {
+  width: 100%;
+  color: var(--crm-color-text-secondary);
+  font-size: var(--crm-font-size-xs);
+  text-align: right;
 }
 </style>

@@ -156,6 +156,13 @@ const navGroups: NavGroup[] = [
         description: '客户等级上限与人员覆盖',
         ability: 'user.manage',
       },
+      {
+        index: '/visit-entry-rules',
+        icon: 'catalog',
+        title: '拜访填报规则',
+        description: '本次与下次内容字数下限',
+        ability: 'user.manage',
+      },
     ],
   },
 ]

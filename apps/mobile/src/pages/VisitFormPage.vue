@@ -34,12 +34,17 @@
         />
         <van-field
           v-model="form.businessSituation"
-          label="生意情况"
+          label="本次情况"
+          :required="visitRules.businessSituationMinLength > 0"
           type="textarea"
           rows="2"
           autosize
-          placeholder="生意情况"
+          placeholder="客户经营、需求或本次沟通要点"
         />
+        <div v-if="visitRules.businessSituationMinLength" class="visit-form__length-hint">
+          已填 {{ visitTextLength(form.businessSituation) }} 字 · 至少
+          {{ visitRules.businessSituationMinLength }} 字
+        </div>
         <van-field
           v-model="form.equipmentSituation"
           label="设备使用"
@@ -58,13 +63,25 @@
         <van-field
           v-model="form.nextActionContent"
           label="下次拜访内容"
+          type="textarea"
+          rows="2"
+          autosize
           placeholder="如：联系技术负责人确认参数"
           :rules="[{ required: true, message: '请填写下次拜访内容' }]"
         />
+        <div v-if="visitRules.nextActionContentMinLength" class="visit-form__length-hint">
+          已填 {{ visitTextLength(form.nextActionContent) }} 字 · 至少
+          {{ visitRules.nextActionContentMinLength }} 字
+        </div>
       </van-cell-group>
 
       <div class="visit-form__submit">
-        <van-button round block type="primary" native-type="submit" :loading="saving"
+        <van-button
+          round
+          block
+          type="primary"
+          native-type="submit"
+          :loading="saving || checkingRules"
           >提交</van-button
         >
       </div>
@@ -89,11 +106,16 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import {
   createVisit,
+  getVisitEntryRules,
   getCustomer,
   getSalesPlan,
   listDimensionOptions,
   VISIT_METHOD_OPTIONS,
+  visitEntryValidationError,
+  visitTextLength,
+  DEFAULT_VISIT_ENTRY_RULES,
   type SalesPlan,
+  type VisitEntryRules,
 } from '@crm/domain'
 
 const route = useRoute()
@@ -124,6 +146,8 @@ const visitTypeLabel = ref('')
 const showMethod = ref(false)
 const showType = ref(false)
 const saving = ref(false)
+const checkingRules = ref(false)
+const visitRules = ref<VisitEntryRules>({ ...DEFAULT_VISIT_ENTRY_RULES })
 const visitMethodColumns = VISIT_METHOD_OPTIONS.map((option) => ({
   value: option.value,
   text: option.label,
@@ -131,6 +155,9 @@ const visitMethodColumns = VISIT_METHOD_OPTIONS.map((option) => ({
 const visitTypeColumns = ref<{ value: string; text: string }[]>([])
 
 onMounted(async () => {
+  void getVisitEntryRules()
+    .then((rules) => (visitRules.value = rules))
+    .catch(() => showToast('拜访填报规则加载失败，提交时将重试'))
   try {
     const [options, plan, customer] = await Promise.all([
       listDimensionOptions('visit_type'),
@@ -166,9 +193,26 @@ function onPickType({ selectedOptions }: { selectedOptions: { text: string; valu
 }
 
 async function handleSubmit() {
+  if (saving.value || checkingRules.value) return
   if (!form.nextActionAt || !form.nextActionContent.trim()) {
     showToast('请填写下次拜访时间和内容')
     return
+  }
+  checkingRules.value = true
+  try {
+    const rules = await getVisitEntryRules()
+    visitRules.value = rules
+    const validationError = visitEntryValidationError(
+      rules,
+      form.businessSituation,
+      form.nextActionContent,
+    )
+    if (validationError) return showToast(validationError)
+  } catch (error) {
+    showToast(error instanceof Error ? error.message : '拜访填报规则加载失败')
+    return
+  } finally {
+    checkingRules.value = false
   }
   saving.value = true
   try {
@@ -177,7 +221,7 @@ async function handleSubmit() {
       occurredAt: form.occurredAt,
       method: form.method as never,
       visitType: form.visitType as never,
-      businessSituation: form.businessSituation || undefined,
+      businessSituation: form.businessSituation.trim() || undefined,
       equipmentSituation: form.equipmentSituation || undefined,
       personnelChanges: form.personnelChanges || undefined,
       sourcePlanId: sourcePlan.value?.id,
@@ -205,5 +249,11 @@ function formatTime(value: string): string {
 <style scoped>
 .visit-form__submit {
   margin: var(--crm-spacing-lg) var(--crm-spacing-md);
+}
+.visit-form__length-hint {
+  padding: 0 16px 8px;
+  color: var(--crm-color-text-secondary);
+  font-size: 12px;
+  text-align: right;
 }
 </style>

@@ -9,6 +9,7 @@ import type { AuthUser } from '../auth/auth.service'
 import type { CreateVisitDto } from './dto/create-visit.dto'
 import { touchCustomerActivity } from '../customers/customer-activity-projection'
 import { businessDate } from '../common/business-date'
+import { VisitEntryRulesService } from './visit-entry-rules.service'
 
 // 拜访保存已发生事实；来源计划与下一次拜访计划在同一事务闭环，不复制进拜访事实。
 @Injectable()
@@ -17,9 +18,11 @@ export class VisitsService {
     private readonly accessService: AccessService,
     private readonly actionsService: SalesPlansService,
     private readonly catalogService: CatalogService,
+    private readonly entryRulesService: VisitEntryRulesService,
   ) {}
 
   async create(dto: CreateVisitDto, actor: AuthUser) {
+    await this.entryRulesService.assertSubmission(dto.businessSituation, dto.nextActionContent)
     if (dto.visitType) await this.catalogService.assertDimensionValue('visit_type', dto.visitType)
     const customer = await this.findCustomer(dto.customerId, actor)
     if (customer.status !== 'active') throw new ConflictException('仅在案客户可登记拜访')
@@ -35,7 +38,7 @@ export class VisitsService {
           occurredAt,
           method: dto.method,
           visitType: dto.visitType ?? null,
-          businessSituation: dto.businessSituation ?? null,
+          businessSituation: dto.businessSituation?.trim() || null,
           equipmentSituation: dto.equipmentSituation ?? null,
           personnelChanges: dto.personnelChanges ?? null,
           sourcePlanId: dto.sourcePlanId ?? null,
@@ -57,7 +60,7 @@ export class VisitsService {
           originType: 'visit',
           sourceId: visit.id,
           plannedAt: businessDate(dto.nextActionAt),
-          content: dto.nextActionContent,
+          content: dto.nextActionContent.trim(),
         },
       )
       await touchCustomerActivity(tx, dto.customerId, occurredAt, 'visit')

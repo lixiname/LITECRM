@@ -144,6 +144,12 @@ const router = createRouter({
           component: () => import('@/pages/CustomerGradeQuotasPage.vue'),
           meta: { title: '客户分级名额', requiresAbility: 'user.manage' },
         },
+        {
+          path: 'visit-entry-rules',
+          name: 'visit-entry-rules',
+          component: () => import('@/pages/VisitEntryRulesPage.vue'),
+          meta: { title: '拜访填报规则', requiresAbility: 'user.manage' },
+        },
       ],
     },
   ],

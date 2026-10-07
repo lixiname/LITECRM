@@ -2,6 +2,7 @@
 import { baseColumns } from './common'
 import { customerGradeQuotaDefaults, userCustomerGradeQuotaOverrides, users } from './org'
 import { auditLogs } from './audit'
+import { visitEntryRules } from './settings'
 import { administrativeDivisions, salesRegionAreas, salesRegions } from './geography'
 import {
   contacts,
@@ -40,6 +41,7 @@ export {
   customerGradeQuotaDefaults,
   userCustomerGradeQuotaOverrides,
   auditLogs,
+  visitEntryRules,
   administrativeDivisions,
   salesRegions,
   salesRegionAreas,

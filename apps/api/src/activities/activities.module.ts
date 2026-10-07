@@ -5,11 +5,12 @@ import { CatalogModule } from '../catalog/catalog.module'
 import { SalesPlansModule } from '../follow-up-actions/follow-up-actions.module'
 import { VisitsController } from './visits.controller'
 import { VisitsService } from './visits.service'
+import { VisitEntryRulesService } from './visit-entry-rules.service'
 
 @Module({
   imports: [AuthModule, AccessModule, SalesPlansModule, CatalogModule],
   controllers: [VisitsController],
-  providers: [VisitsService],
+  providers: [VisitsService, VisitEntryRulesService],
   exports: [VisitsService],
 })
 export class ActivitiesModule {}
